@@ -2,8 +2,5 @@ import boto3
 
 s3 = boto3.client('s3')
 
-response = s3.list_buckets()
-
-for bucket in response['Buckets']:
-    print( f"\nBucket {bucket['Name']}:")
-    print(f"  -->  {list(bucket.keys())}")
+for bucket in s3.buckets.all():
+    print(bucket.name)
