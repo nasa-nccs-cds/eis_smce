@@ -17,6 +17,6 @@ s3 = boto3.resource('s3')
 obj = s3.Object(bucketname, itemname)
 hdf_bytes = obj.get()['Body'].read()
 f = io.BytesIO(hdf_bytes)
-ds: xr.Dataset = xr.open_dataset(f)
+ds: xr.Dataset = xr.open_dataset( f, engine='h5netcdf' )
 
 print( f"READ ds: attrs= {ds.attrs}")
