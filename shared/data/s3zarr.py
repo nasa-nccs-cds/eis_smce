@@ -1,5 +1,5 @@
 import boto3
-import io
+import io, h5py
 import xarray as xr
 
 itemname = 'mod14/raw/MOD14.A2020296.0645.061.2020348134049.hdf'
@@ -17,6 +17,7 @@ s3 = boto3.resource('s3')
 obj = s3.Object(bucketname, itemname)
 hdf_bytes = obj.get()['Body'].read()
 f = io.BytesIO(hdf_bytes)
-ds: xr.Dataset = xr.open_dataset( f, engine='h5netcdf' )
+h = h5py.File(f,'r')
+# ds: xr.Dataset = xr.open_dataset( f, engine='h5py' )
 
-print( f"READ ds: attrs= {ds.attrs}")
+print( f"READ ds:")
