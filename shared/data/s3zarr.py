@@ -1,4 +1,6 @@
 import boto3
+import io
+import xarray as xr
 
 itemname = 'mod14/raw/MOD14.A2020296.0645.061.2020348134049.hdf'
 bucketname = 'eis-dh-fire'
@@ -13,6 +15,8 @@ s3 = boto3.resource('s3')
 
 
 obj = s3.Object(bucketname, itemname)
-body = obj.get()['Body'].read()
+hdf_bytes = obj.get()['Body'].read()
+f = io.BytesIO(hdf_bytes)
+ds: xr.Dataset = xr.open_dataset(f)
 
-print( f"Body: {body.__class__}")
+print( f"READ ds: attrs= {ds.attrs}")
