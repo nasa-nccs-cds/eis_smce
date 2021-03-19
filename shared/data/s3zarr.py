@@ -1,5 +1,5 @@
 import boto3
-import io
+import io, os
 from pyhdf.SD import SD, SDC
 import s3fs
 import xarray as xr
@@ -8,7 +8,7 @@ itemname = 'mod14/raw/MOD14.A2020296.0645.061.2020348134049.hdf'
 bucketname = 'eis-dh-fire'
 
 filename = itemname.split("/")[-1]
-filepath = f"~/cache/{filename}"
+filepath = f"/home/jovyan/cache/{filename}"
 
 s3 = boto3.client('s3')
 s3.download_file( bucketname, itemname, filepath )
