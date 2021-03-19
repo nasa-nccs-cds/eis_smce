@@ -6,7 +6,7 @@ import xarray as xr
 itemname = 'mod14/raw/MOD14.A2020296.0645.061.2020348134049.hdf'
 bucketname = 'eis-dh-fire'
 
-s3 = boto3.resource('s3')
+# s3 = boto3.resource('s3')
 
 # for bucket in s3.buckets.all():
 #    if bucket.name.startswith("eis"):
@@ -23,6 +23,6 @@ s3 = boto3.resource('s3')
 
 
 s3 = s3fs.S3FileSystem()
-f = h5py.File(s3.open("s3://my-bucket/my-file.h5", "rb"))
+f = h5py.File( s3.open(f"s3://{bucketname}/{itemname}", "rb") )
 
 print( f"READ ds:")
