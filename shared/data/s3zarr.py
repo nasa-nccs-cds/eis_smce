@@ -8,12 +8,13 @@ s3path = 'mod14/raw'
 modis_filename = 'MOD14.A2020296.0645.061.2020348134049.hdf'
 bucketname = 'eis-dh-fire'
 local_cache_dir = "/home/jovyan/cache"
+dev_bucketname = 'eis-dh-fire-dev'
 
 itemname = f"{s3path}/{modis_filename}"
 modis_filepath = f"{local_cache_dir}/{modis_filename}"
 
 s3f: s3fs.S3FileSystem  = s3fs.S3FileSystem( anon=True )
-store = s3fs.S3Map( root=f"{bucketname}/{s3path}/{modis_filename}_test1", s3=s3f, check=False, create=True )
+store = s3fs.S3Map( root=f"{dev_bucketname}/{s3path}/{modis_filename}_test1", s3=s3f, check=False, create=True )
 
 s3 = boto3.client('s3')
 s3.download_file( bucketname, itemname, modis_filepath )
