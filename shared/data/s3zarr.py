@@ -24,6 +24,7 @@ bucketname = 'eis-dh-fire'
 
 s3f = s3fs.S3FileSystem()
 f = s3f.open(f"s3://{bucketname}/{itemname}", "rb")
-h5f = h5py.File( f )
+# h5f = h5py.File( f )
+ds: xr.Dataset = xr.open_dataset( f )
 
 print( f"READ ds:")
