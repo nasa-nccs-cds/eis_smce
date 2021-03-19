@@ -1,26 +1,47 @@
 import boto3
-import io, os
+import io, os, sys
 from pyhdf.SD import SD, SDC
-import s3fs
-import xarray as xr
+from botocore.exceptions import ClientError
+import zarr, s3fs
 
-itemname = 'mod14/raw/MOD14.A2020296.0645.061.2020348134049.hdf'
+s3path = 'mod14/raw'
+modis_filename = 'MOD14.A2020296.0645.061.2020348134049.hdf'
 bucketname = 'eis-dh-fire'
+local_cache_dir = "/home/jovyan/cache"
 
-filename = itemname.split("/")[-1]
-filepath = f"/home/jovyan/cache/{filename}"
+itemname = f"{s3path}/{modis_filename}"
+modis_filepath = f"{local_cache_dir}/{modis_filename}"
+zarr_filename = f"{os.path.splitext(modis_filename)[0]}.zarr"
+zarr_filepath = f"{local_cache_dir}/{zarr_filename}"
+
+s3f: s3fs.S3FileSystem  = s3fs.S3FileSystem()
+store = s3fs.S3Map( root=s3path, s3=s3f, check=False )
 
 s3 = boto3.client('s3')
-s3.download_file( bucketname, itemname, filepath )
-modis_sd: SD = SD( filepath, SDC.READ )
+s3.download_file( bucketname, itemname, modis_filepath )
+modis_sd: SD = SD( modis_filepath, SDC.READ )
 
-print( f"Read MODIS FILE {filename}, attrs:")
+root = zarr.group(store=store)
 for (akey, aval) in modis_sd.attributes().items():
-    print(f" -> {akey}: {aval}")
+    if akey.startswith("CoreMetadata"): pass
+    else: root.attrs[akey] = aval
 
-print( f"\nDatasets:")
 for (dskey, dsval) in modis_sd.datasets().items():
-    print(f" -> {dskey}: {dsval}")
+    zarr.copy( dsval, root, log=sys.stdout)
+
+
+
+
+
+
+# print( f"Read MODIS FILE {modis_filename}, attrs:")
+# for (akey, aval) in modis_sd.attributes().items():
+#     print(f" -> {akey}: {aval}")
+#
+# print( f"\nDatasets:")
+# for (dskey, dsval) in modis_sd.datasets().items():
+#     print(f" -> {dskey}: {dsval}")
+
 
 # for bucket in s3.buckets.all():
 #    if bucket.name.startswith("eis"):
