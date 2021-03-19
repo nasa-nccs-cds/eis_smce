@@ -1,5 +1,6 @@
 import boto3
-import io, h5py
+import io
+from pyhdf.SD import SD, SDC
 import s3fs
 import xarray as xr
 
@@ -21,10 +22,10 @@ bucketname = 'eis-dh-fire'
 # h = h5py.File(f,'r')
 # ds: xr.Dataset = xr.open_dataset( f, engine='h5py' )
 
-
-s3f = s3fs.S3FileSystem()
+filename = itemname.split("/")[-1]
+s3f: s3fs.S3FileSystem  = s3fs.S3FileSystem()
 f = s3f.open(f"s3://{bucketname}/{itemname}", "rb")
-# h5f = h5py.File( f )
-ds: xr.Dataset = xr.open_dataset( f )
+f.write( f"~/cache/{filename}")
+modis_sd = SD( f"~/cache/{filename}", SDC.READ )
 
 print( f"READ ds:")
