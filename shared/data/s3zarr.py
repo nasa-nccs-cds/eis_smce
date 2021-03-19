@@ -25,6 +25,7 @@ bucketname = 'eis-dh-fire'
 filename = itemname.split("/")[-1]
 s3f: s3fs.S3FileSystem  = s3fs.S3FileSystem()
 f = s3f.open(f"s3://{bucketname}/{itemname}", "rb")
+f.read()
 f.write( f"~/cache/{filename}")
 modis_sd = SD( f"~/cache/{filename}", SDC.READ )
 
