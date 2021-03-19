@@ -13,7 +13,7 @@ itemname = f"{s3path}/{modis_filename}"
 modis_filepath = f"{local_cache_dir}/{modis_filename}"
 
 s3f: s3fs.S3FileSystem  = s3fs.S3FileSystem( anon=True )
-store = s3fs.S3Map( root=f"{bucketname}/{s3path}", s3=s3f, check=False )
+store = s3fs.S3Map( root=f"{bucketname}/{s3path}", s3=s3f, check=False, create=True )
 
 s3 = boto3.client('s3')
 s3.download_file( bucketname, itemname, modis_filepath )
