@@ -11,11 +11,11 @@ local_cache_dir = "/home/jovyan/cache"
 
 itemname = f"{s3path}/{modis_filename}"
 modis_filepath = f"{local_cache_dir}/{modis_filename}"
-zarr_filename = f"{os.path.splitext(modis_filename)[0]}.zarr"
-zarr_filepath = f"{local_cache_dir}/{zarr_filename}"
+zarr_filename = f"{os.path.splitext(modis_filename)[0]}"
+zarr_filepath = f"{local_cache_dir}/{zarr_filename}.zarr"
 
-s3f: s3fs.S3FileSystem  = s3fs.S3FileSystem()
-store = s3fs.S3Map( root=s3path, s3=s3f, check=False )
+s3f: s3fs.S3FileSystem  = s3fs.S3FileSystem( anon=True, check=False )
+store = s3fs.S3Map( root=f"{bucketname}/{s3path}/{zarr_filename}", s3=s3f, check=False )
 
 s3 = boto3.client('s3')
 s3.download_file( bucketname, itemname, modis_filepath )
