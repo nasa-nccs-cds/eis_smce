@@ -15,7 +15,7 @@ s3.download_file( bucketname, itemname, filepath )
 modis_sd: SD = SD( filepath, SDC.READ )
 
 print( f"Read MODIS FILE {filename}, attrs:")
-for (akey, aval) in SD.attributes().items():
+for (akey, aval) in modis_sd.attributes().items():
     print(f" -> {akey}: {aval}")
 
 print( f"\nDatasets:")
