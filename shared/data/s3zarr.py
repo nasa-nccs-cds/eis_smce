@@ -7,7 +7,12 @@ import xarray as xr
 itemname = 'mod14/raw/MOD14.A2020296.0645.061.2020348134049.hdf'
 bucketname = 'eis-dh-fire'
 
-# s3 = boto3.resource('s3')
+filename = itemname.split("/")[-1]
+filepath = f"~/cache/{filename}"
+
+s3 = boto3.client('s3')
+s3.download_file( bucketname, itemname, filepath )
+modis_sd = SD( filepath, SDC.READ )
 
 # for bucket in s3.buckets.all():
 #    if bucket.name.startswith("eis"):
@@ -22,11 +27,13 @@ bucketname = 'eis-dh-fire'
 # h = h5py.File(f,'r')
 # ds: xr.Dataset = xr.open_dataset( f, engine='h5py' )
 
-filename = itemname.split("/")[-1]
-s3f: s3fs.S3FileSystem  = s3fs.S3FileSystem()
-f = s3f.open(f"s3://{bucketname}/{itemname}", "rb")
-f.read()
-f.write( f"~/cache/{filename}")
-modis_sd = SD( f"~/cache/{filename}", SDC.READ )
+# filename = itemname.split("/")[-1]
+# s3f: s3fs.S3FileSystem  = s3fs.S3FileSystem()
+# f = s3f.open(f"s3://{bucketname}/{itemname}", "rb")
+# f.read()
+# f.write( f"~/cache/{filename}")
+# modis_sd = SD( f"~/cache/{filename}", SDC.READ )
+
+
 
 print( f"READ ds:")
