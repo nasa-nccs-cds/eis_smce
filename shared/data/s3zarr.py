@@ -12,7 +12,15 @@ filepath = f"/home/jovyan/cache/{filename}"
 
 s3 = boto3.client('s3')
 s3.download_file( bucketname, itemname, filepath )
-modis_sd = SD( filepath, SDC.READ )
+modis_sd: SD = SD( filepath, SDC.READ )
+
+print( f"Read MODIS FILE {filename}, attrs:")
+for (akey, aval) in SD.attributes().items():
+    print(f" -> {akey}: {aval}")
+
+print( f"\nDatasets:")
+for (dskey, dsval) in modis_sd.datasets().items():
+    print(f" -> {dskey}: {dsval}")
 
 # for bucket in s3.buckets.all():
 #    if bucket.name.startswith("eis"):
