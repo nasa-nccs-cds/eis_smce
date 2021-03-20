@@ -1,5 +1,5 @@
 import io, os, sys
-from pyhdf.SD import SD, SDC
+from pyhdf.SD import SD, SDC, SDS
 from collections.abc import MutableMapping
 from botocore.client import BaseClient
 import zarr
@@ -25,5 +25,5 @@ class zarrModisDS:
                 root.attrs[akey] = aval
 
         for dskey, dsinfo in modis_sd.datasets().items():
-            modis_sds = modis_sd.select( dskey )
+            modis_sds: SDS = modis_sd.select( dskey )
             zarr.convenience.copy( modis_sds, root, log=sys.stdout )

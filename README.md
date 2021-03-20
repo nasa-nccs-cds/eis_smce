@@ -7,7 +7,7 @@ Create your conda environment as follows:
 
     > conda create --name eis_smce
     > conda activate eis_smce
-    > conda install -c conda-forge xarray numpy boto3 dask pyhdf zarr traits
+    > conda install -c conda-forge xarray numpy boto3 dask pyhdf zarr traitlets s3fs
 
 AWS Configuration
 ---------------
