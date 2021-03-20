@@ -1,39 +1,21 @@
 import boto3
 import io, os, sys
-from pyhdf.SD import SD, SDC
-from botocore.exceptions import ClientError
 import zarr, s3fs
+from eis_smce_dsg.shared.data.s3zarr import zarrModisDS
 
-s3path = 'mod14/raw'
-modis_filename = 'MOD14.A2020296.0645.061.2020348134049.hdf'
+modis_s3_item = 'mod14/raw/MOD14.A2020296.0645.061.2020348134049.hdf'
 bucketname = 'eis-dh-fire'
 local_cache_dir = "/home/jovyan/cache"
-dev_bucketname = 'eis-dh-fire-dev'
-
-itemname = f"{s3path}/{modis_filename}"
-modis_filepath = f"{local_cache_dir}/{modis_filename}"
+store_dir = f'{local_cache_dir}/{os.path.splitext(modis_s3_item)[0]}.zarr'
+os.makedirs( store_dir, exist_ok=True )
 
 s3 = boto3.client('s3')
-s3.create_bucket(Bucket=dev_bucketname)
+store = zarr.DirectoryStore( store_dir )
 
-s3f: s3fs.S3FileSystem  = s3fs.S3FileSystem( anon=True )
-store = s3fs.S3Map( root=f"{dev_bucketname}/{s3path}/{modis_filename}_test1", s3=s3f, check=False, create=True )
+zds = zarrModisDS( s3, store, local_cache_dir )
+zds.from_s3( bucketname, modis_s3_item )
 
-s3.download_file( bucketname, itemname, modis_filepath )
-modis_sd: SD = SD( modis_filepath, SDC.READ )
-root = zarr.group( store=store )
-
-filename = f"{os.path.splitext(modis_filename)[0]}"
-for (akey, aval) in modis_sd.attributes().items():
-    if akey.startswith("CoreMetadata"): pass
-    else: root.attrs[akey] = aval
-
-for (dskey, dsval) in modis_sd.datasets().items():
-    root.copy( dsval, root, log=sys.stdout)
-
-
-
-
+print( f"DONE")
 
 
 # print( f"Read MODIS FILE {modis_filename}, attrs:")
@@ -67,4 +49,3 @@ for (dskey, dsval) in modis_sd.datasets().items():
 
 
 
-print( f"READ ds:")
