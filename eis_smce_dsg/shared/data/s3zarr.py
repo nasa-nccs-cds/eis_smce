@@ -24,5 +24,6 @@ class zarrModisDS:
             else:
                 root.attrs[akey] = aval
 
-        for (dskey, dsval) in modis_sd.datasets().items():
-            zarr.convenience.copy( dsval, root, log=sys.stdout )
+        for dskey, dsinfo in modis_sd.datasets().items():
+            modis_sds = modis_sd.select( dskey )
+            zarr.convenience.copy( modis_sds, root, log=sys.stdout )
