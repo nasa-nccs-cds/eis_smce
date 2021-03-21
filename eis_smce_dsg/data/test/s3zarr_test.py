@@ -1,7 +1,7 @@
 import boto3
-import io, os, sys
-import zarr, s3fs
-from eis_smce_dsg.shared.data.s3zarr import zarrModisDS
+import os
+import zarr
+from eis_smce_dsg.data import zarrModisDS
 
 modis_s3_item = 'mod14/raw/MOD14.A2020296.0645.061.2020348134049.hdf'
 bucketname = 'eis-dh-fire'
