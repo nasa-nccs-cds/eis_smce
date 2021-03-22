@@ -15,4 +15,4 @@ def rasterio_read( file_path: str ):
     print(f"shape = {src.shape}")
 
 
-rasterio_read( test_file )
+pyhdf_read( test_file )
