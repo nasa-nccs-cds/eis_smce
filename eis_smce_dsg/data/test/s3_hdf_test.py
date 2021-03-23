@@ -18,12 +18,12 @@ print( f"DATASET keys = {sd.datasets().keys()} ")
 DATAFIELD_NAME='FP_T31'
 sds: SDS = sd.select(DATAFIELD_NAME)
 print( f"FP_T31 dimensions = {sds.dimensions()}" )
-data = sds[:,:]
-print( data.__class__ )
+print( f"FP_T31 attributes = {sds.attributes().keys()}" )
 
 # Read geolocation dataset.
 lat_sds: SDS = sd.select('FP_latitude')
 print( f"latitude dimensions = {lat_sds.dimensions()}" )
-latitude = lat_sds[:,:]
+print( f"latitude attributes = {lat_sds.attributes().keys()}" )
+
 lon_sds: SDS = sd.select('FP_longitude')
-longitude = lon_sds[:,:]
+print( f"longitude dimensions = {lon_sds.dimensions()}" )
