@@ -12,5 +12,6 @@ modis_filepath = os.path.join( local_cache_dir, file_name )
 client.download_file( bucketname, modis_s3_item, modis_filepath )
 
 sd = SD( modis_filepath, SDC.READ )
-for (akey, aval) in sd.attributes().items():
-    print(f"{akey} = {aval}")
+print( f"METADATA keys = {sd.attributes().keys()} ")
+
+print( f"DATASET keys = {sd.datasets().keys()} ")
