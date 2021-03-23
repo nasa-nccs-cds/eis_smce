@@ -9,7 +9,7 @@ for bucket in s3.buckets.all():
        for obj in bucket.objects.all():
           print(f'{obj.key}: {obj.__class__}')
 
-print( f"\nUploading script to bucket: {bucketname}\n")
-response = s3.upload_file( __file__, bucketname, 'mod14/raw/test_script.py' )
-
-print( response )
+# print( f"\nUploading script to bucket: {bucketname}\n")
+# response = s3.upload_file( __file__, bucketname, 'mod14/raw/test_script.py' )
+#
+# print( response )
