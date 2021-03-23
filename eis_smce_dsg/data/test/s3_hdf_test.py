@@ -13,5 +13,16 @@ client.download_file( bucketname, modis_s3_item, modis_filepath )
 
 sd = SD( modis_filepath, SDC.READ )
 print( f"METADATA keys = {sd.attributes().keys()} ")
-
 print( f"DATASET keys = {sd.datasets().keys()} ")
+
+DATAFIELD_NAME='FP_T31'
+data3D = sd.select(DATAFIELD_NAME)
+print( data3D.__class__ )
+data = data3D[:,:,:]
+print( data.__class__ )
+
+# Read geolocation dataset.
+lat = sd.select('FP_latitude')
+latitude = lat[:,:]
+lon = sd.select('FP_longitude')
+longitude = lon[:,:]
