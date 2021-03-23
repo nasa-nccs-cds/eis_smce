@@ -20,6 +20,7 @@ DATAFIELD_NAME='FP_T31'
 sds: SDS = sd.select(DATAFIELD_NAME)
 print( f"FP_T31 dimensions = {sds.dimensions()}" )
 print( f"FP_T31 attributes = {sds.attributes().keys()}" )
+print( f"FP_T31 data = {sds[:]}" )
 
 # Read geolocation dataset.
 lat_sds: SDS = sd.select('FP_latitude')
