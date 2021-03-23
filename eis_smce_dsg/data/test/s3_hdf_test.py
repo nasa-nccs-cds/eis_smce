@@ -16,13 +16,14 @@ print( f"METADATA keys = {sd.attributes().keys()} ")
 print( f"DATASET keys = {sd.datasets().keys()} ")
 
 DATAFIELD_NAME='FP_T31'
-data3D = sd.select(DATAFIELD_NAME)
-print( data3D.__class__ )
-data = data3D[:,:,:]
+sds: SDS = sd.select(DATAFIELD_NAME)
+print( f"FP_T31 dimensions = {sds.dimensions()}" )
+data = sds[:,:]
 print( data.__class__ )
 
 # Read geolocation dataset.
-lat = sd.select('FP_latitude')
-latitude = lat[:,:]
-lon = sd.select('FP_longitude')
-longitude = lon[:,:]
+lat_sds: SDS = sd.select('FP_latitude')
+print( f"latitude dimensions = {lat_sds.dimensions()}" )
+latitude = lat_sds[:,:]
+lon_sds: SDS = sd.select('FP_longitude')
+longitude = lon_sds[:,:]
