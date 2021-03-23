@@ -9,7 +9,8 @@ client = boto3.client('s3')
 
 file_name = modis_s3_item.split("/")[-1]
 modis_filepath = os.path.join( local_cache_dir, file_name )
-client.download_file( bucketname, modis_s3_item, modis_filepath )
+# client.download_file( bucketname, modis_s3_item, modis_filepath )
+print( f"Reading file {modis_filepath}")
 
 sd = SD( modis_filepath, SDC.READ )
 print( f"METADATA keys = {sd.attributes().keys()} ")
