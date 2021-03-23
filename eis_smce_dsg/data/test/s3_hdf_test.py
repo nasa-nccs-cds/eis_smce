@@ -21,10 +21,10 @@ sds: SDS = sd.select(DATAFIELD_NAME)
 print( f"FP_T31 dimensions = {sds.dimensions()}" )
 print( f"FP_T31 attributes = {sds.attributes().keys()}" )
 
-sample: SDS = sd.select('sample')
+sample: SDS = sd.select('FP_sample')
 print( f"sample data = {sample[:]}" )
 
-line: SDS = sd.select('line')
+line: SDS = sd.select('FP_line')
 print( f"line data = {line[:]}" )
 
 # Read geolocation dataset.
