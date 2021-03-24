@@ -35,7 +35,9 @@ print( f"METADATA keys = {sd.attributes().keys()} ")
 #
 # lon_sds: SDS = sd.select('FP_longitude')
 # print( f"longitude dimensions = {lon_sds.dimensions()}" )
-
 print( f"DIMENSIONS:")
-for dset in dsets:
-    print( f" {dset}: {sd.select(dset).dimensions()}")
+dims = {}
+for dsid in dsets:
+    sds = sd.select(dsid)
+    sd_dims = sds.dimensions()
+    print( f" {dsid}: {sd_dims}" )
