@@ -5,15 +5,14 @@ from pyhdf.SD import SD, SDC, SDS
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 import os
 
-def get_data( sds: SDS ):
-    sd_dims: Dict = sds.dimensions()
-    ndim = len( sd_dims.keys() )
+def get_data( sds: SDS, shape ):
+    ndim = len( shape )
     if ndim == 0: return 0
-    elif ndim == 1: return sds[:]
-    elif ndim == 2: return sds[:,:]
-    elif ndim == 3: return sds[:,:,:]
-    elif ndim == 4: return sds[:,:,:,:]
-    elif ndim == 5: return sds[:,:,:,:,:]
+    elif ndim == 1: return np.array( sds[:] ).reshape( shape )
+    elif ndim == 2: return np.array( sds[:,:] ).reshape( shape )
+    elif ndim == 3: return np.array( sds[:,:,:] ).reshape( shape )
+    elif ndim == 4: return np.array( sds[:,:,:,:] ).reshape( shape )
+    elif ndim == 5: return np.array( sds[:,:,:,:,:] ).reshape( shape )
 
 modis_s3_item = 'mod14/raw/MOD14.A2020298.1835.061.2020348153757.hdf'
 bucketname = 'eis-dh-fire'
@@ -47,11 +46,12 @@ for dsid in dsets:
         if did not in coords:
             coords[did]= np.arange( 0, dsize )
 
-    data = get_data( sds  )
-
     xcoords = [ coords[did] for did in sd_dims.keys() ]
-    xdims = [ dims[did] for did in sd_dims.keys() ]
-    xda = xa.DataArray( data, xcoords, dims, dsid, attrs )
+    xdims = sd_dims.keys()
+    shape = [ dims[did] for did in sd_dims.keys() ]
+    data = get_data( sds, shape  )
+
+    xda = xa.DataArray( data, xcoords, xdims, dsid, attrs )
     data_vars[ dsid ] = xda
 
 xds = xa.Dataset( data_vars, coords, dsattr )
