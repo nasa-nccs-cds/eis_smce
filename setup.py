@@ -19,7 +19,7 @@ setup_args = dict(
     data_files=[ ],
     entry_points={
         'intake.drivers': [
-            'hdf4=eis_smce/data/intake/hdf4/drivers:HDF4Source',
+            'hdf4=eis_smce.data.intake.hdf4.drivers:HDF4Source',
         ]
     },
 )
