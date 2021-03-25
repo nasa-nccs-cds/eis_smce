@@ -17,6 +17,11 @@ setup_args = dict(
     author_email='thomas.maxwell@nasa.gov',
     url='https://github.com/nasa-nccs-cds/eis_smce',
     data_files=[ ],
+    entry_points={
+        'intake.drivers': [
+            'hdf4 = eis_smce_dsg/data/intake/hdf4/drivers:HDF4Source',
+        ]
+    },
 )
 
 setup(**setup_args)

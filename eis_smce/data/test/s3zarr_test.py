@@ -1,7 +1,7 @@
 import boto3
 import os
 import zarr
-from eis_smce_dsg.data import zarrModisDS
+from eis_smce.data import zarrModisDS
 
 modis_s3_item = 'mod14/raw/MOD14.A2020296.0645.061.2020348134049.hdf'
 bucketname = 'eis-dh-fire'
