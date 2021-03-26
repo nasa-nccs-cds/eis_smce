@@ -21,7 +21,6 @@ class HDF4Source( DataSourceMixin ):
 
     def _get_data( self, sds: SDS, shape: List[int] ) -> np.ndarray:
         ndim, is_empty = len(shape), ( math.prod( shape ) == 0 )
-        print( f"     ######### ndim={ndim}, is_empty={is_empty}")
         if is_empty or (ndim == 0): return np.empty( [0] )
         elif ndim == 1:     return np.array( sds[:] ).reshape(shape)
         elif ndim == 2:     return np.array( sds[:,:] ) .reshape(shape)
