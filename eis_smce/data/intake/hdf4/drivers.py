@@ -1,7 +1,3 @@
-# -*- coding: utf-8 -*-
-import fsspec
-from distutils.version import LooseVersion
-from intake.source.base import PatternMixin
 from intake.source.utils import reverse_format
 from intake_xarray.base import DataSourceMixin
 import boto3
@@ -11,7 +7,7 @@ from pyhdf.SD import SD, SDC, SDS
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 import os
 
-class HDF4Source( DataSourceMixin, PatternMixin ):
+class HDF4Source( DataSourceMixin ):
 
     name = 'hdf4'
 
