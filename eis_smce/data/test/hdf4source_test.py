@@ -1,4 +1,3 @@
-import rioxarray as rxr
 from xarray.core.dataset import Dataset
 from xarray.core.variable import Variable
 from eis_smce.data.intake.hdf4.drivers import HDF4Source

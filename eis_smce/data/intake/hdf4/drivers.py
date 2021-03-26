@@ -43,41 +43,38 @@ class HDF4Source( DataSourceMixin ):
 
     def _open_file(self) -> xa.Dataset:
         print(f"Reading file {self.urlpath}")
-        sd = SD(self.urlpath, SDC.READ)
-        dsets = sd.datasets().keys()
-        dsattr = {}
-        for aid, aval in sd.attributes().items():
-            dsattr[aid] = aval
+        with rxr.open_rasterio(self.urlpath) as rxr_dsets:
+            dsattr = rxr_dsets[0].attrs
+            with SD(self.urlpath, SDC.READ) as sd:
+                dsets = sd.datasets().keys()
+                dims = {}
+                coords = {}
+                data_vars = {}
+                for dsid in dsets:
+                    sds = sd.select(dsid)
+                    sd_dims = sds.dimensions()
+                    attrs = sds.attributes()
+                    print(f" {dsid}: {sd_dims}")
+                    for did, dsize in sd_dims.items():
+                        if did in dims:   assert dsize == dims[did], f"Dimension size discrepancy for dimension {did}"
+                        else:             dims[did] = dsize
+                        if did not in coords.keys():
+                            coords[did] = np.arange(0, dsize)
 
-        dims = {}
-        coords = {}
-        data_vars = {}
-        for dsid in dsets:
-            sds = sd.select(dsid)
-            sd_dims = sds.dimensions()
-            attrs = sds.attributes()
-            print(f" {dsid}: {sd_dims}")
-            for did, dsize in sd_dims.items():
-                if did in dims:   assert dsize == dims[did], f"Dimension size discrepancy for dimension {did}"
-                else:             dims[did] = dsize
-                if did not in coords.keys():
-                    coords[did] = np.arange(0, dsize)
+                    xcoords = [coords[did] for did in sd_dims.keys()]
+                    xdims = sd_dims.keys()
+                    shape = [dims[did] for did in sd_dims.keys()]
+                    try:
+                        data = self._get_data(sds, shape)
+                        data_vars[dsid] = xa.DataArray(data, xcoords, xdims, dsid, attrs)
+                    except Exception as err:
+                        print( f"Error extracting data for sds {dsid}, xdims={xdims}, xcoords={xcoords}, shape={shape}: {err}")
+                        print(f"sd_dims.items() = {sd_dims.items()}, coords={coords}, dims={dims}")
 
-            xcoords = [coords[did] for did in sd_dims.keys()]
-            xdims = sd_dims.keys()
-            shape = [dims[did] for did in sd_dims.keys()]
-            try:
-                data = self._get_data(sds, shape)
-                data_vars[dsid] = xa.DataArray(data, xcoords, xdims, dsid, attrs)
-            except Exception as err:
-                print( f"Error extracting data for sds {dsid}, xdims={xdims}, xcoords={xcoords}, shape={shape}: {err}")
-                print(f"sd_dims.items() = {sd_dims.items()}, coords={coords}, dims={dims}")
-
-        xds = xa.Dataset( data_vars, coords, dsattr )
-        return xds
+                return xa.Dataset( data_vars, coords, dsattr )
 
 
-    def h4s(self):
+    def _open_dataset(self):
 
         # if "*" in url or isinstance(url, list):
         #     _open_dataset = xr.open_mfdataset
