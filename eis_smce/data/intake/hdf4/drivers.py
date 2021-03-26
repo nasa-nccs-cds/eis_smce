@@ -112,7 +112,7 @@ class HDF4Source( DataSourceMixin ):
                 print( f"Clearing existing s3 item: {s3f_path}")
                 s3f.delete(s3f_path, recursive=True)
             else:
-                print(f"S3 path clear for writing: {path}")
+                print(f"S3 path clear for writing: {s3f_path}")
         elif os.path.exists(path):
             print(f"Clearing existing file: {path}")
             if os.path.isfile(path):    os.remove(path)
