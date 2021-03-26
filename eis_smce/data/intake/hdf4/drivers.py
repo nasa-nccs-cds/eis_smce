@@ -106,10 +106,13 @@ class HDF4Source( DataSourceMixin ):
         import s3fs
         if path.startswith("s3:"):
             s3f: s3fs.S3FileSystem = s3fs.S3FileSystem(anon=True)
-            if s3f.exists(path): s3f.delete(path, True)
+            if s3f.exists(path):
+                print( f"Clearing existing s3 item: {path}")
+                s3f.delete(path, True)
         elif os.path.exists(path):
-                if os.path.isfile(path):    os.remove(path)
-                else:                       shutil.rmtree(path)
+            print(f"Clearing existing file: {path}")
+            if os.path.isfile(path):    os.remove(path)
+            else:                       shutil.rmtree(path)
 
     def file_exists( self, path: str ):
         import s3fs
