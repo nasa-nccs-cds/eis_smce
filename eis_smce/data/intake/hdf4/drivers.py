@@ -77,7 +77,7 @@ class HDF4Source( DataSourceMixin ):
         return xds
 
 
-    def _open_dataset(self):
+    def h4s(self):
 
         # if "*" in url or isinstance(url, list):
         #     _open_dataset = xr.open_mfdataset

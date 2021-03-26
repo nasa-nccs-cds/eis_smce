@@ -12,7 +12,7 @@ for ids in range( len(modis_pre) ):
     print( f" *** attributes:\n {ds0.attrs}")
     print( f" *** variables:\n")
     for vid, v in ds0.variables.items():
-        print(f" ----> {vid}{v.dims} ({v.shape}) \n")
+        print(f" ----> {vid}{v.dims} ({v.shape})")
 
 
 
