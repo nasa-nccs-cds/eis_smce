@@ -65,9 +65,11 @@ class HDF4Source( DataSourceMixin ):
             xcoords = [coords[did] for did in sd_dims.keys()]
             xdims = sd_dims.keys()
             shape = [dims[did] for did in sd_dims.keys()]
-            data = self._get_data(sds, shape)
-            xda = xa.DataArray(data, xcoords, xdims, dsid, attrs)
-            data_vars[dsid] = xda
+            try:
+                data = self._get_data(sds, shape)
+                data_vars[dsid] = xa.DataArray(data, xcoords, xdims, dsid, attrs)
+            except Exception as err:
+                print( f"Error extracting data for sds {dsid}, xdims={xdims}, xcoords={xcoords}, shape={shape}: {err}")
 
         xds = xa.Dataset( data_vars, coords, dsattr )
         return xds

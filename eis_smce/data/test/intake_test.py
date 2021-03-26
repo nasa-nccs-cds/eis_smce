@@ -5,7 +5,8 @@ item_key = 'mod14/raw/MOD14.A2020296.0645.061.2020348134049'
 bucketname = 'eis-dh-fire'
 
 ds: HDF4Source = intake.open_hdf4( f"s3://{bucketname}/{item_key}.hdf")
-result_source = ds.export( f"s3://{bucketname}/{item_key}.zarr" )
+print( ds.yaml() )
 
-print( result_source.__class__ )
-print( result_source.yaml() )
+eds = ds.export( f"s3://{bucketname}/{item_key}.zarr" )
+print( eds.__class__ )
+print( eds.yaml() )
