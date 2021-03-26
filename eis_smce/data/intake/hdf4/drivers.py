@@ -30,20 +30,19 @@ class HDF4Source( DataSourceMixin ):
         os.makedirs( self.cache_dir, exist_ok=True )
         toks = data_url.split("/")
         file_name = toks[-1]
-        filepath = os.path.join( self.cache_dir, file_name )
-        if refresh or not os.path.exists(filepath):
+        self.urlpath = os.path.join( self.cache_dir, file_name )
+        if refresh or not os.path.exists(self.urlpath):
             ibuket = 2 if len(toks[1]) == 0 else 1
             bucketname = toks[ibuket]
             s3_item = '/'.join(*toks[ibuket + 1:])
             client = boto3.client('s3')
-            client.download_file( bucketname, s3_item, filepath )
-        return filepath
+            client.download_file( bucketname, s3_item, self.urlpath )
 
     def _open_file(self, data_url: str, **kwargs ) -> xa.Dataset:
-        if data_url.startswith("s3"):   filepath = self.download_from_s3( data_url )
-        else:                           filepath = data_url
-        print(f"Reading file {filepath}")
-        sd = SD(filepath, SDC.READ)
+        if data_url.startswith("s3"):   self.download_from_s3( data_url )
+        else:                           self.urlpath = data_url
+        print(f"Reading file {self.urlpath}")
+        sd = SD(self.urlpath, SDC.READ)
         dsets = sd.datasets().keys()
         dsattr = {}
         for aid, aval in sd.attributes().items():
@@ -92,7 +91,7 @@ class HDF4Source( DataSourceMixin ):
         #         kwargs.update(concat_dim=self.concat_dim)
         # else:
 
-        self._ds = self._open_file(url, chunks=self.chunks, **kwargs)
+        self._ds = self._open_file( url, **kwargs )
 
     # def _add_path_to_ds(self, ds):
     #     """Adding path info to a coord for a particular file
