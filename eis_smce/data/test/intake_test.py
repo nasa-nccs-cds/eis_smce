@@ -8,6 +8,7 @@ bucketname = 'eis-dh-fire'
 
 ds: HDF4Source = intake.open_hdf4( f"s3://{bucketname}/{item_key}.hdf" )
 print( ds.yaml() )
+ds.print_bucket_contents('eis')
 
 zarr_export_path = f"s3://{bucketname}/{item_key}.zarr"
 print( f"Exporting to {zarr_export_path}")

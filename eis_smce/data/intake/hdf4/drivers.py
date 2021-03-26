@@ -122,6 +122,14 @@ class HDF4Source( DataSourceMixin ):
             return s3f.exists(path)
         else: return os.path.exists(path)
 
+    def print_bucket_contents(self, bucket_prefix: str ):
+        s3 = boto3.resource('s3')
+        for bucket in s3.buckets.all():
+            if bucket.name.startswith( bucket_prefix ):
+                print(f'** {bucket.name}:')
+                for obj in bucket.objects.all():
+                    print(f'   -> {obj.key}: {obj.__class__}')
+
 
     # def _add_path_to_ds(self, ds):
     #     """Adding path info to a coord for a particular file
