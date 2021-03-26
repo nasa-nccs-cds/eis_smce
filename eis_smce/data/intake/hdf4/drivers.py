@@ -100,7 +100,7 @@ class HDF4Source( DataSourceMixin ):
         elif self.file_exists( path ):
             print( "Cancelling export because export file already exists: set 'overwrite = True' to overwrite existing export")
             return self
-        return super(self).export( path, **kwargs )
+        return super(HDF4Source,self).export( path, **kwargs )
 
     def clear_path( self, path: str ):
         import s3fs
