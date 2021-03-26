@@ -36,7 +36,7 @@ class HDF4Source( DataSourceMixin ):
         if refresh or not os.path.exists(self.urlpath):
             ibuket = 2 if len(toks[1]) == 0 else 1
             bucketname = toks[ibuket]
-            s3_item = '/'.join(*toks[ibuket + 1:])
+            s3_item = '/'.join( toks[ibuket + 1:] )
             client = boto3.client('s3')
             client.download_file( bucketname, s3_item, self.urlpath )
 
