@@ -28,7 +28,7 @@ class HDF4Source( DataSourceMixin ):
         elif ndim == 4:     return np.array( sds[:,:,:,:] ).reshape(shape)
         elif ndim == 5:     return np.array( sds[:,:,:,:,:] ).reshape(shape)
 
-    def download_from_s3( self, data_url: str, refresh = False ):
+    def download_from_s3( self, data_url: str, refresh = True ):
         os.makedirs( self.cache_dir, exist_ok=True )
         toks = data_url.split("/")
         file_name = toks[-1]
