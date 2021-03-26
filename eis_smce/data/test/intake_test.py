@@ -11,5 +11,5 @@ print( ds.yaml() )
 
 zarr_export_path = f"s3://{bucketname}/{item_key}.zarr"
 print( f"Exporting to {zarr_export_path}")
-eds: ZarrSource = ds.export( zarr_export_path )
+eds: ZarrSource = ds.export( zarr_export_path, overwrite=True )
 print( eds.yaml() )

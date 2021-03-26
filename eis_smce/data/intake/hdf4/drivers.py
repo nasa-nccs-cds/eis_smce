@@ -1,6 +1,6 @@
 from intake.source.utils import reverse_format
 from intake_xarray.base import DataSourceMixin
-import boto3, math
+import boto3, math, shutil
 import xarray as xa
 import numpy as np
 from pyhdf.SD import SD, SDC, SDS
@@ -93,6 +93,31 @@ class HDF4Source( DataSourceMixin ):
         # else:
 
         self._ds = self._open_file()
+
+    def export( self, path: str, **kwargs ):
+        overwrite = kwargs.pop( 'overwrite', False )
+        if overwrite: self.clear_path( path )
+        elif self.file_exists( path ):
+            print( "Cancelling export because export file already exists: set 'overwrite = True' to overwrite existing export")
+            return self
+        return super(self).export( path, **kwargs )
+
+    def clear_path( self, path: str ):
+        import s3fs
+        if path.startswith("s3:"):
+            s3f: s3fs.S3FileSystem = s3fs.S3FileSystem(anon=True)
+            if s3f.exists(path): s3f.delete(path, True)
+        elif os.path.exists(path):
+                if os.path.isfile(path):    os.remove(path)
+                else:                       shutil.rmtree(path)
+
+    def file_exists( self, path: str ):
+        import s3fs
+        if path.startswith("s3:"):
+            s3f: s3fs.S3FileSystem = s3fs.S3FileSystem(anon=True)
+            return s3f.exists(path)
+        else: return os.path.exists(path)
+
 
     # def _add_path_to_ds(self, ds):
     #     """Adding path info to a coord for a particular file
