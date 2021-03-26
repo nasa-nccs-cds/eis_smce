@@ -1,6 +1,7 @@
 from intake.source.utils import reverse_format
 from intake_xarray.base import DataSourceMixin
 import boto3, math, shutil
+import rioxarray as rxr
 import xarray as xa
 import numpy as np
 from pyhdf.SD import SD, SDC, SDS
@@ -47,8 +48,6 @@ class HDF4Source( DataSourceMixin ):
         dsattr = {}
         for aid, aval in sd.attributes().items():
             dsattr[aid] = aval
-            if aid == "CoreMetadata.0":
-                print( f"  \n\n CoreMetadata.0: type = {aval.__class__} \n" )
 
         dims = {}
         coords = {}
