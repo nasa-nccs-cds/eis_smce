@@ -96,12 +96,13 @@ class HDF4Source( DataSourceMixin ):
 
     def export( self, path: str, **kwargs ):
         overwrite = kwargs.pop( 'overwrite', False )
-        if overwrite: self.clear_path( path )
-        elif self.file_exists( path ):
-            print( "Cancelling export because export file already exists: set 'overwrite = True' to overwrite existing export")
-            return self
-        print(f"Exporting file to: {path}")
-        return super(HDF4Source,self).export( path, **kwargs )
+        wmode = "w" if overwrite else "w-"
+        # if overwrite: self.clear_path( path )
+        # elif self.file_exists( path ):
+        #     print( "Cancelling export because export file already exists: set 'overwrite = True' to overwrite existing export")
+        #     return self
+        # print(f"Exporting file to: {path}")
+        return super(HDF4Source,self).export( path, mode=wmode, **kwargs )
 
     def clear_path( self, path: str ):
         import s3fs
