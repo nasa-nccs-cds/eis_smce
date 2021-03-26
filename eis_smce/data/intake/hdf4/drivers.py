@@ -11,20 +11,22 @@ class HDF4Source( DataSourceMixin ):
 
     name = 'hdf4'
 
-    def __init__(self, xarray_kwargs=None, metadata=None, cache_dir=None, **kwargs):
+    def __init__(self, data_url: str, xarray_kwargs=None, metadata=None, cache_dir=None, **kwargs):
         self.cache_dir = cache_dir or os.path.expanduser("~/.eis_smce/cache")
         self.xarray_kwargs = xarray_kwargs or {}
         self._ds = None
+        if data_url.startswith("s3"):   self.download_from_s3( data_url )
+        else:                           self.urlpath = data_url
         super(HDF4Source, self).__init__(metadata=metadata, **kwargs)
 
     def _get_data( self, sds: SDS, shape: List[int] ) -> np.ndarray:
         ndim = len(shape)
-        if ndim == 0:       return 0
+        if ndim == 0:       return np.array( 0 )
         elif ndim == 1:     return np.array( sds[:] ).reshape(shape)
-        elif ndim == 2:     return np.array( sds[:, :]) .reshape(shape)
-        elif ndim == 3:     return np.array( sds[:, :, :]) .reshape(shape)
-        elif ndim == 4:     return np.array( sds[:, :, :, :] ).reshape(shape)
-        elif ndim == 5:     return np.array( sds[:, :, :, :, :] ).reshape(shape)
+        elif ndim == 2:     return np.array( sds[:,:] ) .reshape(shape)
+        elif ndim == 3:     return np.array( sds[:,:,:] ) .reshape(shape)
+        elif ndim == 4:     return np.array( sds[:,:,:,:] ).reshape(shape)
+        elif ndim == 5:     return np.array( sds[:,:,:,:,:] ).reshape(shape)
 
     def download_from_s3( self, data_url: str, refresh = False ):
         os.makedirs( self.cache_dir, exist_ok=True )
@@ -38,9 +40,7 @@ class HDF4Source( DataSourceMixin ):
             client = boto3.client('s3')
             client.download_file( bucketname, s3_item, self.urlpath )
 
-    def _open_file(self, data_url: str, **kwargs ) -> xa.Dataset:
-        if data_url.startswith("s3"):   self.download_from_s3( data_url )
-        else:                           self.urlpath = data_url
+    def _open_file(self) -> xa.Dataset:
         print(f"Reading file {self.urlpath}")
         sd = SD(self.urlpath, SDC.READ)
         dsets = sd.datasets().keys()
@@ -74,8 +74,6 @@ class HDF4Source( DataSourceMixin ):
 
 
     def _open_dataset(self):
-        url = self.urlpath
-        kwargs = self.xarray_kwargs
 
         # if "*" in url or isinstance(url, list):
         #     _open_dataset = xr.open_mfdataset
@@ -91,7 +89,7 @@ class HDF4Source( DataSourceMixin ):
         #         kwargs.update(concat_dim=self.concat_dim)
         # else:
 
-        self._ds = self._open_file( url, **kwargs )
+        self._ds = self._open_file()
 
     # def _add_path_to_ds(self, ds):
     #     """Adding path info to a coord for a particular file
