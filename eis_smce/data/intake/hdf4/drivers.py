@@ -107,9 +107,10 @@ class HDF4Source( DataSourceMixin ):
         import s3fs
         if path.startswith("s3:"):
             s3f: s3fs.S3FileSystem = s3fs.S3FileSystem(anon=True)
-            if s3f.exists(path):
-                print( f"Clearing existing s3 item: {path}")
-                s3f.delete(path, recursive=True)
+            s3f_path = path.split(':')[-1].strip("/")
+            if s3f.exists(s3f_path):
+                print( f"Clearing existing s3 item: {s3f_path}")
+                s3f.delete(s3f_path, recursive=True)
             else:
                 print(f"S3 path clear for writing: {path}")
         elif os.path.exists(path):
