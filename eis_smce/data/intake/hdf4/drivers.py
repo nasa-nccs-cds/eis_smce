@@ -59,7 +59,7 @@ class HDF4Source( DataSourceMixin ):
             for did, dsize in sd_dims.items():
                 if did in dims:   assert dsize == dims[did], f"Dimension size discrepancy for dimension {did}"
                 else:             dims[did] = dsize
-                if did not in coords:
+                if did not in coords.keys():
                     coords[did] = np.arange(0, dsize)
 
             xcoords = [coords[did] for did in sd_dims.keys()]
@@ -70,6 +70,7 @@ class HDF4Source( DataSourceMixin ):
                 data_vars[dsid] = xa.DataArray(data, xcoords, xdims, dsid, attrs)
             except Exception as err:
                 print( f"Error extracting data for sds {dsid}, xdims={xdims}, xcoords={xcoords}, shape={shape}: {err}")
+                print(f"sd_dims.items() = {sd_dims.items()}, coords={coords}, dims={dims}")
 
         xds = xa.Dataset( data_vars, coords, dsattr )
         return xds
