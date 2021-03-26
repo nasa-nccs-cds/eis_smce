@@ -10,7 +10,7 @@ for ids in range( len(modis_pre) ):
     ds0: Dataset = modis_pre[ids]
     print(f"\n\n DATASET DS-{ids}:" )
     print( f" *** attributes:\n {ds0.attrs}")
-    print( f" *** variables:\n {ds0.variables}")
+    print( f" *** variables:\n")
     for vid, v in ds0.variables.items():
         print(f" ----> {vid}{v.dims} ({v.shape}) \n")
 
