@@ -1,6 +1,6 @@
 from intake.source.utils import reverse_format
 from intake_xarray.base import DataSourceMixin
-import boto3
+import boto3, math
 import xarray as xa
 import numpy as np
 from pyhdf.SD import SD, SDC, SDS
@@ -20,8 +20,8 @@ class HDF4Source( DataSourceMixin ):
         super(HDF4Source, self).__init__(metadata=metadata, **kwargs)
 
     def _get_data( self, sds: SDS, shape: List[int] ) -> np.ndarray:
-        ndim = len(shape)
-        if ndim == 0:       return np.array( 0 )
+        ndim, is_empty = len(shape), math.prod( shape )
+        if is_empty or (ndim == 0): return np.empty( [0] )
         elif ndim == 1:     return np.array( sds[:] ).reshape(shape)
         elif ndim == 2:     return np.array( sds[:,:] ) .reshape(shape)
         elif ndim == 3:     return np.array( sds[:,:,:] ) .reshape(shape)
