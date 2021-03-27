@@ -9,7 +9,7 @@ def s3m(): return S3Manager.instance()
 class S3Manager(tlc.SingletonConfigurable):
 
     def __init__( self, **kwargs ):
-        tlc.SingletonConfigurable.__init__(**kwargs)
+        tlc.SingletonConfigurable.__init__( self, **kwargs )
         self._client = None
         self._fs: s3fs.S3FileSystem = None
 
