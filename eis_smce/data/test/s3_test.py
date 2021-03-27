@@ -1,11 +1,14 @@
 import boto3
 
-
 bucketname = 'eis-dh-fire'
 s3 = boto3.resource('s3')
 
 for bucket in s3.buckets.filter( Bucket= bucketname ):
-    print(f'** {bucket.name}: {bucket.__class__}')
+    if bucket.name == bucketname:
+        print(f'** {bucket.name}:')
+        for obj in bucket.objects.all():
+            print(f'   -> {obj.key}: {obj.__class__}')
+
 
 # for bucket in s3.buckets.all():
 #    if bucket.name.startswith("eis"):
