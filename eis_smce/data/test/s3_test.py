@@ -3,7 +3,7 @@ import boto3
 bucketname = 'eis-dh-fire'
 s3 = boto3.resource('s3')
 
-for bucket in s3.buckets.filter( name = bucketname ):
+for bucket in s3.buckets.filter( Bucket= bucketname ):
     print(f'** {bucket.name}:')
 
 # for bucket in s3.buckets.all():
