@@ -30,10 +30,15 @@ class S3Manager(tlc.SingletonConfigurable):
         store = s3fs.S3Map( root=f"{bucketname}/{s3path}/{modis_filename}_test1", s3=s3f, check=False, create=True )
         return store
 
-    def get_file_list(self, bucketname: str, pattern: str ) -> List[Dict]:
+    def _parse_urlpath( self, urlpath: str ) -> Tuple[str,str]:
+        path = urlpath.split(":")[-1].strip("/")
+        return ( path[0], "/".join( path[1:] ) )
+
+    def get_file_list(self, urlpath: str ) -> List[Dict]:
         from intake.source.utils import reverse_format
         def has_char(string: str, chars: str): return 1 in [c in string for c in chars]
         s3 = boto3.resource('s3')
+        (bucketname, pattern) = self._parse_urlpath( urlpath )
         is_glob = has_char( pattern, "*?[" )
         files_list = []
         for bucket in s3.buckets.all():
@@ -41,11 +46,11 @@ class S3Manager(tlc.SingletonConfigurable):
                 for obj in bucket.objects.all():
                     if is_glob:
                         if fnmatch.fnmatch( obj.key, pattern ):
-                            files_list.append( {'resolved': obj.key} )
+                            files_list.append( {'resolved': f"s3://{obj.key}" } )
                     else:
                         try:
-                            metadata = reverse_format(pattern, obj.key)
-                            metadata['resolved'] = obj.key
+                            metadata = reverse_format(pattern, obj.keyf )
+                            metadata['resolved'] = f"s3://{obj.key}"
                             files_list.append(metadata)
                         except ValueError:
                             pass

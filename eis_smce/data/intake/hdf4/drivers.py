@@ -1,5 +1,5 @@
 from intake.source.utils import reverse_format
-from intake_xarray.base import DataSourceMixin
+from eis_smce.data.intake.source import EISDataSource
 import boto3, math, shutil
 import rioxarray as rxr
 import xarray as xa
@@ -8,7 +8,7 @@ from pyhdf.SD import SD, SDC, SDS
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 import os
 
-class HDF4Source( DataSourceMixin ):
+class HDF4Source( EISDataSource ):
 
     name = 'hdf4'
 
@@ -16,8 +16,6 @@ class HDF4Source( DataSourceMixin ):
         self.cache_dir = cache_dir or os.path.expanduser("~/.eis_smce/cache")
         self.xarray_kwargs = xarray_kwargs or {}
         self._ds = None
-        if data_url.startswith("s3"):   self.download_from_s3( data_url )
-        else:                           self.urlpath = data_url
         super(HDF4Source, self).__init__(metadata=metadata, **kwargs)
 
     def _get_data( self, sds: SDS, shape: List[int] ) -> np.ndarray:
@@ -33,17 +31,21 @@ class HDF4Source( DataSourceMixin ):
         os.makedirs( self.cache_dir, exist_ok=True )
         toks = data_url.split("/")
         file_name = toks[-1]
-        self.urlpath = os.path.join( self.cache_dir, file_name )
-        if refresh or not os.path.exists(self.urlpath):
+        file_path = os.path.join( self.cache_dir, file_name )
+        if refresh or not os.path.exists( file_path ):
             ibuket = 2 if len(toks[1]) == 0 else 1
             bucketname = toks[ibuket]
             s3_item = '/'.join( toks[ibuket + 1:] )
             client = boto3.client('s3')
-            client.download_file( bucketname, s3_item, self.urlpath )
+            client.download_file( bucketname, s3_item, file_path )
+        return file_path
 
-    def _open_file(self) -> xa.Dataset:
-        print(f"Reading file {self.urlpath}")
-        rxr_dsets: List[xa.Dataset] = rxr.open_rasterio(self.urlpath)
+    def _open_file( self, file_specs: Dict[str,str] ) -> xa.Dataset:
+        file_path = file_specs.pop("resolved")
+        print(f"Reading file {file_path}")
+        if file_path.startswith("s3"):
+            file_path = self.download_from_s3( file_path )
+        rxr_dsets: List[xa.Dataset] = rxr.open_rasterio( file_path )
         dsattr = rxr_dsets[0].attrs
         sd: SD = SD(self.urlpath, SDC.READ)
         dsets = sd.datasets().keys()
@@ -53,8 +55,8 @@ class HDF4Source( DataSourceMixin ):
         for dsid in dsets:
             sds = sd.select(dsid)
             sd_dims = sds.dimensions()
-            attrs = sds.attributes()
-            print(f" {dsid}: {sd_dims}")
+            attrs = sds.attributes().copy()
+            attrs.update( file_specs )
             for did, dsize in sd_dims.items():
                 if did in dims:   assert dsize == dims[did], f"Dimension size discrepancy for dimension {did}"
                 else:             dims[did] = dsize

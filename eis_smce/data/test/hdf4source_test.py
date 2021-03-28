@@ -5,7 +5,7 @@ from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapp
 
 cache_file = "/home/jovyan/.eis_smce/cache/MOD14.A2020298.1835.061.2020348153757.hdf"
 h4s: HDF4Source = HDF4Source( cache_file )
-ds0: Dataset = h4s._open_file()
+ds0: Dataset = h4s.read_partition(0)
 
 print(f"\n HDF4Source DATASET DS0:" )
 print( f" *** attributes:\n {ds0.attrs}")
