@@ -31,8 +31,8 @@ class S3Manager(tlc.SingletonConfigurable):
         return store
 
     def _parse_urlpath( self, urlpath: str ) -> Tuple[str,str]:
-        path = urlpath.split(":")[-1].strip("/")
-        return ( path[0], "/".join( path[1:] ) )
+        ptoks = urlpath.split(":")[-1].strip("/").split("/")
+        return ( ptoks[0], "/".join( ptoks[1:] ) )
 
     def get_file_list(self, urlpath: str ) -> List[Dict]:
         from intake.source.utils import reverse_format
