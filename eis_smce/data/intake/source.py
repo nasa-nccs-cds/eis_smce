@@ -21,9 +21,6 @@ class EISDataSource(DataSource):
         raise NotImplementedError()
 
     def _get_partition(self, i):
-        return self._load_part( i )
-
-    def _load_part(self, i):
         if i not in self._parts:
             self._parts[i] = self._open_file( self._file_list[i] )
         return self._parts[i]
@@ -44,7 +41,7 @@ class EISDataSource(DataSource):
                 from eis_smce.data.storage.local import lfm
                 self._file_list = lfm().get_file_list( self.urlpath )
             self.nparts = len(self._file_list)
-            ds0 =  self.read_partition( 0 )
+            ds0 =  self._get_partition( 0 )
             metadata = {
                 'dims': dict(ds0.dims),
                 'data_vars': {k: list(ds0[k].coords) for k in ds0.data_vars.keys()},
