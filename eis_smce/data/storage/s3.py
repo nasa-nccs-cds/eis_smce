@@ -39,6 +39,7 @@ class S3Manager(tlc.SingletonConfigurable):
         def has_char(string: str, chars: str): return 1 in [c in string for c in chars]
         s3 = boto3.resource('s3')
         (bucketname, pattern) = self._parse_urlpath( urlpath )
+        print( f"get_file_list: bucketname={bucketname}, pattern={pattern}")
         is_glob = has_char( pattern, "*?[" )
         files_list = []
         for bucket in s3.buckets.all():
