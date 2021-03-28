@@ -35,11 +35,8 @@ class EISDataSource(DataSource):
         return xa.concat( parts, dim="samples" )
 
     def _get_schema(self):
-        """Make schema object, which embeds xarray object and some details"""
-#        from .xarray_container import serialize_zarr_ds
-
         self.urlpath = self._get_cache(self.urlpath)[0]
-        if self._file_list == None:
+        if self._schema == None:
             if self.urlpath.startswith( "s3:"):
                 from eis_smce.data.storage.s3 import s3m
                 self._file_list = s3m().get_file_list( self.urlpath )
@@ -54,12 +51,7 @@ class EISDataSource(DataSource):
                 'coords': tuple(ds0.coords.keys()),
             }
             metadata.update( ds0.attrs )
-            self._schema = Schema(
-                datashape=None,
-                dtype=None,
-                shape=None,
-                npartitions=self.nparts,
-                extra_metadata=metadata)
+            self._schema = Schema( datashape=None, dtype=None, shape=None, npartitions=self.nparts, extra_metadata=metadata)
             dsparts = [dask.delayed(self._load_part)(i) for i in range(self.nparts)]
             self._ds = dask.delayed( self._merge_parts )( dsparts )
         return self._schema
