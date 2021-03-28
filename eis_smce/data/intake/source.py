@@ -41,6 +41,7 @@ class EISDataSource(DataSource):
                 from eis_smce.data.storage.local import lfm
                 self._file_list = lfm().get_file_list( self.urlpath )
             self.nparts = len(self._file_list)
+            print( f"Created file list from {self.urlpath} with {self.nparts} parts")
             ds0 =  self._get_partition( 0 )
             metadata = {
                 'dims': dict(ds0.dims),
