@@ -3,7 +3,7 @@ from xarray.core.variable import Variable
 from eis_smce.data.intake.hdf4.drivers import HDF4Source
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 
-cache_file = "/home/jovyan/.eis_smce/cache/MOD14.A2020298.1835.061.2020348153757.hdf"
+cache_file = "/home/jovyan/.eis_smce/cache/MOD14.{sample}.hdf"
 h4s: HDF4Source = HDF4Source( cache_file )
 ds0: Dataset = h4s.read_partition(0)
 
