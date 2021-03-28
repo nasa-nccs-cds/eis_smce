@@ -50,7 +50,7 @@ class S3Manager(tlc.SingletonConfigurable):
                             files_list.append( {'resolved': f"s3://{obj.key}" } )
                     else:
                         try:
-                            metadata = reverse_format(pattern, obj.keyf )
+                            metadata = reverse_format(pattern, obj.key )
                             metadata['resolved'] = f"s3://{obj.key}"
                             files_list.append(metadata)
                         except ValueError:
