@@ -39,9 +39,8 @@ class EISDataSource(DataSource):
 
     def _merge_parts( self, parts: List[xa.Dataset], concat_dim: str  ):  # "number_of_active_fires"
         fparts = list( filter( lambda x: (x is not None), parts ) )
-        concat_parts = [ ds.filter_by_attrs( DIMS=lambda dims: (concat_dim in dims) ) for ds in fparts ]
-        merge_parts = [ ds.filter_by_attrs(DIMS=lambda dims: (concat_dim not in dims)) for ds in fparts ]
-        print( f"Merging {len(concat_parts)} partitions ({len(concat_parts)} non-null)")
+        concat_parts = [ ds.filter_by_attrs( DIMS=lambda dims: (dims and (concat_dim in dims)) ) for ds in fparts ]
+#        merge_parts = [ ds.filter_by_attrs(DIMS=lambda dims: (concat_dim not in dims)) for ds in fparts ]
         if len( concat_parts ) == 1: return concat_parts[0]
         return xa.concat( concat_parts, dim=concat_dim, data_vars = "minimal", combine_attrs= "drop_conflicts" )
 
