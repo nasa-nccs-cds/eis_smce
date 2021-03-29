@@ -2,7 +2,7 @@ from intake.source.base import DataSource, Schema
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 import dask.delayed
 import xarray as xa
-import intake_xarray as ixa
+import intake_xarray as ixa   # Need this import to register 'xarray' container.
 
 class EISDataSource(DataSource):
     """Common behaviours for plugins in this repo"""
@@ -21,20 +21,25 @@ class EISDataSource(DataSource):
     def _open_file(self, file_specs: Dict[str,str] ) -> xa.Dataset:
         raise NotImplementedError()
 
-    def _get_partition(self, i):
+    def _open_partition(self, i):
         if i not in self._parts:
             self._parts[i] = self._open_file( self._file_list[i] )
-        self._ds = self._parts[i]
-        return self._ds
+        return self._parts[i]
+
+    def _get_partition(self, i):
+        part = self._open_partition( i )
+        self._ds = self._merge_parts( [self._ds, part] )
+        return part
 
     def read(self) -> xa.Dataset:
-        dsparts = [dask.delayed(self._get_partition)(i) for i in range(self.nparts)]
+        dsparts = [dask.delayed(self._open_partition)(i) for i in range(self.nparts)]
         self._ds = dask.delayed(self._merge_parts)(dsparts)
         return self._ds.compute()
 
     def _merge_parts(self, parts: List[xa.Dataset] ):
+        parts = list( filter( lambda x: (x is not None), parts ) )
         if len( parts ) == 1: return parts[0]
-        return xa.concat( parts, dim="samples" )
+        return xa.concat( parts, dim="number_of_active_fires", data_vars = "minimal", combine_attrs= "drop_conflicts" )
 
     def to_dask(self):
         self._get_schema()
