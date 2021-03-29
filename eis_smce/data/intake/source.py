@@ -43,7 +43,7 @@ class EISDataSource(DataSource):
             filter_op = lambda dims: (dims and (concat_dim not in dims))
             cdim = kwargs.get( 'new_dim', "sample" )
         concat_parts = [ ds.filter_by_attrs(DIMS=filter_op) for ds in dsets ]
-        return xa.concat( concat_parts, dim=cdim, combine_attrs="drop_conflicts", compat='override' ) # , coords="all" )
+        return xa.concat( concat_parts, dim=cdim, combine_attrs="drop_conflicts" ) # , coords="all" )
 
     def _merge_parts( self, parts: List[xa.Dataset], concat_dim: str, merge_dim: str = "sample"  ):
         fparts = list( filter( lambda x: (x is not None), parts ) )
