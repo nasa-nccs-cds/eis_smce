@@ -50,7 +50,7 @@ class EISDataSource(DataSource):
             }
             metadata.update( ds0.attrs )
             self._schema = Schema( datashape=None, dtype=None, shape=None, npartitions=self.nparts, extra_metadata=metadata)
-            dsparts = [dask.delayed(self._load_part)(i) for i in range(self.nparts)]
+            dsparts = [dask.delayed(self._get_partition)(i) for i in range(self.nparts)]
             self._ds = dask.delayed( self._merge_parts )( dsparts )
         return self._schema
 
