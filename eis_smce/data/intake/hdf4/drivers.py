@@ -69,6 +69,7 @@ class HDF4Source( EISDataSource ):
             shape = [dims[did] for did in sd_dims.keys()]
             try:
                 data = self._get_data(sds, shape)
+                print(f"Creating DataArray {dsid}, DIMS = {attrs['DIMS']}, file = {file_path}")
                 data_vars[dsid] = xa.DataArray(data, xcoords, xdims, dsid, attrs)
             except Exception as err:
                 print( f"Error extracting data for sds {dsid}, xdims={xdims}, xcoords={xcoords}, shape={shape}: {err}")
