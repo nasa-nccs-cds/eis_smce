@@ -8,7 +8,9 @@ h4s: HDF4Source = HDF4Source( data_url + ".hdf" )
 ds0: Dataset = h4s.read_partition(0)
 
 print(f"\n HDF4Source DATASET DS0:" )
-print( f" ***  attributes:\n {ds0.attrs}")
+print( f" ***  attributes:\n")
+for vid, v in ds0.attrs.items():
+    print(f" ----> {vid}: {v}")
 print( f" ***  variables:\n")
 for vid, v in ds0.variables.items():
     print(f" ----> {vid}{v.dims} ({v.shape})")
