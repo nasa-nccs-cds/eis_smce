@@ -13,7 +13,7 @@ print( f" ***  variables:\n")
 for vid, v in ds0.variables.items():
     print(f" ----> {vid}{v.dims} ({v.shape})")
 
-h4s.export( data_url + ".zarr" )
+# h4s.export( data_url + ".zarr" )
 
 
 

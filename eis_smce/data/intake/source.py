@@ -41,11 +41,18 @@ class EISDataSource(DataSource):
         fparts = list( filter( lambda x: (x is not None), parts ) )
         print( f"Merging {len(parts)} partitions ({len(fparts)} non-null)")
         if len( fparts ) == 1: return fparts[0]
-        return xa.concat( fparts, dim="number_of_active_fires", data_vars = "minimal", combine_attrs= "drop_conflicts", compat='override' )
+        return xa.concat( fparts, dim="number_of_active_fires", data_vars = "minimal", combine_attrs= "drop_conflicts" )
 
     def to_dask(self):
         self._get_schema()
         return self._ds
+
+    def _filter_by_coord( self, ds: xa.Dataset, dim: str ):
+        data_vars = []
+        coords = {}
+        attrs = dict()
+
+        return xa.Dataset(data_vars=None, coords=None, attrs=None)
 
     def _get_schema(self):
         self.urlpath = self._get_cache(self.urlpath)[0]
