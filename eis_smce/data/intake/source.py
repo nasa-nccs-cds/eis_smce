@@ -2,6 +2,7 @@ from intake.source.base import DataSource, Schema
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 import dask.delayed
 import xarray as xa
+import intake_xarray as ixa
 
 class EISDataSource(DataSource):
     """Common behaviours for plugins in this repo"""
