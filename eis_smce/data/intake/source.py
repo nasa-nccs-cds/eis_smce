@@ -37,6 +37,7 @@ class EISDataSource(DataSource):
         return xa.concat( parts, dim="samples" )
 
     def to_dask(self):
+        self._get_schema()
         return self._ds
 
     def _get_schema(self):
