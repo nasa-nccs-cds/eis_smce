@@ -37,22 +37,17 @@ class EISDataSource(DataSource):
         self._ds = dask.delayed(self._merge_parts)(dsparts)
         return self._ds.compute()
 
-    def _merge_parts( self, parts: List[xa.Dataset] ):
+    def _merge_parts( self, parts: List[xa.Dataset], concat_dim: str  ):  # "number_of_active_fires"
         fparts = list( filter( lambda x: (x is not None), parts ) )
-        print( f"Merging {len(parts)} partitions ({len(fparts)} non-null)")
-        if len( fparts ) == 1: return fparts[0]
-        return xa.concat( fparts, dim="number_of_active_fires", data_vars = "minimal", combine_attrs= "drop_conflicts" )
+        concat_parts = [ ds.filter_by_attrs( DIMS=lambda dims: (concat_dim in dims) ) for ds in fparts ]
+        merge_parts = [ ds.filter_by_attrs(DIMS=lambda dims: (concat_dim not in dims)) for ds in fparts ]
+        print( f"Merging {len(concat_parts)} partitions ({len(concat_parts)} non-null)")
+        if len( concat_parts ) == 1: return concat_parts[0]
+        return xa.concat( concat_parts, dim=concat_dim, data_vars = "minimal", combine_attrs= "drop_conflicts" )
 
     def to_dask(self):
         self._get_schema()
         return self._ds
-
-    def _filter_by_coord( self, ds: xa.Dataset, dim: str ):
-        data_vars = []
-        coords = {}
-        attrs = dict()
-
-        return xa.Dataset(data_vars=None, coords=None, attrs=None)
 
     def _get_schema(self):
         self.urlpath = self._get_cache(self.urlpath)[0]

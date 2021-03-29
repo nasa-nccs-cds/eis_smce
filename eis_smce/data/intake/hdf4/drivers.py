@@ -57,6 +57,7 @@ class HDF4Source( EISDataSource ):
             sd_dims = sds.dimensions()
             attrs = sds.attributes().copy()
             attrs.update( file_specs )
+            attrs['DIMS'] = list( sd_dims.keys() )
             for did, dsize in sd_dims.items():
                 if did in dims:   assert dsize == dims[did], f"Dimension size discrepancy for dimension {did}"
                 else:             dims[did] = dsize
