@@ -16,26 +16,23 @@ class EISDataSource(DataSource):
         self._parts = {}
         self._schema: Schema = None
         self._ds = None
+        self._mds = None
         self.nparts = -1
 
     def _open_file(self, file_specs: Dict[str,str] ) -> xa.Dataset:
         raise NotImplementedError()
 
-    def _open_partition(self, i):
+    def _get_partition(self, i):
         if i not in self._parts:
             self._parts[i] = self._open_file( self._file_list[i] )
+            self._mds = None
         return self._parts[i]
-
-    def _get_partition(self, i):
-        part = self._open_partition( i )
-        self._ds = self._merge_parts( [self._ds, part], "number_of_active_fires" )
-        return part
 
     def read(self) -> xa.Dataset:
         self._load_metadata()
-        dsparts = [dask.delayed(self._open_partition)(i) for i in range(self.nparts)]
-        self._ds = dask.delayed(self._merge_parts)( dsparts, "number_of_active_fires" )
-        return self._ds.compute()
+        dsparts = [dask.delayed(self._get_partition)(i) for i in range(self.nparts)]
+        self._mds = dask.delayed(self._merge_parts)( dsparts, "number_of_active_fires" )
+        return self._mds.compute()
 
     def _merge_parts( self, parts: List[xa.Dataset], concat_dim: str  ):  # "number_of_active_fires"
         fparts = list( filter( lambda x: (x is not None), parts ) )
@@ -45,8 +42,10 @@ class EISDataSource(DataSource):
         return xa.concat( concat_parts, dim=concat_dim, data_vars = "minimal", combine_attrs= "drop_conflicts" )
 
     def to_dask(self):
-        self._get_schema()
-        return self._ds
+        self._load_metadata()
+        if self._mds is None:
+            self._mds = dask.delayed(self._merge_parts)( self._parts, "number_of_active_fires" )
+        return self._mds
 
     def _get_schema(self):
         self.urlpath = self._get_cache(self.urlpath)[0]
