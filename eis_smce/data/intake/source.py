@@ -36,10 +36,11 @@ class EISDataSource(DataSource):
         self._ds = dask.delayed(self._merge_parts)(dsparts)
         return self._ds.compute()
 
-    def _merge_parts(self, parts: List[xa.Dataset] ):
-        parts = list( filter( lambda x: (x is not None), parts ) )
-        if len( parts ) == 1: return parts[0]
-        return xa.concat( parts, dim="number_of_active_fires", data_vars = "minimal", combine_attrs= "drop_conflicts" )
+    def _merge_parts( self, parts: List[xa.Dataset] ):
+        fparts = list( filter( lambda x: (x is not None), parts ) )
+        print( f"Merging {len(parts)} partitions ({len(fparts)} non-null)")
+        if len( fparts ) == 1: return fparts[0]
+        return xa.concat( fparts, dim="number_of_active_fires", data_vars = "minimal", combine_attrs= "drop_conflicts" )
 
     def to_dask(self):
         self._get_schema()
