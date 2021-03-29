@@ -41,7 +41,7 @@ class EISDataSource(DataSource):
         fparts = list( filter( lambda x: (x is not None), parts ) )
         print( f"Merging {len(parts)} partitions ({len(fparts)} non-null)")
         if len( fparts ) == 1: return fparts[0]
-        return xa.concat( fparts, dim="number_of_active_fires", data_vars = "minimal", combine_attrs= "drop_conflicts" )
+        return xa.concat( fparts, dim="number_of_active_fires", data_vars = "minimal", combine_attrs= "drop_conflicts", compat='override' )
 
     def to_dask(self):
         self._get_schema()
