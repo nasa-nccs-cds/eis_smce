@@ -23,12 +23,16 @@ class EISDataSource(DataSource):
     def _get_partition(self, i):
         if i not in self._parts:
             self._parts[i] = self._open_file( self._file_list[i] )
-        return self._parts[i]
+        self._ds = self._parts[i]
+        return self._ds
 
     def read(self) -> xa.Dataset:
+        dsparts = [dask.delayed(self._get_partition)(i) for i in range(self.nparts)]
+        self._ds = dask.delayed(self._merge_parts)(dsparts)
         return self._ds.compute()
 
     def _merge_parts(self, parts: List[xa.Dataset] ):
+        if len( parts ) == 1: return parts[0]
         return xa.concat( parts, dim="samples" )
 
     def _get_schema(self):
@@ -50,8 +54,6 @@ class EISDataSource(DataSource):
             }
             metadata.update( ds0.attrs )
             self._schema = Schema( datashape=None, dtype=None, shape=None, npartitions=self.nparts, extra_metadata=metadata)
-            dsparts = [dask.delayed(self._get_partition)(i) for i in range(self.nparts)]
-            self._ds = dask.delayed( self._merge_parts )( dsparts )
         return self._schema
 
 
