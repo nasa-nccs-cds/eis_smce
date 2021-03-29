@@ -34,12 +34,21 @@ class EISDataSource(DataSource):
         self._mds = dask.delayed(self._merge_parts)( dsparts, "number_of_active_fires" )
         return self._mds.compute()
 
+    def _concat_dsets(self, dsets: List[xa.Dataset], concat_dim: str, existing_dim: bool, **kwargs  ) -> xa.Dataset:
+        if len(dsets) == 1: return dsets[0]
+        if existing_dim:
+            filter_op = lambda dims: (dims and (concat_dim in dims))
+            cdim = concat_dim
+        else:
+            filter_op = lambda dims: (dims and (concat_dim not in dims))
+            cdim = kwargs.get( 'new_dim', "sample" )
+        concat_parts = [ ds.filter_by_attrs(DIMS=filter_op) for ds in dsets ]
+        return xa.concat( concat_parts, dim=cdim, data_vars="minimal", combine_attrs="drop_conflicts", compat='override', coords="all" )
+
     def _merge_parts( self, parts: List[xa.Dataset], concat_dim: str, merge_dim: str = "sample"  ):
         fparts = list( filter( lambda x: (x is not None), parts ) )
-        concat_parts = [ ds.filter_by_attrs( DIMS=lambda dims: (dims and (concat_dim in dims)) ) for ds in fparts ]
-        merge_parts = [ ds.filter_by_attrs(DIMS=lambda dims: (dims and (concat_dim not in dims)) ) for ds in fparts ]
-        concat_ds = concat_parts[0] if len( concat_parts ) == 1 else xa.concat( concat_parts, dim=concat_dim, data_vars = "minimal", combine_attrs= "drop_conflicts", compat='override' )
-        merge_ds = merge_parts[0] if len( merge_parts ) == 1 else xa.concat( merge_parts, dim=merge_dim, data_vars = "minimal", combine_attrs= "drop_conflicts", compat='override' )
+        concat_ds = self._concat_dsets( fparts, concat_dim, True )
+        merge_ds = self._concat_dsets( fparts, concat_dim, False )
         return xa.merge( [ concat_ds, merge_ds ], combine_attrs= "drop_conflicts" )
 
     def to_dask(self):
