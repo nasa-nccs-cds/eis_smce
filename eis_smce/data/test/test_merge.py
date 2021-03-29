@@ -7,17 +7,17 @@ data_url = 's3://eis-dh-fire/mod14/raw/MOD14.A2020299.*.hdf'
 h4s: HDF4Source = HDF4Source( data_url )
 
 ds0 = h4s.read_partition( 0 )
-print( f" *** ds0 variables:\n")
+print( f"\n *** ds0 variables:")
 for vid, v in ds0.variables.items():
     print(f" ----> {vid}{v.dims} ({v.shape})")
 
 ds1 = h4s.read_partition( 1 )
-print( f" *** ds1 variables:\n")
+print( f"\n *** ds1 variables:")
 for vid, v in ds1.variables.items():
     print(f" ----> {vid}{v.dims} ({v.shape})")
 
 dsm: Dataset = h4s.read()
-print( f" *** Merged variables:\n")
+print( f"\n *** Merged variables:")
 for vid, v in dsm.variables.items():
     print(f" ----> {vid}{v.dims} ({v.shape})")
 

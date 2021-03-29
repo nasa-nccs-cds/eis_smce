@@ -34,12 +34,13 @@ class EISDataSource(DataSource):
         self._mds = dask.delayed(self._merge_parts)( dsparts, "number_of_active_fires" )
         return self._mds.compute()
 
-    def _merge_parts( self, parts: List[xa.Dataset], concat_dim: str  ):  # "number_of_active_fires"
+    def _merge_parts( self, parts: List[xa.Dataset], concat_dim: str, merge_dim: str = "sample"  ):
         fparts = list( filter( lambda x: (x is not None), parts ) )
         concat_parts = [ ds.filter_by_attrs( DIMS=lambda dims: (dims and (concat_dim in dims)) ) for ds in fparts ]
-#        merge_parts = [ ds.filter_by_attrs(DIMS=lambda dims: (concat_dim not in dims)) for ds in fparts ]
-        if len( concat_parts ) == 1: return concat_parts[0]
-        return xa.concat( concat_parts, dim=concat_dim, data_vars = "minimal", combine_attrs= "drop_conflicts" )
+        merge_parts = [ ds.filter_by_attrs(DIMS=lambda dims: (concat_dim not in dims)) for ds in fparts ]
+        concat_ds = concat_parts[0] if len( concat_parts ) == 1 else xa.concat( concat_parts, dim=concat_dim, data_vars = "minimal", combine_attrs= "drop_conflicts" )
+        merge_ds = merge_parts[0] if len( merge_parts ) == 1 else xa.concat( merge_parts, dim=merge_dim, data_vars = "minimal", combine_attrs= "drop_conflicts" )
+        return xa.merge( [ concat_ds, merge_ds ], combine_attrs= "drop_conflicts" )
 
     def to_dask(self):
         self._load_metadata()
