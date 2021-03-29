@@ -28,13 +28,13 @@ class EISDataSource(DataSource):
 
     def _get_partition(self, i):
         part = self._open_partition( i )
-        self._ds = self._merge_parts( [self._ds, part] )
+        self._ds = self._merge_parts( [self._ds, part], "number_of_active_fires" )
         return part
 
     def read(self) -> xa.Dataset:
         self._load_metadata()
         dsparts = [dask.delayed(self._open_partition)(i) for i in range(self.nparts)]
-        self._ds = dask.delayed(self._merge_parts)(dsparts)
+        self._ds = dask.delayed(self._merge_parts)( dsparts, "number_of_active_fires" )
         return self._ds.compute()
 
     def _merge_parts( self, parts: List[xa.Dataset], concat_dim: str  ):  # "number_of_active_fires"
