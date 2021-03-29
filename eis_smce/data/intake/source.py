@@ -36,6 +36,9 @@ class EISDataSource(DataSource):
         if len( parts ) == 1: return parts[0]
         return xa.concat( parts, dim="samples" )
 
+    def to_dask(self):
+        return self._ds
+
     def _get_schema(self):
         self.urlpath = self._get_cache(self.urlpath)[0]
         if self._schema == None:
