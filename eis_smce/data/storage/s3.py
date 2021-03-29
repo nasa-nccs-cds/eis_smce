@@ -47,11 +47,11 @@ class S3Manager(tlc.SingletonConfigurable):
                 for obj in bucket.objects.all():
                     if is_glob:
                         if fnmatch.fnmatch( obj.key, pattern ):
-                            files_list.append( {'resolved': f"s3://{obj.key}" } )
+                            files_list.append( {'resolved': f"s3://{bucketname}/{obj.key}" } )
                     else:
                         try:
                             metadata = reverse_format(pattern, obj.key )
-                            metadata['resolved'] = f"s3://{obj.key}"
+                            metadata['resolved'] = f"s3://{bucketname}/{obj.key}"
                             files_list.append(metadata)
                         except ValueError:
                             pass
