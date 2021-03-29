@@ -32,6 +32,7 @@ class EISDataSource(DataSource):
         return part
 
     def read(self) -> xa.Dataset:
+        self._load_metadata()
         dsparts = [dask.delayed(self._open_partition)(i) for i in range(self.nparts)]
         self._ds = dask.delayed(self._merge_parts)(dsparts)
         return self._ds.compute()
