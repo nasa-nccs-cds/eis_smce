@@ -10,7 +10,7 @@ ds0: xr.Dataset = h4s.read_partition( part_index )               # Each partitio
 
 remote_input_file: str = ds0.attrs['remote_file']
 local_input_file: str  = ds0.attrs['local_file']
-remote_input_file: str = os.path.splitext( remote_input_file )[0] + ".zarr"
+remote_zarr_file: str = os.path.splitext( remote_input_file )[0] + ".zarr"
 
 print(f"\n HDF4Source DATASET DS0:" )
 print( f"\n ***  attributes:")
@@ -20,9 +20,9 @@ print( f"\n ***  variables:")
 for vid, v in ds0.variables.items():
     print(f" ----> {vid}{v.dims} ({v.shape})")
 
-xzSource: ZarrSource = h4s.export( remote_input_file )            # Exports the current partition (index = 0), Zarr is the default export format
+xzSource: ZarrSource = h4s.export( remote_zarr_file )            # Exports the current partition (index = 0), Zarr is the default export format
 
-print( f"Exported file '{remote_input_file}' (cached at '{local_input_file}') to '{remote_input_file}'")
+print( f"Exported file '{remote_input_file}' (cached at '{local_input_file}') to '{remote_zarr_file}'")
 print( "Catalog entry:" )
 print( xzSource.yaml() )
 
