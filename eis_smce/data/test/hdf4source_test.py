@@ -10,8 +10,8 @@ ds0: xr.Dataset = h4s.read_partition( part_index )               # Each partitio
 
 remote_input_file: str = ds0.attrs['remote_file']
 local_input_file: str  = ds0.attrs['local_file']
-filename: str = os.path.splitext( os.path.basename(local_input_file) )[0]
-zarr_url: str = f"s3://eis-dh-fire/mod14/raw/{filename}.zarr"
+remote_input_file: str = os.path.splitext( remote_input_file )[0] + ".zarr"
+
 print(f"\n HDF4Source DATASET DS0:" )
 print( f"\n ***  attributes:")
 for vid, v in ds0.attrs.items():
@@ -20,9 +20,9 @@ print( f"\n ***  variables:")
 for vid, v in ds0.variables.items():
     print(f" ----> {vid}{v.dims} ({v.shape})")
 
-exSoruce: ZarrSource = h4s.export( zarr_url )                   # Exports the current partition (index = 0), Zarr is the default export format
+exSoruce: ZarrSource = h4s.export( remote_input_file )            # Exports the current partition (index = 0), Zarr is the default export format
 
-print( f"Exported file '{remote_input_file}' (cached at '{local_input_file}') to '{zarr_url}'")
+print( f"Exported file '{remote_input_file}' (cached at '{local_input_file}') to '{remote_input_file}'")
 print( "Catalog entry:" )
 print( exSoruce.yaml() )
 
