@@ -42,9 +42,10 @@ class HDF4Source( EISDataSource ):
         return file_path
 
     def _open_file( self, file_specs: Dict[str,str] ) -> xa.Dataset:
-        file_path = file_specs.pop("resolved")
-        if file_path.startswith("s3"):
-            file_path = self.download_from_s3( file_path )
+        # Use rasterio/GDAL to read the metadata and pyHDF to read the variable data.
+        file_path = rfile_path = file_specs.pop("resolved")
+        if rfile_path.startswith("s3"):
+            file_path = self.download_from_s3( rfile_path )
         rxr_dsets: List[xa.Dataset] = rxr.open_rasterio( file_path )
         dsattr = rxr_dsets[0].attrs
         sd: SD = SD( file_path, SDC.READ )
@@ -76,6 +77,8 @@ class HDF4Source( EISDataSource ):
                 print(f"sd_dims.items() = {sd_dims.items()}, coords={coords}, dims={dims}")
 
         xds = xa.Dataset( data_vars, coords, dsattr )
+        xds.attrs[ 'local_file' ] = file_path
+        xds.attrs[ 'remote_file'] = rfile_path
         sd.end()
         for ds in rxr_dsets: ds.close()
         return xds
