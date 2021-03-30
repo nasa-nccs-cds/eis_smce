@@ -14,7 +14,7 @@ eis_smce Setup
 ---------------
 Install eis_smce as follows:
 
-    > git clone 
+    > git clone https://github.com/nasa-nccs-cds/eis_smce.git 
     > cd eis_smce
     > python setup.py install
 
