@@ -1,6 +1,8 @@
 from intake.source.base import DataSource, Schema
-from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
-import dask.delayed
+from pathlib import Path
+from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable, MutableMapping
+import dask.delayed, boto3, os
+import dask.bag as db
 import xarray as xa
 import intake_xarray as ixa   # Need this import to register 'xarray' container.
 
@@ -13,10 +15,9 @@ class EISDataSource(DataSource):
     def __init__(self, **kwargs ):
         super(EISDataSource, self).__init__( **kwargs )
         self._file_list: List[ Dict[str,str] ] = None
-        self._parts = {}
+        self._parts: Dict[int,xa.Dataset] = {}
         self._schema: Schema = None
-        self._ds = None
-        self._mds = None
+        self._ds: xa.Dataset = None
         self.nparts = -1
 
     def _open_file(self, file_specs: Dict[str,str] ) -> xa.Dataset:
@@ -25,14 +26,44 @@ class EISDataSource(DataSource):
     def _get_partition(self, i):
         if i not in self._parts:
             self._parts[i] = self._open_file( self._file_list[i] )
-            self._mds = None
         return self._parts[i]
 
-    def read(self) -> xa.Dataset:
+    def _export_partition(self, i, **kwargs):
+        overwrite = kwargs.pop( 'overwrite', True )
+        group: str = kwargs.pop( 'group', None )
+        location: str = kwargs.pop('location', None)
+        wmode = "w" if overwrite else "w-"
+        if i not in self._parts:
+            self._parts[i] = self._open_file( self._file_list[i] )
+        remote_input_file: str = self._parts[i].attrs['remote_file']
+        if location is None:    store = os.path.splitext(remote_input_file)[0] + ".zarr"
+        else:                   store = f"{location}/{os.path.splitext( os.path.basename(remote_input_file) )[0]}.zarr"
+        self._parts[i].to_zarr( store, mode=wmode, group=group )
+        return store
+
+    def read( self, merge_axis = None ) -> xa.Dataset:
         self._load_metadata()
         dsparts = [dask.delayed(self._get_partition)(i) for i in range(self.nparts)]
-        self._mds = dask.delayed(self._merge_parts)( dsparts, "number_of_active_fires" )
-        return self._mds.compute()
+        if merge_axis is None:
+            mds = dask.delayed(self._collect_parts)( dsparts )
+            return mds.compute()
+        else:
+            mds = dask.delayed(self._merge_parts)( dsparts, merge_axis )
+            return mds.compute()
+
+    def export( self, path: str, **kwargs ):
+        self._load_metadata()
+        dsparts = [dask.delayed(self._export_partition)(i,**kwargs) for i in range(self.nparts)]
+        stores = dask.delayed(self._collect_parts)( dsparts )
+        return stores.compute()
+
+    def print_bucket_contents(self, bucket_prefix: str ):
+        s3 = boto3.resource('s3')
+        for bucket in s3.buckets.all():
+            if bucket.name.startswith( bucket_prefix ):
+                print(f'** {bucket.name}:')
+                for obj in bucket.objects.all():
+                    print(f'   -> {obj.key}: {obj.__class__}')
 
     def _concat_dsets(self, dsets: List[xa.Dataset], concat_dim: str, existing_dim: bool, **kwargs  ) -> xa.Dataset:
         if len(dsets) == 1: return dsets[0]
@@ -51,11 +82,9 @@ class EISDataSource(DataSource):
         merge_ds = self._concat_dsets( fparts, concat_dim, False, new_dim=merge_dim )
         return xa.merge( [ concat_ds, merge_ds ], combine_attrs= "drop_conflicts" )
 
-    def to_dask(self):
-        self._load_metadata()
-        if self._mds is None:
-            self._mds = dask.delayed(self._merge_parts)( self._parts, "number_of_active_fires" )
-        return self._mds
+    def _collect_parts( self, parts: List[Any]  ) -> dask.bag.Bag:
+        fparts = list( filter( lambda x: (x is not None), parts ) )
+        return db.from_sequence( fparts )
 
     def _get_schema(self):
         self.urlpath = self._get_cache(self.urlpath)[0]
