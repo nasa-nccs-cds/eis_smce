@@ -4,6 +4,7 @@ from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapp
 import dask.delayed, boto3, os
 import dask.bag as db
 import xarray as xa
+from intake.source.zarr import ZarrArraySource
 import intake_xarray as ixa   # Need this import to register 'xarray' container.
 
 class EISDataSource(DataSource):
@@ -28,7 +29,7 @@ class EISDataSource(DataSource):
             self._parts[i] = self._open_file( self._file_list[i] )
         return self._parts[i]
 
-    def _export_partition(self, i, **kwargs):
+    def _export_partition(self, i, **kwargs) -> str:
         overwrite = kwargs.pop( 'overwrite', True )
         group: str = kwargs.pop( 'group', None )
         location: str = kwargs.pop('location', None)
