@@ -29,17 +29,18 @@ class EISDataSource(DataSource):
             self._parts[i] = self._open_file( self._file_list[i] )
         return self._parts[i]
 
-    def _export_partition(self, i, **kwargs) -> str:
+    def _export_partition(self, ip: int, **kwargs) -> str:
         overwrite = kwargs.pop( 'overwrite', True )
         group: str = kwargs.pop( 'group', None )
         location: str = kwargs.pop('location', None)
         wmode = "w" if overwrite else "w-"
-        if i not in self._parts:
-            self._parts[i] = self._open_file( self._file_list[i] )
-        remote_input_file: str = self._parts[i].attrs['remote_file']
+        if ip not in self._parts:
+            self._parts[ip] = self._open_file( self._file_list[ip] )
+        remote_input_file: str = self._parts[ip].attrs['remote_file']
         if location is None:    store = os.path.splitext(remote_input_file)[0] + ".zarr"
         else:                   store = f"{location}/{os.path.splitext( os.path.basename(remote_input_file) )[0]}.zarr"
-        self._parts[i].to_zarr( store, mode=wmode, group=group )
+        print( f"Exporting partition {ip} to zarr: {store}")
+        self._parts[ip].to_zarr( store, mode=wmode, group=group )
         return store
 
     def read( self, merge_axis = None ) -> xa.Dataset:
