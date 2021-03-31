@@ -8,7 +8,7 @@ cache_dir = "/att/nobackup/tpmaxwel/ILAB/scratch"
 collection = "MOD17A2H-GPP"
 batch = "2000/049/MOD17A2H.A2000049.h11{v}.006.{ts}.hdf"
 data_url = f"file:/{base_dir}/{collection}/{batch}"
-output_dir = os.path.basename(f"{cache_dir}/{collection}/{batch}")
+output_dir = os.path.dirname(f"{cache_dir}/{collection}/{batch}")
 os.makedirs( output_dir, exist_ok=True )
 part_index: int = 0
 
