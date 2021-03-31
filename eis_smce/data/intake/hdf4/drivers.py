@@ -46,8 +46,8 @@ class HDF4Source( EISDataSource ):
         file_path = rfile_path = file_specs.pop("resolved")
         if rfile_path.startswith("s3"):
             file_path = self.download_from_s3( rfile_path )
-        rxr_dsets: List[xa.Dataset] = rxr.open_rasterio( file_path )
-        dsattr = rxr_dsets[0].attrs
+        rxr_dset: xa.Dataset = rxr.open_rasterio( file_path )
+        dsattr = rxr_dset.attrs
         sd: SD = SD( file_path, SDC.READ )
         dsets = sd.datasets().keys()
         dims = {}
