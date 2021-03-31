@@ -7,8 +7,10 @@ Create your conda environment as follows:
 
     > conda create --name eis_smce 
     > conda activate eis_smce
+    > pip install awscli --upgrade --user
     > conda install -c conda-forge rioxarray rasterio xarray numpy boto3 dask pyhdf zarr traitlets s3fs intake intake-xarray ipykernel
     > python -m ipykernel install --user --name=eis_smce
+
 
 eis_smce Setup
 ---------------
@@ -27,10 +29,12 @@ Setup Amazon Credentials
 
     > pip install awscli --upgrade --user
 
-* Setup Configuration:
+* Setup Configuration (enter access keys create above):
 
     > aws configure
-    >
+
+* Setup MFA:
+  
     > source ./config/mfa.sh
 
 
