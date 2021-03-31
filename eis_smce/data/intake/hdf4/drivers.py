@@ -80,7 +80,7 @@ class HDF4Source( EISDataSource ):
         xds.attrs[ 'local_file' ] = file_path
         xds.attrs[ 'remote_file'] = rfile_path
         sd.end()
-        for ds in rxr_dsets: ds.close()
+        rxr_dset.close()
         return xds
 
 
