@@ -125,3 +125,66 @@ class EISDataSource(DataSource):
         self._parts = {}
         self._ds = None
         self._schema = None
+
+class EISDataFileSource(DataSource):
+    """Common behaviours for plugins in this repo"""
+    version = 0.1
+    container = 'xarray'
+    partition_access = True
+
+    def __init__(self, **kwargs ):
+        super(EISDataFileSource, self).__init__( **kwargs )
+        self._file_url: str = None
+        self._ds: xa.Dataset = None
+        self._schema: Schema = None
+
+    def _open_file(self, file_specs: Dict[str,str] ) -> xa.Dataset:
+        raise NotImplementedError()
+
+    @property
+    def ds(self):
+        if self._ds is None:
+            self._ds = self._get_partition()
+        return self._ds
+
+    def _get_partition(self, i=0) -> xa.Dataset:
+        return self.ds
+
+    def read( self, merge_axis = None ) -> xa.Dataset:
+        self._load_metadata()
+        return self.ds
+
+    def to_dask(self) -> xa.Dataset:
+        return self.read()
+
+    def export( self, path: str, **kwargs ):
+        overwrite = kwargs.pop( 'overwrite', False )
+        wmode = "w" if overwrite else "w-"
+        return super(EISDataFileSource,self).export( path, mode=wmode, **kwargs )
+
+    def print_bucket_contents(self, bucket_prefix: str ):
+        s3 = boto3.resource('s3')
+        for bucket in s3.buckets.all():
+            if bucket.name.startswith( bucket_prefix ):
+                print(f'** {bucket.name}:')
+                for obj in bucket.objects.all():
+                    print(f'   -> {obj.key}: {obj.__class__}')
+
+    def _get_schema(self):
+        self.urlpath = self._get_cache(self.urlpath)[0]
+        if self._schema == None:
+            ds0 =  self._get_partition()
+            metadata = {
+                'dims': dict(ds0.dims),
+                'data_vars': {k: list(ds0[k].coords) for k in ds0.data_vars.keys()},
+                'coords': tuple(ds0.coords.keys()),
+            }
+            metadata.update( ds0.attrs )
+            self._schema = Schema( datashape=None, dtype=None, shape=None, npartitions=1, extra_metadata=metadata)
+        return self._schema
+
+
+    def close(self):
+        """Delete open file from memory"""
+        self._ds = None
+        self._schema = None
