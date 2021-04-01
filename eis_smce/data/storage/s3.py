@@ -3,6 +3,7 @@ import fnmatch
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 import glob
 import boto3
+from intake.source.utils import path_to_glob
 # import s3fs
 
 def s3m(): return S3Manager.instance()
@@ -42,16 +43,14 @@ class S3Manager(tlc.SingletonConfigurable):
         (bucketname, pattern) = self._parse_urlpath( urlpath )
         print( f"get_file_list: urlpath={urlpath}, bucketname={bucketname}, pattern={pattern}")
         is_glob = has_char( pattern, "*?[" )
+        gpattern = pattern if is_glob else path_to_glob( pattern )
         files_list = []
         for bucket in s3.buckets.all():
             if fnmatch.fnmatch(bucket.name,bucketname):
                 for obj in bucket.objects.all():
-                    if is_glob:
-                        if fnmatch.fnmatch( obj.key, pattern ):
-                            files_list.append( {'resolved': f"s3://{bucketname}/{obj.key}" } )
-                    else:
+                    if fnmatch.fnmatch( obj.key, gpattern ):
                         try:
-                            metadata = reverse_format(pattern, obj.key )
+                            metadata = {} if is_glob else reverse_format( pattern, obj.key )
                             metadata['resolved'] = f"s3://{bucketname}/{obj.key}"
                             files_list.append(metadata)
                         except ValueError:
