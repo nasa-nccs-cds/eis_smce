@@ -53,6 +53,9 @@ class EISDataSource(DataSource):
             mds = dask.delayed(self._merge_parts)( dsparts, merge_axis )
             return mds.compute()
 
+    def to_dask(self):
+        return self.read()
+
     def export( self, **kwargs ):
         self._load_metadata()
         dsparts = [dask.delayed(self._export_partition)(i,**kwargs) for i in range(self.nparts)]
