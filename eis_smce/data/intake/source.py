@@ -137,6 +137,7 @@ class EISDataFileSource(DataSource):
         self._file_url: str = None
         self._ds: xa.Dataset = None
         self._schema: Schema = None
+        self._file_specs = None
 
     def _open_file(self, file_specs: Dict[str,str] ) -> xa.Dataset:
         raise NotImplementedError()
@@ -144,7 +145,7 @@ class EISDataFileSource(DataSource):
     @property
     def ds(self):
         if self._ds is None:
-            self._ds = self._get_partition()
+            self._ds = self._open_file( self._file_specs )
         return self._ds
 
     def _get_partition(self, i=0) -> xa.Dataset:
@@ -173,6 +174,12 @@ class EISDataFileSource(DataSource):
     def _get_schema(self):
         self.urlpath = self._get_cache(self.urlpath)[0]
         if self._schema == None:
+            if self.urlpath.startswith( "s3:"):
+                from eis_smce.data.storage.s3 import s3m
+                self._file_specs = s3m().get_file_list( self.urlpath )[0]
+            else:
+                from eis_smce.data.storage.local import lfm
+                self._file_specs = lfm().get_file_list( self.urlpath )[0]
             ds0 =  self._get_partition()
             metadata = {
                 'dims': dict(ds0.dims),
@@ -188,3 +195,4 @@ class EISDataFileSource(DataSource):
         """Delete open file from memory"""
         self._ds = None
         self._schema = None
+        self._file_specs = None
