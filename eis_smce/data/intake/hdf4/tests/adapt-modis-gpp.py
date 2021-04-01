@@ -8,12 +8,12 @@ cache_dir = "/att/nobackup/tpmaxwel/ILAB/scratch"
 collection = "MOD17A2H-GPP"
 batch = "2000/049/MOD17A2H.A2000049.h11{v}.006.{ts}.hdf"
 file = "2000/049/MOD17A2H.A2000049.h11v04.006.2015136155345.hdf"
-data_url = f"file:/{base_dir}/{collection}/{batch}"
 output_dir = os.path.dirname(f"{cache_dir}/{collection}/{batch}")
 output_file = f"{cache_dir}/{collection}/{file}"
 os.makedirs( output_dir, exist_ok=True )
 part_index: int = 0
 
+data_url = f"file:/{base_dir}/{collection}/{file}"
 h4s: HDF4Source = HDF4Source( data_url  )                              # Creates source encapsulating all matched files in data_url
 ds0: xr.Dataset = h4s.read_partition( part_index )                     # Each partition corresponds to a single file, downloads file from s3 to local cache before reading.
 
