@@ -4,4 +4,4 @@ bucketname = 'demo-bucket-pic'
 # bucketname = 'eis-dh-fire'
 fs = s3fs.S3FileSystem(anon=True)
 
-print( fs.ls("/") )
+print( fs.ls("/demo-bucket-pic") )
