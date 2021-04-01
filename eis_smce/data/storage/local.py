@@ -12,7 +12,7 @@ class LocalFileManager(tlc.SingletonConfigurable ):
         tlc.SingletonConfigurable.__init__( self, **kwargs )
 
     def _parse_urlpath( self, urlpath: str ) -> str:
-        return urlpath.split(":")[-1].replace("//","/")
+        return urlpath.split(":")[-1].replace("//","/").replace("//","/")
 
     def get_file_list(self, urlpath: str ) -> List[Dict]:
         from intake.source.utils import reverse_format

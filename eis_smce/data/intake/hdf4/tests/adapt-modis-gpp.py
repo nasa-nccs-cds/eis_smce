@@ -23,8 +23,10 @@ print( f"\n ***  variables:")
 for vid, v in ds0.variables.items():
     print(f" ----> {vid}{v.dims} ({v.shape})")
 
-stores = h4s.export( location=f"file:/{output_dir}" )    # Exports all partitions, Zarr is the default export format
+# stores = h4s.export( location=f"file:/{output_dir}" )    # Exports all partitions, Zarr is the default export format
 
-print( f"Exported file '{ds0.attrs['remote_file']}' (cached at '{ds0.attrs['local_file']}') to '{stores[0]}'")
+store = h4s._export_partition( part_index, location=f"file:/{output_dir}" )
+
+print( f"Exported file '{ds0.attrs['remote_file']}' (cached at '{ds0.attrs['local_file']}') to '{store}'")
 print( "Sample catalog entry:" )
-print( ZarrSource( stores[0] ).yaml() )
+print( ZarrSource( store ).yaml() )
