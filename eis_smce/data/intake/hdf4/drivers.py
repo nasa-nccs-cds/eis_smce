@@ -170,7 +170,9 @@ class HDF4FileSource( EISDataFileSource ):
 
     def _open_file( self, file_specs: Dict[str,str] ) -> xa.Dataset:
         # Use rasterio/GDAL to read the metadata and pyHDF to read the variable data.
+        print( f"Opening file from specs: {file_specs}")
         file_path = rfile_path = file_specs.pop("resolved")
+        print( f"Resolved: {file_path}")
         if rfile_path.startswith("s3"):
                file_path = self.download_from_s3( rfile_path )
                print(f"Reading file {file_path} (downloade3d from {rfile_path})")
