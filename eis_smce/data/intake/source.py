@@ -59,6 +59,11 @@ class EISDataSource(DataSource):
         stores = dask.delayed(self._collect_parts)( dsparts )
         return stores.compute()
 
+    def export_xi( self, path: str, **kwargs ):
+        overwrite = kwargs.pop( 'overwrite', False )
+        wmode = "w" if overwrite else "w-"
+        return super(EISDataSource,self).export( path, mode=wmode, **kwargs )
+
     def print_bucket_contents(self, bucket_prefix: str ):
         s3 = boto3.resource('s3')
         for bucket in s3.buckets.all():
