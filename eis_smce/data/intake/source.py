@@ -94,6 +94,7 @@ class EISDataSource(DataSource):
 
     def _collect_parts( self, parts: List[Any]  ) -> dask.bag.Bag:
         fparts = list( filter( lambda x: (x is not None), parts ) )
+        if ( len( fparts ) == 1 ): return fparts[0]
         return db.from_sequence( fparts )
 
     def _get_schema(self):
