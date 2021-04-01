@@ -177,8 +177,8 @@ class HDF4FileSource( EISDataFileSource ):
                file_path = self.download_from_s3( rfile_path )
                print(f"Reading file {file_path} (downloade3d from {rfile_path})")
         else:  print( f"Reading file {file_path}" )
-        rxr_dset: xa.Dataset = rxr.open_rasterio( file_path )
-        dsattr = rxr_dset.attrs
+        rxr_arrays = rxr.open_rasterio( file_path )
+        dsattr = rxr_arrays[0].attrs
         sd: SD = SD( file_path, SDC.READ )
         dsets = sd.datasets().keys()
         dims = {}
@@ -211,7 +211,6 @@ class HDF4FileSource( EISDataFileSource ):
         xds.attrs[ 'local_file' ] = file_path
         xds.attrs[ 'remote_file'] = rfile_path
         sd.end()
-        rxr_dset.close()
         return xds
 
 
