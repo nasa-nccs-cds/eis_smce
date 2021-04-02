@@ -58,6 +58,7 @@ class EISDataSource(DataSource):
         return self._ds
 
     def translate(self) -> List[str]:
+        self._load_metadata()
         dsparts: List[str] = [self._translate_file(i) for i in range(self.nparts)]
         return dsparts
 
@@ -83,6 +84,7 @@ class EISDataSource(DataSource):
             return [ source ]
         except Exception as err:
             location = os.path.dirname(path)
+            print( f"Merge ERROR: {err}" )
             print( f"Merge failed, exporting files individually to {location}"  )
             sources = []
             for i in range(self.nparts):
