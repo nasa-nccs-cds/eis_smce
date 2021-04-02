@@ -109,7 +109,7 @@ class EISDataSource(DataSource):
         merge_ds = self._concat_dsets( fparts, concat_dim, False, new_dim=merge_dim )
         return xa.merge( [ concat_ds, merge_ds ], combine_attrs= "drop_conflicts" )
 
-    def _merge_files( self, files: List[Union[dask.delayed.Delayed,str]]  ):
+    def _merge_files( self, files: List  ):
         try:
             return dask.delayed( xa.open_mfdataset )( files )
         except Exception as err:
