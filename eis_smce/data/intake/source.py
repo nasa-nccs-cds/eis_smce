@@ -67,14 +67,17 @@ class EISDataSource(DataSource):
     def to_dask(self) -> xa.Dataset:
         return self.read()
 
-    def export( self, path: str, **kwargs ):
+    def export( self, path: str, **kwargs ) -> List[DataSource]:
         try:
             overwrite = kwargs.pop( 'overwrite', True )
             wmode = "w" if overwrite else "w-"
-            return super(EISDataSource,self).export( path, mode=wmode, **kwargs )
+            source = super(EISDataSource,self).export( path, mode=wmode, **kwargs )
+            print( f"Exported merged dataset to {path}, specs = {source.yaml()}")
+            return [ source ]
         except Exception as err:
             location = os.path.dirname(path)
             print( f"Merge failed, exporting files individually to {location}"  )
+            sources = []
             for i in range(self.nparts):
                 file_spec = self._file_list[i]
                 file_path = file_spec["translated"]
@@ -83,6 +86,8 @@ class EISDataSource(DataSource):
                 zpath = f"{location}/{file_name}.zarr"
                 print(f"Exporting to zarr file: {zpath}")
                 source.export( zpath )
+                sources.append( source )
+            return sources
 
     def print_bucket_contents(self, bucket_prefix: str ):
         s3 = boto3.resource('s3')
