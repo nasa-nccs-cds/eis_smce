@@ -21,16 +21,16 @@ class EISDataSource(DataSource):
         self._ds: xa.Dataset = None
         self.nparts = -1
 
-    def _open_file(self, file_specs: Dict[str,str] ) -> xa.Dataset:
+    def _open_file(self, ipart: int ) -> xa.Dataset:
         raise NotImplementedError()
 
     def _get_partition(self, ipart: int ) -> xa.Dataset:
         if ipart not in self._parts:
-            self._parts[ipart] = self._open_file( self._file_list[ipart]  )
+            self._parts[ipart] = self._open_file( ipart )
         return self._parts[ipart]
 
     def _translate_file(self, ipart: int ) -> str:
-        xds: xa.Dataset = self._open_file( self._file_list[ipart] )
+        xds: xa.Dataset = self._open_file( ipart )
         file_path = xds.attrs['local_file']
         nc_file_path =  os.path.splitext( file_path )[0] + ".nc"
         xds.attrs['local_file'] = nc_file_path

@@ -33,10 +33,11 @@ class HDF4Source( EISDataSource ):
             elif ndim == 5:
                 return np.array(sds[:, :, :, :, :]).reshape(shape)
 
-        def _open_file( self, file_specs: Dict[str, str] ) -> xa.Dataset:
+        def _open_file( self, ipart: int  ) -> xa.Dataset:
             from eis_smce.data.storage.s3 import s3m
             # Use rasterio/GDAL to read the metadata and pyHDF to read the variable data.
-            print(f"Opening file from specs: {file_specs}")
+            file_specs = self._file_list[ipart].copy()
+            print(f"Opening file[{ipart}] from specs: {file_specs}")
             file_path = rfile_path = file_specs.pop("resolved")
             print(f"Resolved: {file_path}")
             if rfile_path.startswith("s3"):
