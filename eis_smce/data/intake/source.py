@@ -51,7 +51,7 @@ class EISDataSource(DataSource):
                 dsparts: List[str] = [ self._translate_file(i) for i in range(self.nparts) ]
                 print( f"Opening mfdataset from parts: {dsparts}")
                 self._ds = self._merge_files( dsparts )
-                print(f"Opened dataset with data vars: {list(self._ds.data_vars.keys())}")
+                print(f"Opened merged dataset")
         return self._ds
 
     def read_delay( self, merge_axis = None ) -> xa.Dataset:
