@@ -1,7 +1,7 @@
-from intake.source.utils import reverse_format
 from eis_smce.data.intake.source import EISDataSource, EISDataFileSource
 import boto3, math, shutil
 import rioxarray as rxr
+import rasterio as rio
 import xarray as xa
 import numpy as np
 from pyhdf.SD import SD, SDC, SDS
@@ -179,6 +179,9 @@ class HDF4FileSource( EISDataFileSource ):
         else:  print( f"Reading file {file_path}" )
         rxr_arrays = rxr.open_rasterio( file_path )
         dsattr = rxr_arrays[0].attrs
+        print( "rxr arrays:" )
+        for rxr_array in rxr_arrays:
+            print( f" --> {rxr_array.__class__}: attrs = {rxr_array.attrs.keys()}" )
         sd: SD = SD( file_path, SDC.READ )
         dsets = sd.datasets().keys()
         dims = {}
