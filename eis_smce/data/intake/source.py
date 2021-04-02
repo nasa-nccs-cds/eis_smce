@@ -24,51 +24,36 @@ class EISDataSource(DataSource):
     def _open_file(self, file_specs: Dict[str,str] ) -> xa.Dataset:
         raise NotImplementedError()
 
-    def _get_partition(self, i):
-        if i not in self._parts:
-            self._parts[i] = self._open_file( self._file_list[i] )
-        return self._parts[i]
+    def _get_partition(self, ipart: int ) -> xa.Dataset:
+        if ipart not in self._parts:
+            self._parts[ipart] = self._open_file( self._file_list[ipart]  )
+        return self._parts[ipart]
 
-    def _export_partition(self, ip: int, **kwargs) -> str:
-        overwrite = kwargs.pop( 'overwrite', True )
-        group: str = kwargs.pop( 'group', None )
-        location: str = kwargs.pop('location', None)
-        wmode = "w" if overwrite else "w-"
-        if ip not in self._parts:
-            self._parts[ip] = self._open_file( self._file_list[ip] )
-        remote_input_file: str = self._parts[ip].attrs['remote_file']
-        if location is None:    store = os.path.splitext(remote_input_file)[0] + ".zarr"
-        else:                   store = f"{location}/{os.path.splitext( os.path.basename(remote_input_file) )[0]}.zarr"
-        print( f"Exporting partition {ip} to zarr: {store}")
-        self._parts[ip].to_zarr( store, mode=wmode, group=group )
-        return store
+    def _translate_file(self, ipart: int ) -> str:
+        xds: xa.Dataset = self._open_file( self._file_list[ipart] )
+        file_path = xds.attrs['local_file']
+        nc_file_path =  os.path.splitext( file_path )[0] + ".nc"
+        xds.attrs['local_file'] = nc_file_path
+        xds.to_netcdf( nc_file_path, "w" )
+        os.remove( file_path )
+        xds.close()
+        return nc_file_path
 
     def read( self, merge_axis = None ) -> xa.Dataset:
-        self._load_metadata()
-        dsparts = [dask.delayed(self._get_partition)(i) for i in range(self.nparts)]
-        if merge_axis is None:
-            mds = dask.delayed(self._collect_parts)( dsparts )
-            return mds.compute()
-        else:
-            mds = dask.delayed(self._merge_parts)( dsparts, merge_axis )
-            return mds.compute()
+        if self._ds is None:
+            self._load_metadata()
+            if self.nparts == 1:
+                self._ds = self._get_partition(0)
+            else:
+                dsparts: List[str] = [ dask.delayed(self._translate_file)(i) for i in range(self.nparts) ]
+                self._ds = dask.delayed( xa.open_mfdataset )( dsparts )
+        return self._ds
 
-    def to_dask(self):
+    def to_dask(self) -> xa.Dataset:
         return self.read()
 
     def export( self, path: str, **kwargs ):
         overwrite = kwargs.pop( 'overwrite', True )
-        wmode = "w" if overwrite else "w-"
-        return super(EISDataSource,self).export( path, mode=wmode, **kwargs )
-
-    def export1( self, **kwargs ):
-        self._load_metadata()
-        dsparts = [dask.delayed(self._export_partition)(i,**kwargs) for i in range(self.nparts)]
-        stores = dask.delayed(self._collect_parts)( dsparts )
-        return stores.compute()
-
-    def export_xi( self, path: str, **kwargs ):
-        overwrite = kwargs.pop( 'overwrite', False )
         wmode = "w" if overwrite else "w-"
         return super(EISDataSource,self).export( path, mode=wmode, **kwargs )
 
@@ -130,74 +115,3 @@ class EISDataSource(DataSource):
         self._parts = {}
         self._ds = None
         self._schema = None
-
-class EISDataFileSource(DataSource):
-    """Common behaviours for plugins in this repo"""
-    version = 0.1
-    container = 'xarray'
-    partition_access = True
-
-    def __init__(self, **kwargs ):
-        super(EISDataFileSource, self).__init__( **kwargs )
-        self._file_url: str = None
-        self._ds: xa.Dataset = None
-        self._schema: Schema = None
-        self._file_specs = None
-
-    def _open_file(self, file_specs: Dict[str,str] ) -> xa.Dataset:
-        raise NotImplementedError()
-
-    @property
-    def ds(self):
-        if self._ds is None:
-            self._ds = self._open_file( self._file_specs )
-        return self._ds
-
-    def _get_partition(self, i=0) -> xa.Dataset:
-        return self.ds
-
-    def read( self, merge_axis = None ) -> xa.Dataset:
-        self._load_metadata()
-        return self.ds
-
-    def to_dask(self) -> xa.Dataset:
-        return self.read()
-
-    def export( self, path: str, **kwargs ):
-        overwrite = kwargs.pop( 'overwrite', True )
-        wmode = "w" if overwrite else "w-"
-        return super(EISDataFileSource,self).export( path, mode=wmode, **kwargs )
-
-    def print_bucket_contents(self, bucket_prefix: str ):
-        s3 = boto3.resource('s3')
-        for bucket in s3.buckets.all():
-            if bucket.name.startswith( bucket_prefix ):
-                print(f'** {bucket.name}:')
-                for obj in bucket.objects.all():
-                    print(f'   -> {obj.key}: {obj.__class__}')
-
-    def _get_schema(self):
-        self.urlpath = self._get_cache(self.urlpath)[0]
-        if self._schema == None:
-            if self.urlpath.startswith( "s3:"):
-                from eis_smce.data.storage.s3 import s3m
-                self._file_specs = s3m().get_file_list( self.urlpath )[0]
-            else:
-                from eis_smce.data.storage.local import lfm
-                self._file_specs = lfm().get_file_list( self.urlpath )[0]
-            ds0 =  self._get_partition()
-            metadata = {
-                'dims': dict(ds0.dims),
-                'data_vars': {k: list(ds0[k].coords) for k in ds0.data_vars.keys()},
-                'coords': tuple(ds0.coords.keys()),
-            }
-            metadata.update( ds0.attrs )
-            self._schema = Schema( datashape=None, dtype=None, shape=None, npartitions=1, extra_metadata=metadata)
-        return self._schema
-
-
-    def close(self):
-        """Delete open file from memory"""
-        self._ds = None
-        self._schema = None
-        self._file_specs = None

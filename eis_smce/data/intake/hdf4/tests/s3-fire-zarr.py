@@ -1,5 +1,5 @@
 import os, xarray as xr
-from eis_smce.data.intake.hdf4.drivers import HDF4FileSource, HDF4Source
+from eis_smce.data.intake.hdf4.drivers import HDF4Source
 from intake_xarray.xzarr import ZarrSource
 
 part_index: int = 0

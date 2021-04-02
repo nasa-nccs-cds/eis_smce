@@ -33,7 +33,7 @@ class HDF4Source( EISDataSource ):
             elif ndim == 5:
                 return np.array(sds[:, :, :, :, :]).reshape(shape)
 
-        def _open_file(self, file_specs: Dict[str, str]) -> xa.Dataset:
+        def _open_file( self, file_specs: Dict[str, str] ) -> xa.Dataset:
             from eis_smce.data.storage.s3 import s3m
             # Use rasterio/GDAL to read the metadata and pyHDF to read the variable data.
             print(f"Opening file from specs: {file_specs}")
@@ -78,9 +78,10 @@ class HDF4Source( EISDataSource ):
                     print(f"sd_dims.items() = {sd_dims.items()}, coords={coords}, dims={dims}")
 
             xds = xa.Dataset(data_vars, coords, dsattr)
-            xds.attrs['local_file'] = file_path
             xds.attrs['remote_file'] = rfile_path
+            xds.attrs['local_file'] = file_path
             sd.end()
+
             return xds
 
 
@@ -115,70 +116,6 @@ class HDF4Source( EISDataSource ):
     #         return s3f.exists(path)
     #     else: return os.path.exists(path)
 
-class HDF4FileSource( EISDataFileSource ):
-
-    name = 'hdf4'
-
-    def __init__(self, data_url: str, xarray_kwargs=None, metadata=None, cache_dir=None, **kwargs):
-        self.cache_dir = cache_dir or os.path.expanduser("~/.eis_smce/cache")
-        self.urlpath = data_url
-        self.xarray_kwargs = xarray_kwargs or {}
-        super(HDF4FileSource, self).__init__(metadata=metadata, **kwargs)
-
-    def _get_data( self, sds: SDS, shape: List[int] ) -> np.ndarray:
-        ndim, is_empty = len(shape), ( math.prod( shape ) == 0 )
-        if is_empty or (ndim == 0): return np.empty( [0] )
-        elif ndim == 1:     return np.array( sds[:] ).reshape(shape)
-        elif ndim == 2:     return np.array( sds[:,:] ) .reshape(shape)
-        elif ndim == 3:     return np.array( sds[:,:,:] ) .reshape(shape)
-        elif ndim == 4:     return np.array( sds[:,:,:,:] ).reshape(shape)
-        elif ndim == 5:     return np.array( sds[:,:,:,:,:] ).reshape(shape)
-
-    def _open_file( self, file_specs: Dict[str,str] ) -> xa.Dataset:
-        from eis_smce.data.storage.s3 import s3m
-        # Use rasterio/GDAL to read the metadata and pyHDF to read the variable data.
-        print( f"Opening file from specs: {file_specs}")
-        file_path = rfile_path = file_specs.pop("resolved")
-        print( f"Resolved: {file_path}")
-        if rfile_path.startswith("s3"):
-               file_path = s3m().download( rfile_path, self.cache_dir )
-               print(f"Reading file {file_path} (downloade3d from {rfile_path})")
-        else:  print( f"Reading file {file_path}" )
-        rxr_dsets = rxr.open_rasterio( file_path )
-        dsattr = rxr_dsets[0].attrs if isinstance(rxr_dsets, list) else rxr_dsets.attrs
-        sd: SD = SD( file_path, SDC.READ )
-        dsets = sd.datasets().keys()
-        dims = {}
-        coords = {}
-        data_vars = {}
-        for dsid in dsets:
-            sds = sd.select(dsid)
-            sd_dims = sds.dimensions()
-            attrs = sds.attributes().copy()
-            attrs.update( file_specs )
-            attrs['DIMS'] = list( sd_dims.keys() )
-            for did, dsize in sd_dims.items():
-                if did in dims:   assert dsize == dims[did], f"Dimension size discrepancy for dimension {did}"
-                else:             dims[did] = dsize
-                if did not in coords.keys():
-                    coords[did] = np.arange(0, dsize)
-
-            xcoords = [coords[did] for did in sd_dims.keys()]
-            xdims = sd_dims.keys()
-            shape = [dims[did] for did in sd_dims.keys()]
-            try:
-                data = self._get_data(sds, shape)
-                print(f"Creating DataArray {dsid}, DIMS = {attrs['DIMS']}, file = {file_path}")
-                data_vars[dsid] = xa.DataArray(data, xcoords, xdims, dsid, attrs)
-            except Exception as err:
-                print( f"Error extracting data for sds {dsid}, xdims={xdims}, xcoords={xcoords}, shape={shape}: {err}")
-                print(f"sd_dims.items() = {sd_dims.items()}, coords={coords}, dims={dims}")
-
-        xds = xa.Dataset( data_vars, coords, dsattr )
-        xds.attrs[ 'local_file' ] = file_path
-        xds.attrs[ 'remote_file'] = rfile_path
-        sd.end()
-        return xds
 
 
     #
@@ -197,8 +134,6 @@ class HDF4FileSource( EISDataFileSource ):
     #     # else:
     #
     #     self._ds = self._open_file()
-
-
 
 
     # def _add_path_to_ds(self, ds):
