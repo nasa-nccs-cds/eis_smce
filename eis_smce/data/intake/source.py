@@ -2,6 +2,8 @@ from intake.source.base import DataSource, Schema
 from pathlib import Path
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable, MutableMapping
 import dask.delayed, boto3, os
+from intake_xarray.netcdf import NetCDFSource
+import intake
 import dask.bag as db
 import xarray as xa
 from intake.source.zarr import ZarrArraySource
@@ -29,17 +31,18 @@ class EISDataSource(DataSource):
             self._parts[ipart] = self._open_file( ipart )
         return self._parts[ipart]
 
-    def _translate_file(self, ipart: int ) -> str:
+    def _translate_file(self, ipart: int, **kwargs ) -> str:
         xds: xa.Dataset = self._open_file( ipart )
         file_path = xds.attrs['local_file']
         nc_file_path =  os.path.splitext( file_path )[0] + ".nc"
         xds.attrs['local_file'] = nc_file_path
         xds.to_netcdf( nc_file_path, "w" )
-        os.remove( file_path )
+        if kwargs.get('cleanup', True ): os.remove( file_path )
+        self._file_list[ipart]["translated"] = nc_file_path
         xds.close()
         return nc_file_path
 
-    def read( self, merge_axis = None ) -> xa.Dataset:
+    def read_test( self ) -> xa.Dataset:
         if self._ds is None:
             self._load_metadata()
             if self.nparts == 1:
@@ -51,23 +54,35 @@ class EISDataSource(DataSource):
                 print(f"Opened dataset with data vars: {list(self._ds.data_vars.keys())}")
         return self._ds
 
-    def read_delayed( self, merge_axis = None ) -> xa.Dataset:
+    def read( self, merge_axis = None ) -> xa.Dataset:
         if self._ds is None:
             self._load_metadata()
             if self.nparts == 1:
                 self._ds = self._get_partition(0)
             else:
                 dsparts: List[str] = [ dask.delayed(self._translate_file)(i) for i in range(self.nparts) ]
-                self._ds = dask.delayed( xa.open_mfdataset )( dsparts )
+                self._ds = dask.delayed( self._merge_files )( dsparts )
         return self._ds
 
     def to_dask(self) -> xa.Dataset:
         return self.read()
 
     def export( self, path: str, **kwargs ):
-        overwrite = kwargs.pop( 'overwrite', True )
-        wmode = "w" if overwrite else "w-"
-        return super(EISDataSource,self).export( path, mode=wmode, **kwargs )
+        try:
+            overwrite = kwargs.pop( 'overwrite', True )
+            wmode = "w" if overwrite else "w-"
+            return super(EISDataSource,self).export( path, mode=wmode, **kwargs )
+        except Exception as err:
+            location = os.path.dirname(path)
+            print( f"Merge failed, exporting files individually to {location}"  )
+            for i in range(self.nparts):
+                file_spec = self._file_list[i]
+                file_path = file_spec["translated"]
+                file_name =  os.path.splitext( os.path.basename(file_path) )[0]
+                source = NetCDFSource( file_path )
+                zpath = f"{location}/{file_name}.zarr"
+                print(f"Exporint to zarr file: {zpath}")
+                source.export( zpath )
 
     def print_bucket_contents(self, bucket_prefix: str ):
         s3 = boto3.resource('s3')
@@ -93,6 +108,13 @@ class EISDataSource(DataSource):
         concat_ds = self._concat_dsets( fparts, concat_dim, True )
         merge_ds = self._concat_dsets( fparts, concat_dim, False, new_dim=merge_dim )
         return xa.merge( [ concat_ds, merge_ds ], combine_attrs= "drop_conflicts" )
+
+    def _merge_files( self, files: List[Union[dask.delayed.Delayed,str]]  ):
+        try:
+            return dask.delayed( xa.open_mfdataset )( files )
+        except Exception as err:
+            print(f" These files cannot be merged due to error: {err}")
+            return None
 
     def _collect_parts( self, parts: List[Any]  ) -> dask.bag.Bag:
         fparts = list( filter( lambda x: (x is not None), parts ) )

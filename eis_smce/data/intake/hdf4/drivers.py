@@ -47,6 +47,7 @@ class HDF4Source( EISDataSource ):
                 print(f"Reading file {file_path}")
             rxr_dsets = rxr.open_rasterio(file_path)
             dsattr = rxr_dsets[0].attrs if isinstance(rxr_dsets, list) else rxr_dsets.attrs
+            dsattr.update(file_specs)
             sd: SD = SD(file_path, SDC.READ)
             dsets = sd.datasets().keys()
             dims = {}
@@ -56,7 +57,6 @@ class HDF4Source( EISDataSource ):
                 sds = sd.select(dsid)
                 sd_dims = sds.dimensions()
                 attrs = sds.attributes().copy()
-                attrs.update(file_specs)
                 attrs['DIMS'] = list(sd_dims.keys())
                 for did, dsize in sd_dims.items():
                     if did in dims:
