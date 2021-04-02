@@ -36,6 +36,7 @@ class EISDataSource(DataSource):
         file_path = xds.attrs['local_file']
         nc_file_path =  os.path.splitext( file_path )[0] + ".nc"
         xds.attrs['local_file'] = nc_file_path
+        print( f"Translating file {file_path}, dims = {xds.dims}" )
         xds.to_netcdf( nc_file_path, "w" )
         if kwargs.get('cleanup', True ): os.remove( file_path )
         self._file_list[ipart]["translated"] = nc_file_path
