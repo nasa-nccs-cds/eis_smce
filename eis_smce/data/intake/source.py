@@ -32,14 +32,16 @@ class EISDataSource(DataSource):
         return self._parts[ipart]
 
     def _translate_file(self, ipart: int, **kwargs ) -> str:
+        overwrite = kwargs.get('overwrite', False )
         xds: xa.Dataset = self._open_file( ipart )
         file_path = xds.attrs['local_file']
         nc_file_path =  os.path.splitext( file_path )[0] + ".nc"
-        xds.attrs['local_file'] = nc_file_path
-        print( f"Translating file {file_path}, dims = {xds.dims}" )
-        xds.to_netcdf( nc_file_path, "w" )
-        if kwargs.get('cleanup', True ): os.remove( file_path )
-        self._file_list[ipart]["translated"] = nc_file_path
+        if overwrite or not os.path.exists(nc_file_path):
+            xds.attrs['local_file'] = nc_file_path
+            print( f"Translating file {file_path}, dims = {xds.dims}" )
+            xds.to_netcdf( nc_file_path, "w" )
+            if kwargs.get('cleanup', True ): os.remove( file_path )
+            self._file_list[ipart]["translated"] = nc_file_path
         xds.close()
         return nc_file_path
 
@@ -54,6 +56,10 @@ class EISDataSource(DataSource):
                 self._ds = self._merge_files( dsparts )
                 print(f"Opened merged dataset")
         return self._ds
+
+    def translate(self) -> List[str]:
+        dsparts: List[str] = [self._translate_file(i) for i in range(self.nparts)]
+        return dsparts
 
     def read_delay( self, merge_axis = None ) -> xa.Dataset:
         if self._ds is None:
@@ -70,9 +76,9 @@ class EISDataSource(DataSource):
 
     def export( self, path: str, **kwargs ) -> List[DataSource]:
         try:
-            overwrite = kwargs.pop( 'overwrite', True )
-            wmode = "w" if overwrite else "w-"
-            source = super(EISDataSource,self).export( path, mode=wmode, **kwargs )
+            source = NetCDFSource( self.translate() )
+            print(f"Exporting to zarr file: {path}")
+            source.export( path, mode="w" )
             print( f"Exported merged dataset to {path}, specs = {source.yaml()}")
             return [ source ]
         except Exception as err:
