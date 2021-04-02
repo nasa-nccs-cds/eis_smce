@@ -45,6 +45,18 @@ class EISDataSource(DataSource):
             if self.nparts == 1:
                 self._ds = self._get_partition(0)
             else:
+                dsparts: List[str] = [ self._translate_file(i) for i in range(self.nparts) ]
+                print( f"Opening mfdataset from parts: {dsparts}")
+                self._ds = xa.open_mfdataset( dsparts )
+                print(f"Opened dataset with data vars: {list(self._ds.data_vars.keys())}")
+        return self._ds
+
+    def read_delayed( self, merge_axis = None ) -> xa.Dataset:
+        if self._ds is None:
+            self._load_metadata()
+            if self.nparts == 1:
+                self._ds = self._get_partition(0)
+            else:
                 dsparts: List[str] = [ dask.delayed(self._translate_file)(i) for i in range(self.nparts) ]
                 self._ds = dask.delayed( xa.open_mfdataset )( dsparts )
         return self._ds
