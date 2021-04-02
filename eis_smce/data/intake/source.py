@@ -42,7 +42,7 @@ class EISDataSource(DataSource):
         xds.close()
         return nc_file_path
 
-    def read_test( self ) -> xa.Dataset:
+    def read( self ) -> xa.Dataset:
         if self._ds is None:
             self._load_metadata()
             if self.nparts == 1:
@@ -50,11 +50,11 @@ class EISDataSource(DataSource):
             else:
                 dsparts: List[str] = [ self._translate_file(i) for i in range(self.nparts) ]
                 print( f"Opening mfdataset from parts: {dsparts}")
-                self._ds = xa.open_mfdataset( dsparts )
+                self._ds = self._merge_files( dsparts )
                 print(f"Opened dataset with data vars: {list(self._ds.data_vars.keys())}")
         return self._ds
 
-    def read( self, merge_axis = None ) -> xa.Dataset:
+    def read_delay( self, merge_axis = None ) -> xa.Dataset:
         if self._ds is None:
             self._load_metadata()
             if self.nparts == 1:
