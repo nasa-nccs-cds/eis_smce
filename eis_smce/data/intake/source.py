@@ -56,7 +56,12 @@ class EISDataSource(DataSource):
     def to_dask(self):
         return self.read()
 
-    def export( self, **kwargs ):
+    def export( self, path: str, **kwargs ):
+        overwrite = kwargs.pop( 'overwrite', True )
+        wmode = "w" if overwrite else "w-"
+        return super(EISDataSource,self).export( path, mode=wmode, **kwargs )
+
+    def export1( self, **kwargs ):
         self._load_metadata()
         dsparts = [dask.delayed(self._export_partition)(i,**kwargs) for i in range(self.nparts)]
         stores = dask.delayed(self._collect_parts)( dsparts )

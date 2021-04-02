@@ -1,7 +1,7 @@
 import traitlets.config as tlc
 import fnmatch
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
-import glob
+import glob, os
 import boto3
 from intake.source.utils import path_to_glob
 # import s3fs
@@ -35,6 +35,19 @@ class S3Manager(tlc.SingletonConfigurable):
     def _parse_urlpath( self, urlpath: str ) -> Tuple[str,str]:
         ptoks = urlpath.split(":")[-1].strip("/").split("/")
         return ( ptoks[0], "/".join( ptoks[1:] ) )
+
+    def download( self, data_url: str, destination: str, refresh = True ):
+        os.makedirs( destination, exist_ok=True )
+        toks = data_url.split("/")
+        file_name = toks[-1]
+        file_path = os.path.join( destination, file_name )
+        if refresh or not os.path.exists( file_path ):
+            ibuket = 2 if len(toks[1]) == 0 else 1
+            bucketname = toks[ibuket]
+            s3_item = '/'.join( toks[ibuket + 1:] )
+            client = boto3.client('s3')
+            client.download_file( bucketname, s3_item, file_path )
+        return file_path
 
     def get_file_list(self, urlpath: str ) -> List[Dict]:
         from intake.source.utils import reverse_format
