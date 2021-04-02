@@ -159,7 +159,7 @@ class EISDataFileSource(DataSource):
         return self.read()
 
     def export( self, path: str, **kwargs ):
-        overwrite = kwargs.pop( 'overwrite', False )
+        overwrite = kwargs.pop( 'overwrite', True )
         wmode = "w" if overwrite else "w-"
         return super(EISDataFileSource,self).export( path, mode=wmode, **kwargs )
 

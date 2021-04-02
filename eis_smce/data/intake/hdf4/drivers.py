@@ -48,8 +48,8 @@ class HDF4Source( EISDataSource ):
                file_path = self.download_from_s3( rfile_path )
                print(f"Reading file {file_path} (downloade3d from {rfile_path})")
         else:  print( f"Reading file {file_path}" )
-        rxr_dset: xa.Dataset = rxr.open_rasterio( file_path )
-        dsattr = rxr_dset.attrs
+        rxr_dsets = rxr.open_rasterio( file_path )
+        dsattr = rxr_dsets[0].attrs if isinstance(rxr_dsets, list) else rxr_dsets.attrs
         sd: SD = SD( file_path, SDC.READ )
         dsets = sd.datasets().keys()
         dims = {}
@@ -177,11 +177,8 @@ class HDF4FileSource( EISDataFileSource ):
                file_path = self.download_from_s3( rfile_path )
                print(f"Reading file {file_path} (downloade3d from {rfile_path})")
         else:  print( f"Reading file {file_path}" )
-        rxr_dsets: List[xa.Dataset] = rxr.open_rasterio( file_path )
-        dsattr = rxr_dsets[0].attrs
-        print( "rxr dsets:" )
-        for rxr_dset in rxr_dsets:
-            print( f" --> {rxr_dset.data_vars.keys()} {rxr_dset.coords.keys()} {rxr_dset.dims}" )
+        rxr_dsets = rxr.open_rasterio( file_path )
+        dsattr = rxr_dsets[0].attrs if isinstance(rxr_dsets, list) else rxr_dsets.attrs
         sd: SD = SD( file_path, SDC.READ )
         dsets = sd.datasets().keys()
         dims = {}
