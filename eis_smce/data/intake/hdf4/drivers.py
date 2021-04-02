@@ -1,4 +1,4 @@
-from eis_smce.data.intake.source import EISDataSource, EISDataFileSource
+from eis_smce.data.intake.source import EISDataSource
 import boto3, math, shutil
 import rioxarray as rxr
 import rasterio as rio
