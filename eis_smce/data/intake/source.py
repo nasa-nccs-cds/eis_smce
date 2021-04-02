@@ -81,7 +81,7 @@ class EISDataSource(DataSource):
                 file_name =  os.path.splitext( os.path.basename(file_path) )[0]
                 source = NetCDFSource( file_path )
                 zpath = f"{location}/{file_name}.zarr"
-                print(f"Exporint to zarr file: {zpath}")
+                print(f"Exporting to zarr file: {zpath}")
                 source.export( zpath )
 
     def print_bucket_contents(self, bucket_prefix: str ):
