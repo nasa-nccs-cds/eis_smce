@@ -3,10 +3,10 @@ from pathlib import Path
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable, MutableMapping
 import dask.delayed, boto3, os
 from intake_xarray.netcdf import NetCDFSource
+from intake_xarray.xzarr import ZarrSource
 import intake
 import dask.bag as db
 import xarray as xa
-from intake.source.zarr import ZarrArraySource
 import intake_xarray as ixa   # Need this import to register 'xarray' container.
 
 class EISDataSource(DataSource):
@@ -75,13 +75,13 @@ class EISDataSource(DataSource):
     def to_dask(self) -> xa.Dataset:
         return self.read()
 
-    def export( self, path: str, **kwargs ) -> List[DataSource]:
+    def export( self, path: str, **kwargs ) -> List[ZarrSource]:
         try:
             source = NetCDFSource( self.translate() )
             print(f"Exporting to zarr file: {path}")
             source.export( path, mode="w" )
             print( f"Exported merged dataset to {path}, specs = {source.yaml()}")
-            return [ source ]
+            return [ ZarrSource(path) ]
         except Exception as err:
             location = os.path.dirname(path)
             print( f"Merge ERROR: {err}" )
@@ -95,7 +95,7 @@ class EISDataSource(DataSource):
                 zpath = f"{location}/{file_name}.zarr"
                 print(f"Exporting to zarr file: {zpath}")
                 source.export( zpath )
-                sources.append( source )
+                sources.append( ZarrSource(zpath) )
             return sources
 
     def print_bucket_contents(self, bucket_prefix: str ):
