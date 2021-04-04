@@ -78,7 +78,8 @@ class HDF4Source( EISDataSource ):
                 try:
                     data = self._get_data(sds, shape)
                     print(f"Creating DataArray {dsid}, DIMS = {attrs['DIMS']}, file = {file_path}")
-                    data_vars[nc_vid] = xa.DataArray(data, xcoords, xdims, dsid, attrs)
+                    data_vars[nc_vid] = xa.DataArray(data, xcoords, xdims, nc_vid, attrs)
+                    print(f"  var[{nc_vid}] attrs: {attrs.keys()}")
                 except Exception as err:
                     print(
                         f"Error extracting data for sds {dsid}, xdims={xdims}, xcoords={xcoords}, shape={shape}: {err}")
@@ -87,6 +88,7 @@ class HDF4Source( EISDataSource ):
             xds = xa.Dataset(data_vars, coords, dsattr)
             xds.attrs['remote_file'] = rfile_path
             xds.attrs['local_file'] = file_path
+            print( f"  dset attrs: {xds.attrs.keys()}")
             sd.end()
 
             return xds
