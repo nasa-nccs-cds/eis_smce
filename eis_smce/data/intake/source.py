@@ -10,7 +10,7 @@ import dask.bag as db
 import xarray as xa
 import intake_xarray as ixa   # Need this import to register 'xarray' container.
 
-class EISDataSource(DataSource):
+class EISDataSource( DataSource, tlc.Configurable ):
     """Common behaviours for plugins in this repo"""
     version = 0.1
     container = 'xarray'
