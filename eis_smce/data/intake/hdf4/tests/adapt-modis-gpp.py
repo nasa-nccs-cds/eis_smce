@@ -3,11 +3,11 @@ import os, xarray as xr
 from eis_smce.data.intake.hdf4.drivers import HDF4Source
 from intake_xarray.xzarr import ZarrSource
 
-base_dir = "/css/modis/Collection6/L3"
+base_dir = "/att/nobackup/mcarrol2/MODIS"
 cache_dir = "/att/nobackup/tpmaxwel/ILAB/scratch"
-collection = "MOD17A2H-GPP"
-batch = "2000/049/MOD17A2H.A2000049.h11{v}.006.{ts}.hdf"
-file = "2000/049/MOD17A2H.A2000049.h11v04.006.2015136155345.hdf"
+collection = "MCD12Q1"
+batch = "200?/001/MCD12Q1.A200?001.h09v09.006.*.hdf"
+file = "2001/001/MCD12Q1.A2001001.h09v09.006.2018142183530.h"
 output_dir = os.path.dirname(f"{cache_dir}/{collection}/{batch}")
 output_file = f"{cache_dir}/{collection}/{file}"
 os.makedirs( output_dir, exist_ok=True )
