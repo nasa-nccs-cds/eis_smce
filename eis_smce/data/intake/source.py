@@ -52,6 +52,7 @@ class EISDataSource( DataSource ):   # , tlc.Configurable
         if overwrite or not os.path.exists(nc_file_path):
             xds.attrs['local_file'] = nc_file_path
             print( f"Translating file {file_path}, dims = {xds.dims}" )
+            print( xds )
             xds.to_netcdf( nc_file_path, "w" )
             if kwargs.get('cleanup', False ): os.remove( file_path )
             self._file_list[ipart]["translated"] = nc_file_path
