@@ -12,8 +12,7 @@ class HDF4Source( EISDataSource ):
 
         name = 'hdf4'
 
-        def __init__(self, data_url: str, xarray_kwargs=None, metadata=None, cache_dir=None, **kwargs):
-            self.cache_dir = cache_dir or os.path.expanduser("~/.eis_smce/cache")
+        def __init__(self, data_url: str, xarray_kwargs=None, metadata=None, **kwargs):
             self.urlpath = data_url
             self.xarray_kwargs = xarray_kwargs or {}
             super(HDF4Source, self).__init__(metadata=metadata, **kwargs)

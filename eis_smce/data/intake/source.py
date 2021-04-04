@@ -15,7 +15,7 @@ class EISDataSource(DataSource):
     version = 0.1
     container = 'xarray'
     partition_access = True
-    _cache_dir = tlc.Unicode("/tmp").tag(config=True)
+    _cache_dir = tlc.Unicode( os.path.expanduser( "~/.eis_smce/cache") ).tag(config=True)
 
     def __init__(self, **kwargs ):
         super(EISDataSource, self).__init__( **kwargs )
