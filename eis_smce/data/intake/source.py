@@ -10,15 +10,16 @@ import dask.bag as db
 import xarray as xa
 import intake_xarray as ixa   # Need this import to register 'xarray' container.
 
-class EISDataSource( DataSource, tlc.Configurable ):
+class EISDataSource( DataSource ):   # , tlc.Configurable
     """Common behaviours for plugins in this repo"""
     version = 0.1
     container = 'xarray'
     partition_access = True
-    _cache_dir = tlc.Unicode( os.path.expanduser( "~/.eis_smce/cache") ).tag(config=True)
+#    _cache_dir = tlc.Unicode( os.path.expanduser( "~/.eis_smce/cache") ).tag(config=True)
 
     def __init__(self, **kwargs ):
         super(EISDataSource, self).__init__( **kwargs )
+        self._cache_dir = kwargs.get( 'cache_dir', os.path.expanduser( "~/.eis_smce/cache") )
         self._file_list: List[ Dict[str,str] ] = None
         self._parts: Dict[int,xa.Dataset] = {}
         self._schema: Schema = None
