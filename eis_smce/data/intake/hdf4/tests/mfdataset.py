@@ -21,7 +21,7 @@ for iF in file_indices:
     print( unmerged_data_array )
 
 merge_index = xr.IndexVariable( 'sample', np.array(file_indices) )
-merged_dataset: xr.Dataset = xr.open_mfdataset( data_files, concat_dim='sample', preprocess= )   # preprocess to expand_dims
+merged_dataset: xr.Dataset = xr.open_mfdataset( data_files, concat_dim='sample' )   # preprocess to expand_dims:  preprocess=
 merged_data_array: xr.DataArray = merged_dataset[test_var]
 print( '\n\nmerged_data_array:' )
 print( merged_data_array )
