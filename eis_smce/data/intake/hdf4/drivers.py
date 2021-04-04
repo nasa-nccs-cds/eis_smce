@@ -8,6 +8,10 @@ from pyhdf.SD import SD, SDC, SDS
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 import os
 
+def nc_id( sds_id: str):
+    rv_id = sds_id.replace(":", "_").replace(" ", "_")
+    return rv_id
+
 class HDF4Source( EISDataSource ):
 
         name = 'hdf4'
@@ -54,11 +58,13 @@ class HDF4Source( EISDataSource ):
             coords = {}
             data_vars = {}
             for dsid in dsets:
+                nc_vid = nc_id( dsid )
                 sds = sd.select(dsid)
-                sd_dims = sds.dimensions()
+                sd_dims: Dict[str,int] = sds.dimensions()
+                nc_dims: Dict[str,int] = { nc_id( did ): dsize for (did,dsize) in sd_dims.items() }
                 attrs = sds.attributes().copy()
-                attrs['DIMS'] = list(sd_dims.keys())
-                for did, dsize in sd_dims.items():
+                attrs['DIMS'] = list(nc_dims.keys())
+                for did, dsize in nc_dims.items():
                     if did in dims:
                         assert dsize == dims[did], f"Dimension size discrepancy for dimension {did}"
                     else:
@@ -66,13 +72,13 @@ class HDF4Source( EISDataSource ):
                     if did not in coords.keys():
                         coords[did] = np.arange(0, dsize)
 
-                xcoords = [coords[did] for did in sd_dims.keys()]
-                xdims = sd_dims.keys()
-                shape = [dims[did] for did in sd_dims.keys()]
+                xcoords = [coords[did] for did in nc_dims.keys()]
+                xdims = nc_dims.keys()
+                shape = [dims[did] for did in nc_dims.keys()]
                 try:
                     data = self._get_data(sds, shape)
                     print(f"Creating DataArray {dsid}, DIMS = {attrs['DIMS']}, file = {file_path}")
-                    data_vars[dsid] = xa.DataArray(data, xcoords, xdims, dsid, attrs)
+                    data_vars[nc_vid] = xa.DataArray(data, xcoords, xdims, dsid, attrs)
                 except Exception as err:
                     print(
                         f"Error extracting data for sds {dsid}, xdims={xdims}, xcoords={xcoords}, shape={shape}: {err}")
