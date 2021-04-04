@@ -12,6 +12,9 @@ def nc_id( sds_id: str):
     rv_id = sds_id.replace(":", "_").replace(" ", "_")
     return rv_id
 
+def nc_keys( sds_dict: Dict[str,Any] ):
+    return { nc_id( did ): v for (did,v) in sds_dict.items() }
+
 class HDF4Source( EISDataSource ):
 
         name = 'hdf4'
@@ -40,7 +43,7 @@ class HDF4Source( EISDataSource ):
         def _open_file( self, ipart: int  ) -> xa.Dataset:
             from eis_smce.data.storage.s3 import s3m
             # Use rasterio/GDAL to read the metadata and pyHDF to read the variable data.
-            file_specs = self._file_list[ipart].copy()
+            file_specs = nc_keys( self._file_list[ipart] )
             print(f"Opening file[{ipart}] from specs: {file_specs}")
             file_path = rfile_path = file_specs.pop("resolved")
             print(f"Resolved: {file_path}")
@@ -50,7 +53,7 @@ class HDF4Source( EISDataSource ):
             else:
                 print(f"Reading file {file_path}")
             rxr_dsets = rxr.open_rasterio(file_path)
-            dsattr = rxr_dsets[0].attrs if isinstance(rxr_dsets, list) else rxr_dsets.attrs
+            dsattr = nc_keys( rxr_dsets[0].attrs if isinstance(rxr_dsets, list) else rxr_dsets.attrs )
             dsattr.update(file_specs)
             sd: SD = SD(file_path, SDC.READ)
             dsets = sd.datasets().keys()
@@ -61,8 +64,8 @@ class HDF4Source( EISDataSource ):
                 nc_vid = nc_id( dsid )
                 sds = sd.select(dsid)
                 sd_dims: Dict[str,int] = sds.dimensions()
-                nc_dims: Dict[str,int] = { nc_id( did ): dsize for (did,dsize) in sd_dims.items() }
-                attrs = sds.attributes().copy()
+                nc_dims: Dict[str,int] = nc_keys( sd_dims )
+                attrs = nc_keys( sds.attributes() )
                 attrs['DIMS'] = list(nc_dims.keys())
                 for did, dsize in nc_dims.items():
                     if did in dims:
