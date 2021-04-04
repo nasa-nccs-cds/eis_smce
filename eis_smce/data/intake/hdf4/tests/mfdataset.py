@@ -2,14 +2,8 @@ import numpy as np
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 import os, glob, xarray as xr
 
-base_dir = "/att/nobackup/mcarrol2/MODIS"
-cache_dir = "/att/nobackup/tpmaxwel/ILAB/scratch"
-collection = "MCD12Q1"
-location = "h09v09"
-batch = f"200?/001/MCD12Q1.A200?001.{location}.006.*.hdf"
-output_file = f"{cache_dir}/{collection}/{location}.zarr"
-os.makedirs( os.path.dirname(output_file), exist_ok=True )
-data_files = glob.glob( f"{base_dir}/{collection}/{batch}" )
+batch = os.path.expanduser(f"~/.eis_smce/cache/NACRSULL/*.nc")
+data_files = glob.glob( batch )
 
 test_var = "QC"
 file_indices = range( len(data_files) )
