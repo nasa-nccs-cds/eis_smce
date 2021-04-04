@@ -1,5 +1,6 @@
 from intake.source.base import DataSource, Schema
 from pathlib import Path
+import traitlets.config as tlc, random, string
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable, MutableMapping
 import dask.delayed, boto3, os
 from intake_xarray.netcdf import NetCDFSource
@@ -14,6 +15,7 @@ class EISDataSource(DataSource):
     version = 0.1
     container = 'xarray'
     partition_access = True
+    _cache_dir = tlc.Unicode("/tmp").tag(config=True)
 
     def __init__(self, **kwargs ):
         super(EISDataSource, self).__init__( **kwargs )
@@ -22,6 +24,15 @@ class EISDataSource(DataSource):
         self._schema: Schema = None
         self._ds: xa.Dataset = None
         self.nparts = -1
+        self._instance_cache = None
+
+    @property
+    def cache_dir(self):
+        if self._instance_cache is None:
+            cid = ''.join( random.choices( string.ascii_uppercase + string.digits, k=8 ) )
+            self._instance_cache = os.path.join( self._cache_dir, cid )
+            os.makedirs( self._instance_cache )
+        return self._instance_cache
 
     def _open_file(self, ipart: int ) -> xa.Dataset:
         raise NotImplementedError()
@@ -35,7 +46,8 @@ class EISDataSource(DataSource):
         overwrite = kwargs.get('overwrite', True )
         xds: xa.Dataset = self._open_file( ipart )
         file_path = xds.attrs['local_file']
-        nc_file_path =  os.path.splitext( file_path )[0] + ".nc"
+        ncfile_name = os.path.splitext( os.path.basename(file_path) )[0] + ".nc"
+        nc_file_path =  os.path.join( self.cache_dir, ncfile_name )
         if overwrite or not os.path.exists(nc_file_path):
             xds.attrs['local_file'] = nc_file_path
             print( f"Translating file {file_path}, dims = {xds.dims}" )
