@@ -2,7 +2,7 @@ from intake.source.base import DataSource, Schema
 from pathlib import Path
 import traitlets.config as tlc, random, string
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable, MutableMapping
-import dask.delayed, boto3, os
+import dask.delayed, boto3, os, traceback
 from intake_xarray.netcdf import NetCDFSource
 from intake_xarray.xzarr import ZarrSource
 import intake
@@ -100,7 +100,8 @@ class EISDataSource( DataSource ):   # , tlc.Configurable
         except Exception as err:
             location = os.path.dirname(path)
             print( f"Merge ERROR: {err}" )
-            print( f"Merge failed, exporting files individually to {location}"  )
+            traceback.print_exc()
+            print( f"\n\nMerge failed, exporting files individually to {location}"  )
             sources = []
             for i in range(self.nparts):
                 file_spec = self._file_list[i]
