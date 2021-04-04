@@ -32,7 +32,7 @@ class EISDataSource(DataSource):
         return self._parts[ipart]
 
     def _translate_file(self, ipart: int, **kwargs ) -> str:
-        overwrite = kwargs.get('overwrite', False )
+        overwrite = kwargs.get('overwrite', True )
         xds: xa.Dataset = self._open_file( ipart )
         file_path = xds.attrs['local_file']
         nc_file_path =  os.path.splitext( file_path )[0] + ".nc"
@@ -40,7 +40,7 @@ class EISDataSource(DataSource):
             xds.attrs['local_file'] = nc_file_path
             print( f"Translating file {file_path}, dims = {xds.dims}" )
             xds.to_netcdf( nc_file_path, "w" )
-            if kwargs.get('cleanup', True ): os.remove( file_path )
+            if kwargs.get('cleanup', False ): os.remove( file_path )
             self._file_list[ipart]["translated"] = nc_file_path
         xds.close()
         return nc_file_path
@@ -77,9 +77,11 @@ class EISDataSource(DataSource):
 
     def export( self, path: str, **kwargs ) -> List[ZarrSource]:
         try:
-            source = NetCDFSource( self.translate() )
+            inputs = self.translate()
+            source = NetCDFSource( inputs )
             print(f"Exporting to zarr file: {path}")
             source.export( path, mode="w" )
+            print( f"Merged dataset = {source._ds}")
             print( f"Exported merged dataset to {path}, specs = {source.yaml()}")
             return [ ZarrSource(path) ]
         except Exception as err:
@@ -94,9 +96,13 @@ class EISDataSource(DataSource):
                 source = NetCDFSource( file_path )
                 zpath = f"{location}/{file_name}.zarr"
                 print(f"Exporting to zarr file: {zpath}")
-                source.export( zpath )
+                source.export( zpath, mode="w" )
                 sources.append( ZarrSource(zpath) )
             return sources
+
+    def get_zarr_source(self, zpath: str ):
+        zsrc = ZarrSource(zpath)
+        zsrc.yaml()
 
     def print_bucket_contents(self, bucket_prefix: str ):
         s3 = boto3.resource('s3')

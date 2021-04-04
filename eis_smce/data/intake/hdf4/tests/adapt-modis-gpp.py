@@ -27,7 +27,7 @@ for vid, v in ds0.variables.items():
 
 # stores = h4s.export( location=f"file:/{output_dir}" )    # Exports all partitions, Zarr is the default export format
 
-store = h4s.export_xi( f"file:/{output_file}" )
+store = h4s.export( f"file:/{output_file}" )
 
 print( f"Exported file '{ds0.attrs['remote_file']}' (cached at '{ds0.attrs['local_file']}') to '{store}'")
 print( "Sample catalog entry:" )

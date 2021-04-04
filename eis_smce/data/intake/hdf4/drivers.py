@@ -19,8 +19,9 @@ class HDF4Source( EISDataSource ):
             super(HDF4Source, self).__init__(metadata=metadata, **kwargs)
 
         def _get_data(self, sds: SDS, shape: List[int]) -> np.ndarray:
-            ndim, is_empty = len(shape), (math.prod(shape) == 0)
-            if is_empty or (ndim == 0):
+            ndim = len(shape)
+            is_empty = (ndim == 0) or (0 in shape)
+            if is_empty:
                 return np.empty([0])
             elif ndim == 1:
                 return np.array(sds[:]).reshape(shape)
