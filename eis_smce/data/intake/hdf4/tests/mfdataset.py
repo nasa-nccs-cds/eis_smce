@@ -15,6 +15,7 @@ test_var = "QC"
 file_indices = range( len(data_files) )
 
 for iF in file_indices:
+    print( f"Processing data file: {data_files[iF]}" )
     single_dataset: xr.Dataset = xr.open_dataset( data_files[iF] )
     unmerged_data_array: xr.DataArray = single_dataset[test_var].expand_dims( {"sample":np.array([iF])}, 0 )
     print( f'\n\nunmerged_data_array[{iF}:' )
