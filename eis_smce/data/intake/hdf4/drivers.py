@@ -8,8 +8,10 @@ from pyhdf.SD import SD, SDC, SDS
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 import os
 
+NC_ILLEGAL_NAME_CHARS = "-/"
+
 def nc_id( sds_id: str ):
-    for zc in " -/":  sds_id = sds_id.replace(zc, "_")
+    for zc in NC_ILLEGAL_NAME_CHARS:  sds_id = sds_id.replace(zc, "_")
     return sds_id
 
 def nc_keys( sds_dict: Dict[str,Any] ):
