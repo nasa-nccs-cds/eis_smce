@@ -9,7 +9,7 @@ from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapp
 import os
 
 def nc_id( sds_id: str):
-    rv_id = sds_id.replace(":", "_").replace(" ", "_").replace("-", "_")
+    rv_id = sds_id.replace(":", "_").replace(" ", "_").replace("-", "_").replace("/", "_")
     return rv_id
 
 def nc_keys( sds_dict: Dict[str,Any] ):
