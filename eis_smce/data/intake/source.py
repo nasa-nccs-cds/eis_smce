@@ -1,5 +1,5 @@
 from intake.source.base import DataSource, Schema
-import collections
+import collections, json
 import traitlets.config as tlc, random, string
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable, MutableMapping
 import dask.delayed, boto3, os, traceback
@@ -10,6 +10,8 @@ import dask.bag as db
 import pandas as pd
 import xarray as xa
 import intake_xarray as ixa   # Need this import to register 'xarray' container.
+
+def dsort( d: Dict ): return { (k, d[k]) for k in sorted(d.keys()) }
 
 class EISDataSource( DataSource ):   # , tlc.Configurable
     """Common behaviours for plugins in this repo"""
@@ -100,17 +102,17 @@ class EISDataSource( DataSource ):   # , tlc.Configurable
             new_vars[name] = xar.expand_dims({self.merge_dim: np.array([merge_axis_val])}, 0)
         return xa.Dataset(new_vars)
 
-    def _get_merged_attrs( self ) -> collections.OrderedDict:
-        merged_attrs = collections.OrderedDict()
+    def _get_merged_attrs( self ) -> Dict:
+        merged_attrs = {}
         for axval, attrs in self._ds_attr_map.items():
             for k,v in attrs.items():
-                att_dict = merged_attrs.setdefault( k, collections.OrderedDict() )
+                att_dict = merged_attrs.setdefault( k, {} )
                 att_dict[ axval ] = v
         for attr_name, att_map in  merged_attrs.items():
             attvals = list(att_map.values())
             if (len(attvals) == self.nparts) and all(x == attvals[0] for x in attvals):
                    merged_attrs[ attr_name ] = attvals[0]
-            else:  merged_attrs[ attr_name ] = str( att_map )
+            else:  merged_attrs[ attr_name ] = json.dumps( dsort(att_map) )
         return merged_attrs
 
     def export( self, path: str, **kwargs ) -> List[ZarrSource]:
