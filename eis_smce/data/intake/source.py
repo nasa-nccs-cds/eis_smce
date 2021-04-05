@@ -104,7 +104,7 @@ class EISDataSource( DataSource ):   # , tlc.Configurable
                 inputs = self.translate()
                 merged_dataset: xa.Dataset = xa.open_mfdataset( inputs, concat_dim='sample', preprocess=self._reprocess_for_export )
                 merged_dataset.to_zarr( path, mode="w" )
-                print(f"Exporting to zarr file: {path}")
+                print(f"Exporting to zarr file: {path}, attrs = {dict(merged_dataset.attrs)}")
                 return [ ZarrSource(path) ]
             except Exception as err:
                 print(f"Merge ERROR: {err}")

@@ -24,6 +24,3 @@ print( dset )
 print( "\n --> Dataset Attributes:" )
 print( dict(dset.attrs) )
 
-print( "\n --> Var Attributes:" )
-for name, xar in dset.items():
-    print(f"    ... {name}: {xar.attrs}")
