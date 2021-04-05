@@ -33,7 +33,7 @@ Setup Amazon Credentials
 
     > aws configure
 
-* Setup MFA:
+* Setup MFA (must be done daily):
   
     > source ./config/mfa.sh
 
