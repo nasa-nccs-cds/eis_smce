@@ -5,7 +5,7 @@ from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapp
 import dask.delayed, boto3, os, traceback
 from intake_xarray.netcdf import NetCDFSource
 from intake_xarray.xzarr import ZarrSource
-import intake
+import intake, zarr, numpy as np
 import dask.bag as db
 import xarray as xa
 import intake_xarray as ixa   # Need this import to register 'xarray' container.
@@ -25,6 +25,7 @@ class EISDataSource( DataSource ):   # , tlc.Configurable
         self._schema: Schema = None
         self._ds: xa.Dataset = None
         self.nparts = -1
+        self.merge_dim = "sample"
         self._instance_cache = None
 
     @property
@@ -51,6 +52,7 @@ class EISDataSource( DataSource ):   # , tlc.Configurable
         nc_file_path =  os.path.join( self.cache_dir, ncfile_name )
         if overwrite or not os.path.exists(nc_file_path):
             xds.attrs['local_file'] = nc_file_path
+            xds.attrs['sample'] = ipart
             print( f"Translating file {file_path}, dims = {xds.dims}" )
             xds.to_netcdf( nc_file_path, "w" )
             if kwargs.get('cleanup', False ): os.remove( file_path )
@@ -88,7 +90,31 @@ class EISDataSource( DataSource ):   # , tlc.Configurable
     def to_dask(self) -> xa.Dataset:
         return self.read()
 
+    def _reprocess_for_export(self, ds: xa.Dataset):
+        new_vars = {}
+        for name, xar in ds.items():
+            new_vars[name] = xar.expand_dims({self.merge_dim: np.array([ds.attrs[self.merge_dim]])}, 0)
+        return xa.Dataset(new_vars)
+
     def export( self, path: str, **kwargs ) -> List[ZarrSource]:
+        merge = kwargs.get('merge', True )
+        location = os.path.dirname(path)
+        if merge:
+            try:
+                inputs = self.translate()
+                merged_dataset: xa.Dataset = xa.open_mfdataset( inputs, concat_dim='sample', preprocess=self._reprocess_for_export )
+                merged_dataset.to_zarr( path )
+                print(f"Exporting to zarr file: {path}")
+                return [ ZarrSource(path) ]
+            except Exception as err:
+                print(f"Merge ERROR: {err}")
+                traceback.print_exc()
+                print(f"\n\nMerge failed, exporting files individually to {location}")
+                return self._multi_export( location )
+        else:
+            return self._multi_export( location )
+
+    def export1( self, path: str, **kwargs ) -> List[ZarrSource]:
         try:
             inputs = self.translate()
             source = NetCDFSource( inputs )
@@ -98,21 +124,24 @@ class EISDataSource( DataSource ):   # , tlc.Configurable
             print( f"Exported merged dataset to {path}, specs = {source.yaml()}")
             return [ ZarrSource(path) ]
         except Exception as err:
-            location = os.path.dirname(path)
-            print( f"Merge ERROR: {err}" )
+            print(f"Merge ERROR: {err}")
             traceback.print_exc()
-            print( f"\n\nMerge failed, exporting files individually to {location}"  )
-            sources = []
-            for i in range(self.nparts):
-                file_spec = self._file_list[i]
-                file_path = file_spec["translated"]
-                file_name =  os.path.splitext( os.path.basename(file_path) )[0]
-                source = NetCDFSource( file_path )
-                zpath = f"{location}/{file_name}.zarr"
-                print(f"Exporting to zarr file: {zpath}")
-                source.export( zpath, mode="w" )
-                sources.append( ZarrSource(zpath) )
-            return sources
+            location = os.path.dirname(path)
+            print(f"\n\nMerge failed, exporting files individually to {location}")
+            return self._multi_export( location )
+
+    def _multi_export(self, location ):
+        sources = []
+        for i in range(self.nparts):
+            file_spec = self._file_list[i]
+            file_path = file_spec["translated"]
+            file_name = os.path.splitext(os.path.basename(file_path))[0]
+            source = NetCDFSource(file_path)
+            zpath = f"{location}/{file_name}.zarr"
+            print(f"Exporting to zarr file: {zpath}")
+            source.export(zpath, mode="w")
+            sources.append(ZarrSource(zpath))
+        return sources
 
     def get_zarr_source(self, zpath: str ):
         zsrc = ZarrSource(zpath)

@@ -25,7 +25,6 @@ for iF in file_indices:
     single_dataset.to_netcdf( outfile, "w" )
     new_files.append( outfile )
 
-merge_index = xr.IndexVariable( 'sample', np.array(file_indices) )
 merged_dataset: xr.Dataset = xr.open_mfdataset( new_files, concat_dim='sample', preprocess=preprocess )
 merged_data_array: xr.DataArray = merged_dataset[test_var]
 print( '\n\nmerged_data_array:' )
