@@ -103,10 +103,10 @@ class EISDataSource( DataSource ):   # , tlc.Configurable
         return xa.Dataset(new_vars)
 
     def _get_merged_attrs( self ) -> Dict:
-        merged_attrs = {}
+        merged_attrs = dict()
         for axval, attrs in self._ds_attr_map.items():
             for k,v in attrs.items():
-                att_dict = merged_attrs.setdefault( k, {} )
+                att_dict = merged_attrs.setdefault( k, dict() )
                 att_dict[ axval ] = v
         for attr_name, att_map in  merged_attrs.items():
             attvals = list(att_map.values())
