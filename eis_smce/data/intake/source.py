@@ -11,7 +11,7 @@ import pandas as pd
 import xarray as xa
 import intake_xarray as ixa   # Need this import to register 'xarray' container.
 
-def dsort( d: Dict ): return { (k, d[k]) for k in sorted(d.keys()) }
+def dsort( d: Dict ) -> Dict: return { k:d[k] for k in sorted(d.keys()) }
 
 class EISDataSource( DataSource ):   # , tlc.Configurable
     """Common behaviours for plugins in this repo"""
