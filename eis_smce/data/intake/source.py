@@ -109,7 +109,7 @@ class EISDataSource( DataSource ):   # , tlc.Configurable
         for axval, attvals in  merged_attrs.items():
             if (len(attvals) == self.nparts) and all(x == attvals[0] for x in attvals):
                    merged_attrs[ axval ] = attvals[0]
-            else:  merged_attrs[ axval ] = pd.data( attvals ).to_numpy()
+            else:  merged_attrs[ axval ] = pd.DataFrame( attvals ).to_numpy()
         return merged_attrs
 
     def export( self, path: str, **kwargs ) -> List[ZarrSource]:
