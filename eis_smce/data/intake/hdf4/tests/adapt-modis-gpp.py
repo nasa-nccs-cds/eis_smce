@@ -22,5 +22,6 @@ dset: xr.Dataset = zs.to_dask()
 print( dset )
 
 print( "\n --> Dataset Attributes:" )
-print( dict(dset.attrs) )
+for k,v in dset.attrs.items():
+    print( f"   ... {k} = {v}" )
 
