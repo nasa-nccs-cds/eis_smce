@@ -99,7 +99,7 @@ class EISDataSource( DataSource ):   # , tlc.Configurable
             new_vars[name] = xar.expand_dims({self.merge_dim: np.array([merge_axis_val])}, 0)
         return xa.Dataset(new_vars)
 
-    def _get_merged_attrs( self ):
+    def _get_merged_attrs( self ) -> collections.OrderedDict:
         merged_attrs = collections.OrderedDict()
         for axval, attrs in self._ds_attr_map.items():
             for k,v in attrs.items():
@@ -108,6 +108,7 @@ class EISDataSource( DataSource ):   # , tlc.Configurable
         for axval, attvals in  merged_attrs.items():
             if (len(attvals) and self.nparts) and all(x == attvals[0] for x in attvals):
                 merged_attrs[ axval ] = attvals[0]
+        return merged_attrs
 
     def export( self, path: str, **kwargs ) -> List[ZarrSource]:
         merge = kwargs.get('merge', True )
@@ -117,7 +118,6 @@ class EISDataSource( DataSource ):   # , tlc.Configurable
         if merge:
             try:
                 inputs = self.translate()
-                ds0 = xa.open_dataset( inputs[0] )
                 merged_dataset: xa.Dataset = xa.open_mfdataset( inputs, concat_dim=self.merge_dim, preprocess=self._preprocess_for_export, parallel=kwargs.get('parallel',True) )
                 merged_dataset.attrs.update( self._get_merged_attrs() )
                 merged_dataset.to_zarr( path, mode="w" )
