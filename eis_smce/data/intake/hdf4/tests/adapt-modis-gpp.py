@@ -17,8 +17,13 @@ h4s: HDF4Source = HDF4Source( data_url  )                              # Creates
 h4s.export( output_file )
 zs = ZarrSource( output_file )
 
-print( "ZarrSource:" )
+print( "\nZarrSource:" )
 dset: xr.Dataset = zs.to_dask()
 print( dset )
-print( " --> Chunks:" )
-print( dset.chunks )
+
+print( "\n --> Dataset Attributes:" )
+print( dict(dset.attrs) )
+
+print( "\n --> Var Attributes:" )
+for name, xar in dset.items():
+    print(f"    ... {name}: {xar.attrs}")
