@@ -8,7 +8,7 @@ data_files = glob.glob( batch )
 test_var = "QC"
 file_indices = range( len(data_files) )
 
-df0: xr.Dataset = data_files[0]
+df0: xr.Dataset = xr.open_dataset( data_files[0] )
 
 print( f"DIMS: {df0.dims}" )
 print( f"COORDS: {list(df0.coords.keys())}" )
