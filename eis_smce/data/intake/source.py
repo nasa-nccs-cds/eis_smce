@@ -1,5 +1,5 @@
 from intake.source.base import DataSource, Schema
-from pathlib import Path
+import collections
 import traitlets.config as tlc, random, string
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable, MutableMapping
 import dask.delayed, boto3, os, traceback
@@ -25,6 +25,7 @@ class EISDataSource( DataSource ):   # , tlc.Configurable
         self._schema: Schema = None
         self._ds: xa.Dataset = None
         self.nparts = -1
+        self._ds_attr_map = collections.OrderedDict()
         self.merge_dim = "sample"
         self._instance_cache = None
 
@@ -90,21 +91,35 @@ class EISDataSource( DataSource ):   # , tlc.Configurable
     def to_dask(self) -> xa.Dataset:
         return self.read()
 
-    def _reprocess_for_export(self, ds: xa.Dataset):
+    def _preprocess_for_export(self, ds: xa.Dataset):
         new_vars = {}
+        merge_axis_val = ds.attrs[self.merge_dim]
+        self._ds_attr_map[ merge_axis_val ] = ds.attrs
         for name, xar in ds.items():
-            new_vars[name] = xar.expand_dims({self.merge_dim: np.array([ds.attrs[self.merge_dim]])}, 0)
+            new_vars[name] = xar.expand_dims({self.merge_dim: np.array([merge_axis_val])}, 0)
         return xa.Dataset(new_vars)
+
+    def _get_merged_attrs( self ):
+        merged_attrs = collections.OrderedDict()
+        for axval, attrs in self._ds_attr_map.items():
+            for k,v in attrs.items():
+                att_dict = merged_attrs.setdefault( k, collections.OrderedDict() )
+                att_dict[ axval ] = v
+        for axval, attvals in  merged_attrs.items():
+            if (len(attvals) and self.nparts) and all(x == attvals[0] for x in attvals):
+                merged_attrs[ axval ] = attvals[0]
 
     def export( self, path: str, **kwargs ) -> List[ZarrSource]:
         merge = kwargs.get('merge', True )
+        self.merge_dim = kwargs.get( 'merge_dim', 'sample' )
+        self._ds_attr_map = collections.OrderedDict()
         location = os.path.dirname(path)
         if merge:
             try:
                 inputs = self.translate()
                 ds0 = xa.open_dataset( inputs[0] )
-                merged_dataset: xa.Dataset = xa.open_mfdataset( inputs, concat_dim='sample', preprocess=self._reprocess_for_export )
-                merged_dataset.attrs.update( ds0.attrs )
+                merged_dataset: xa.Dataset = xa.open_mfdataset( inputs, concat_dim=self.merge_dim, preprocess=self._preprocess_for_export, parallel=kwargs.get('parallel',True) )
+                merged_dataset.attrs.update( self._get_merged_attrs() )
                 merged_dataset.to_zarr( path, mode="w" )
                 print(f"Exporting to zarr file: {path}")
                 return [ ZarrSource(path) ]
