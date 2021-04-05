@@ -8,6 +8,8 @@ data_files = glob.glob( batch )
 test_var = "QC"
 file_indices = range( len(data_files) )
 
+def preprocess_for_merge( ds: xr.Dataset ) -> xr.Dataset:
+
 for iF in file_indices:
     print( f"Processing data file: {data_files[iF]}" )
     single_dataset: xr.Dataset = xr.open_dataset( data_files[iF] )
