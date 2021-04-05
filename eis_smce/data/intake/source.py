@@ -7,6 +7,7 @@ from intake_xarray.netcdf import NetCDFSource
 from intake_xarray.xzarr import ZarrSource
 import intake, zarr, numpy as np
 import dask.bag as db
+import pandas as pd
 import xarray as xa
 import intake_xarray as ixa   # Need this import to register 'xarray' container.
 
@@ -106,8 +107,9 @@ class EISDataSource( DataSource ):   # , tlc.Configurable
                 att_dict = merged_attrs.setdefault( k, collections.OrderedDict() )
                 att_dict[ axval ] = v
         for axval, attvals in  merged_attrs.items():
-            if (len(attvals) and self.nparts) and all(x == attvals[0] for x in attvals):
-                merged_attrs[ axval ] = attvals[0]
+            if (len(attvals) == self.nparts) and all(x == attvals[0] for x in attvals):
+                   merged_attrs[ axval ] = attvals[0]
+            else:  merged_attrs[ axval ] = pd.data( attvals ).to_numpy()
         return merged_attrs
 
     def export( self, path: str, **kwargs ) -> List[ZarrSource]:
