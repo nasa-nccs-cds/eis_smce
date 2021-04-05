@@ -46,9 +46,7 @@ class HDF4Source( EISDataSource ):
             from eis_smce.data.storage.s3 import s3m
             # Use rasterio/GDAL to read the metadata and pyHDF to read the variable data.
             file_specs = nc_keys( self._file_list[ipart] )
-            print(f"Opening file[{ipart}] from specs: {file_specs}")
             file_path = rfile_path = file_specs.pop("resolved")
-            print(f"Resolved: {file_path}")
             if rfile_path.startswith("s3"):
                 file_path = s3m().download(rfile_path, self.cache_dir)
                 print(f"Reading file {file_path} (downloade3d from {rfile_path})")
@@ -82,7 +80,7 @@ class HDF4Source( EISDataSource ):
                 shape = [dims[did] for did in nc_dims.keys()]
                 try:
                     data = self._get_data(sds, shape)
-                    print(f"Creating DataArray {dsid}, DIMS = {attrs['DIMS']}, file = {file_path}")
+#                    print(f"Creating DataArray {dsid}, DIMS = {attrs['DIMS']}, file = {file_path}")
                     data_vars[nc_vid] = xa.DataArray(data, xcoords, xdims, nc_vid, attrs)
                 except Exception as err:
                     print(

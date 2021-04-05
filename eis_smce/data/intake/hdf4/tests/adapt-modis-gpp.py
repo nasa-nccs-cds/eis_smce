@@ -15,6 +15,7 @@ part_index: int = 0
 data_url = f"file:/{base_dir}/{collection}/{batch}"
 h4s: HDF4Source = HDF4Source( data_url  )                              # Creates source encapsulating all matched files in data_url
 h4s.export( output_file )
+zs = ZarrSource( output_file )
 
-print( "Catalog entry:" )
-print( ZarrSource( output_file ).yaml() )
+print( "ZarrSource:" )
+print( zs )
