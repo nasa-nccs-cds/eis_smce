@@ -18,4 +18,4 @@ h4s.export( output_file )
 zs = ZarrSource( output_file )
 
 print( "ZarrSource:" )
-print( zs )
+print( zs.to_dask() )
