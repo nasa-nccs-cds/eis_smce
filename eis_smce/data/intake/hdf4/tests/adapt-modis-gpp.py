@@ -18,4 +18,7 @@ h4s.export( output_file )
 zs = ZarrSource( output_file )
 
 print( "ZarrSource:" )
-print( zs.to_dask() )
+dset: xr.Dataset = zs.to_dask()
+print( dset )
+print( " --> Chunks:" )
+print( dset.chunks )
