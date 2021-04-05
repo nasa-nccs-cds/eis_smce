@@ -112,7 +112,7 @@ class EISDataSource( DataSource ):   # , tlc.Configurable
             attvals = list(att_map.values())
             if (len(attvals) == self.nparts) and all(x == attvals[0] for x in attvals):
                    merged_attrs[ attr_name ] = attvals[0]
-            else:  merged_attrs[ attr_name ] = json.dumps( dsort(att_map) )
+            else:  merged_attrs[ attr_name ] = str( dsort(att_map) )
         return merged_attrs
 
     def export( self, path: str, **kwargs ) -> List[ZarrSource]:
