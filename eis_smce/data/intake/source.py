@@ -47,7 +47,7 @@ class EISDataSource( DataSource ):   # , tlc.Configurable
         return self._parts[ipart]
 
     def _translate_file(self, ipart: int, **kwargs ) -> str:
-        overwrite = kwargs.get('overwrite', True )
+        overwrite = kwargs.get('cache_overwrite', True )
         xds: xa.Dataset = self._open_file( ipart )
         file_path = xds.attrs['local_file']
         ncfile_name = os.path.splitext( os.path.basename(file_path) )[0] + ".nc"
@@ -57,8 +57,8 @@ class EISDataSource( DataSource ):   # , tlc.Configurable
             xds.attrs['sample'] = ipart
             print( f"Translating file {file_path} to {nc_file_path}" )
             xds.to_netcdf( nc_file_path, "w" )
-            if kwargs.get('cleanup', False ): os.remove( file_path )
-            self._file_list[ipart]["translated"] = nc_file_path
+        if kwargs.get('cache_cleanup', False ): os.remove( file_path )
+        self._file_list[ipart]["translated"] = nc_file_path
         xds.close()
         return nc_file_path
 
@@ -74,9 +74,9 @@ class EISDataSource( DataSource ):   # , tlc.Configurable
                 print(f"Opened merged dataset")
         return self._ds
 
-    def translate(self) -> List[str]:
+    def translate( self, **kwargs ) -> List[str]:
         self._load_metadata()
-        dsparts: List[str] = [self._translate_file(i) for i in range(self.nparts)]
+        dsparts: List[str] = [self._translate_file( i, **kwargs ) for i in range(self.nparts)]
         return dsparts
 
     def read_delay( self, merge_axis = None ) -> xa.Dataset:
@@ -106,10 +106,11 @@ class EISDataSource( DataSource ):   # , tlc.Configurable
             for k,v in attrs.items():
                 att_dict = merged_attrs.setdefault( k, collections.OrderedDict() )
                 att_dict[ axval ] = v
-        for axval, attvals in  merged_attrs.items():
+        for attr_name, att_map in  merged_attrs.items():
+            attvals = att_map.values()
             if (len(attvals) == self.nparts) and all(x == attvals[0] for x in attvals):
-                   merged_attrs[ axval ] = attvals[0]
-            else:  merged_attrs[ axval ] = pd.DataFrame( attvals ).to_numpy()
+                   merged_attrs[ attr_name ] = attvals[0]
+            else:  merged_attrs[ attr_name ] = str( att_map )
         return merged_attrs
 
     def export( self, path: str, **kwargs ) -> List[ZarrSource]:
@@ -119,7 +120,7 @@ class EISDataSource( DataSource ):   # , tlc.Configurable
         location = os.path.dirname(path)
         if merge:
             try:
-                inputs = self.translate()
+                inputs = self.translate( **kwargs )
                 merged_dataset: xa.Dataset = xa.open_mfdataset( inputs, concat_dim=self.merge_dim, preprocess=self._preprocess_for_export, parallel=kwargs.get('parallel',True) )
                 merged_dataset.attrs.update( self._get_merged_attrs() )
                 merged_dataset.to_zarr( path, mode="w" )
