@@ -107,7 +107,7 @@ class EISDataSource( DataSource ):   # , tlc.Configurable
                 att_dict = merged_attrs.setdefault( k, collections.OrderedDict() )
                 att_dict[ axval ] = v
         for attr_name, att_map in  merged_attrs.items():
-            attvals = att_map.values()
+            attvals = list(att_map.values())
             if (len(attvals) == self.nparts) and all(x == attvals[0] for x in attvals):
                    merged_attrs[ attr_name ] = attvals[0]
             else:  merged_attrs[ attr_name ] = str( att_map )
