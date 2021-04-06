@@ -1,4 +1,5 @@
 import os, xarray as xr
+import intake
 from eis_smce.data.intake.hdf4.drivers import HDF4Source
 from intake_xarray.xzarr import ZarrSource
 
@@ -13,7 +14,8 @@ output_file = f"{cache_dir}/{collection}/h09v09.zarr"
 os.makedirs( os.path.dirname(output_file), exist_ok=True )
 
 data_url = f"file://{base_dir}/{collection}/{batch}"
-h4s: HDF4Source = HDF4Source( data_url  )                              # Creates source encapsulating all matched files in data_url
+# h4s: HDF4Source = HDF4Source( data_url  )
+h4s = intake.open_hdf4( data_url )
 h4s.export( output_file )
 zs = ZarrSource( output_file )
 
