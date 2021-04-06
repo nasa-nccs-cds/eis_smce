@@ -5,6 +5,7 @@ from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapp
 import glob, os
 
 def lfm(): return LocalFileManager.instance()
+def has_char(string: str, chars: str): return 1 in [c in string for c in chars]
 
 class LocalFileManager(tlc.SingletonConfigurable ):
 
@@ -19,14 +20,13 @@ class LocalFileManager(tlc.SingletonConfigurable ):
         filepath_pattern = self._parse_urlpath( urlpath )
         filepath_glob = path_to_glob( filepath_pattern )
         input_files = glob.glob(filepath_glob)
+        is_glob = has_char( filepath_pattern, "*?[" )
         files_list = []
         print(f" Processing {len(input_files)} input files from glob '{filepath_glob}'")
         for file_path in input_files:
             try:
-                file_name, file_pattern = os.path.basename(file_path) , os.path.basename(filepath_pattern)
-                print(f" reverse_format( {file_pattern}: {file_name} )")
+                (file_name, file_pattern) = (os.path.basename(file_path) , os.path.basename(filepath_pattern)) if is_glob else (file_path,filepath_pattern)
                 metadata = reverse_format( file_pattern, file_name )
-                print( f" reverse_format result -> {metadata}")
                 metadata['resolved'] = file_path
                 files_list.append(metadata)
             except ValueError as err:
