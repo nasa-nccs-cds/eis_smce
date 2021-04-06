@@ -2,7 +2,7 @@ import traitlets.config as tlc
 import fnmatch
 from intake.source.utils import path_to_glob
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
-import glob
+import glob, os
 
 def lfm(): return LocalFileManager.instance()
 
@@ -23,11 +23,12 @@ class LocalFileManager(tlc.SingletonConfigurable ):
         print(f" Processing {len(input_files)} input files from glob '{filepath_glob}'")
         for file_path in input_files:
             try:
-                print(f" reverse_format( {filepath_pattern}: {file_path} )")
-                metadata = reverse_format( filepath_pattern, file_path )
+                file_name, file_pattern = os.path.basename(file_path) , os.path.basename(filepath_pattern)
+                print(f" reverse_format( {file_pattern}: {file_name} )")
+                metadata = reverse_format( file_pattern, file_name )
                 print( f" reverse_format result -> {metadata}")
                 metadata['resolved'] = file_path
                 files_list.append(metadata)
             except ValueError as err:
-                print( f" Metadata processing error: {err}")
+                print( f" Metadata processing error: {err}, Did you mix glob and pattern in file name?")
         return files_list
