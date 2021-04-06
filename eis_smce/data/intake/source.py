@@ -57,7 +57,7 @@ class EISDataSource( DataSource ):
     def _translate_file(self, ipart: int, **kwargs ) -> str:
         overwrite = kwargs.get('cache_overwrite', True )
         file_specs = self._file_list[ipart]
-        local_file_path =  self.get_local_file_path( file_specs.pop("resolved") )
+        local_file_path =  self.get_local_file_path( file_specs.get("resolved") )
         ncfile_name = os.path.splitext( os.path.basename(local_file_path) )[0] + ".nc"
         nc_file_path =  os.path.join( self.cache_dir, ncfile_name )
         if overwrite or not os.path.exists(nc_file_path):
