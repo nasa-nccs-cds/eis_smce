@@ -61,6 +61,7 @@ class EISDataSource( DataSource ):
         ncfile_name = os.path.splitext( os.path.basename(local_file_path) )[0] + ".nc"
         nc_file_path =  os.path.join( self.cache_dir, ncfile_name )
         if overwrite or not os.path.exists(nc_file_path):
+            print(f"Creating translated file {nc_file_path}")
             xds: xa.Dataset = self._open_file(ipart)
             file_path = xds.attrs['local_file']
             xds.attrs['local_file'] = nc_file_path
