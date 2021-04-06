@@ -22,7 +22,7 @@ class EISDataSource( DataSource ):
 
     def __init__(self, **kwargs ):
         super(EISDataSource, self).__init__( **kwargs )
-        dask.config.set(scheduler='threaded')
+        dask.config.set(scheduler='threading')
         self._cache_dir = kwargs.get( 'cache_dir', os.path.expanduser( "~/.eis_smce/cache") )
         self._file_list: List[ Dict[str,str] ] = None
         self._parts: Dict[int,xa.Dataset] = {}
