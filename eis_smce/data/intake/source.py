@@ -6,6 +6,7 @@ import dask.delayed, boto3, os, traceback
 from intake_xarray.netcdf import NetCDFSource
 from intake_xarray.xzarr import ZarrSource
 import intake, zarr, numpy as np
+from dask.distributed import Client
 import dask.bag as db
 import pandas as pd
 import xarray as xa
@@ -21,6 +22,7 @@ class EISDataSource( DataSource ):
 
     def __init__(self, **kwargs ):
         super(EISDataSource, self).__init__( **kwargs )
+        dask.config.set(scheduler='processes')
         self._cache_dir = kwargs.get( 'cache_dir', os.path.expanduser( "~/.eis_smce/cache") )
         self._file_list: List[ Dict[str,str] ] = None
         self._parts: Dict[int,xa.Dataset] = {}
@@ -84,17 +86,12 @@ class EISDataSource( DataSource ):
     def translate( self, **kwargs ) -> List[str]:
         self._load_metadata()
         print( "Transforming inputs")
-        dsparts = [ self._translate_file( i, **kwargs ) for i in range(self.nparts) ]
+        if  kwargs.get('parallel', True ):
+            dsparts_delayed = [ dask.delayed(self._translate_file)( i, **kwargs ) for i in range(self.nparts)]
+            dsparts = dask.compute( *dsparts_delayed )
+        else:
+            dsparts = [ self._translate_file( i, **kwargs ) for i in range(self.nparts) ]
         return dsparts
-
-    def translate_delayed( self, **kwargs ) -> List[str]:
-        self._load_metadata()
-        print( "Transforming inputs")
-        dsparts = [ dask.delayed(self._translate_file)( i, **kwargs ) for i in range(self.nparts)]
-        return dask.delayed( self._merge_translations )( dsparts ).compute( )
-
-    def _merge_translations( self, nc_file_paths: List[str] ) -> List[str]:
-        return nc_file_paths
 
     def to_dask(self) -> xa.Dataset:
         return self.read()
