@@ -47,20 +47,29 @@ class EISDataSource( DataSource ):
             self._parts[ipart] = self._open_file( ipart )
         return self._parts[ipart]
 
+    def get_local_file_path(self, data_url: str):
+        if data_url.startswith("s3"):
+            toks = data_url.split("/")
+            file_name = toks[-1]
+            data_url = os.path.join( self.cache_dir, file_name)
+        return data_url
+
     def _translate_file(self, ipart: int, **kwargs ) -> str:
         overwrite = kwargs.get('cache_overwrite', True )
-        xds: xa.Dataset = self._open_file( ipart )
-        file_path = xds.attrs['local_file']
-        ncfile_name = os.path.splitext( os.path.basename(file_path) )[0] + ".nc"
+        file_specs = self._file_list[ipart]
+        local_file_path =  self.get_local_file_path( file_specs.pop("resolved") )
+        ncfile_name = os.path.splitext( os.path.basename(local_file_path) )[0] + ".nc"
         nc_file_path =  os.path.join( self.cache_dir, ncfile_name )
         if overwrite or not os.path.exists(nc_file_path):
+            xds: xa.Dataset = self._open_file(ipart)
+            file_path = xds.attrs['local_file']
             xds.attrs['local_file'] = nc_file_path
             if 'sample' not in list(xds.attrs.keys()): xds.attrs['sample'] = ipart
             print( f"Translating file {file_path} to {nc_file_path}" )
             xds.to_netcdf( nc_file_path, "w" )
-        if kwargs.get('cache_cleanup', False ): os.remove( file_path )
+            xds.close()
+        if kwargs.get('cache_cleanup', False ): os.remove( local_file_path )
         self._file_list[ipart]["translated"] = nc_file_path
-        xds.close()
         return nc_file_path
 
     def read( self ) -> xa.Dataset:
