@@ -51,11 +51,9 @@ class S3Manager(tlc.SingletonConfigurable):
 
     def get_file_list(self, urlpath: str ) -> List[Dict]:
         from intake.source.utils import reverse_format
-        def has_char(string: str, chars: str): return 1 in [c in string for c in chars]
         s3 = boto3.resource('s3')
         (bucketname, pattern) = self._parse_urlpath( urlpath )
         print( f"get_file_list: urlpath={urlpath}, bucketname={bucketname}, pattern={pattern}")
-        is_glob = has_char( pattern, "*?[" )
         gpattern = path_to_glob( pattern )
         files_list = []
         for bucket in s3.buckets.all():
@@ -63,7 +61,7 @@ class S3Manager(tlc.SingletonConfigurable):
                 for obj in bucket.objects.all():
                     if fnmatch.fnmatch( obj.key, gpattern ):
                         try:
-                            metadata = {} if is_glob else reverse_format( pattern, obj.key )
+                            metadata = reverse_format( pattern, obj.key )
                             metadata['resolved'] = f"s3://{bucketname}/{obj.key}"
                             files_list.append(metadata)
                         except ValueError:

@@ -16,14 +16,12 @@ class LocalFileManager(tlc.SingletonConfigurable ):
 
     def get_file_list(self, urlpath: str ) -> List[Dict]:
         from intake.source.utils import reverse_format
-        def has_char(string: str, chars: str): return 1 in [c in string for c in chars]
         filepath_pattern = self._parse_urlpath( urlpath )
-        is_glob = has_char( filepath_pattern, "*?[" )
         filepath_glob = path_to_glob( filepath_pattern )
         files_list = []
         for file_path in  glob.glob(filepath_glob):
             try:
-                metadata = {} if is_glob else reverse_format( filepath_pattern, file_path )
+                metadata = reverse_format( filepath_pattern, file_path )
                 metadata['resolved'] = file_path
                 files_list.append(metadata)
             except ValueError:
