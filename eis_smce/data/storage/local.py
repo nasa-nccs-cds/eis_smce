@@ -23,8 +23,9 @@ class LocalFileManager(tlc.SingletonConfigurable ):
         print(f" Processing {len(input_files)} input files from glob '{filepath_glob}'")
         for file_path in input_files:
             try:
+                print(f" reverse_format( {filepath_pattern}: {file_path} )")
                 metadata = reverse_format( filepath_pattern, file_path )
-                print( f" reverse_format( {filepath_pattern}: {file_path} ) -> {metadata}")
+                print( f" reverse_format result -> {metadata}")
                 metadata['resolved'] = file_path
                 files_list.append(metadata)
             except ValueError as err:
