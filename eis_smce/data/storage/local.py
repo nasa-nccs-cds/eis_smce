@@ -22,6 +22,7 @@ class LocalFileManager(tlc.SingletonConfigurable ):
         for file_path in  glob.glob(filepath_glob):
             try:
                 metadata = reverse_format( filepath_pattern, file_path )
+                print( f" reverse_format( {filepath_pattern}: {file_path} ) -> {metadata}")
                 metadata['resolved'] = file_path
                 files_list.append(metadata)
             except ValueError:
