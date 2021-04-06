@@ -18,13 +18,15 @@ class LocalFileManager(tlc.SingletonConfigurable ):
         from intake.source.utils import reverse_format
         filepath_pattern = self._parse_urlpath( urlpath )
         filepath_glob = path_to_glob( filepath_pattern )
+        input_files = glob.glob(filepath_glob)
         files_list = []
-        for file_path in  glob.glob(filepath_glob):
+        print(f" Processing {len(input_files)} input files from glob '{filepath_glob}'")
+        for file_path in input_files:
             try:
                 metadata = reverse_format( filepath_pattern, file_path )
                 print( f" reverse_format( {filepath_pattern}: {file_path} ) -> {metadata}")
                 metadata['resolved'] = file_path
                 files_list.append(metadata)
-            except ValueError:
-                pass
+            except ValueError as err:
+                print( f" Metadata processing error: {err}")
         return files_list
