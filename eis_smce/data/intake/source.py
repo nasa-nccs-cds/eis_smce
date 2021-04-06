@@ -85,7 +85,7 @@ class EISDataSource( DataSource ):
 
     def translate( self, **kwargs ) -> List[str]:
         t0 = time.time()
-        parallel = kwargs.get('parallel', True )
+        parallel = kwargs.get('parallel', False )
         self._load_metadata()
         print( "Transforming inputs")
         if  parallel:
