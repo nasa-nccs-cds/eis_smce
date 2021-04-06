@@ -9,7 +9,7 @@ import intake, zarr, numpy as np
 from dask.distributed import Client
 import dask.bag as db
 import pandas as pd
-import xarray as xa
+import time, xarray as xa
 import intake_xarray as ixa   # Need this import to register 'xarray' container.
 
 def dsort( d: Dict ) -> Dict: return { k:d[k] for k in sorted(d.keys()) }
@@ -84,13 +84,16 @@ class EISDataSource( DataSource ):
         return self._ds
 
     def translate( self, **kwargs ) -> List[str]:
+        t0 = time.time()
+        parallel = kwargs.get('parallel', True )
         self._load_metadata()
         print( "Transforming inputs")
-        if  kwargs.get('parallel', True ):
+        if  parallel:
             dsparts_delayed = [ dask.delayed(self._translate_file)( i, **kwargs ) for i in range(self.nparts)]
             dsparts = dask.compute( *dsparts_delayed )
         else:
             dsparts = [ self._translate_file( i, **kwargs ) for i in range(self.nparts) ]
+        print( f"Completed translate (parallel={parallel}) in {time.time()-t0} sec")
         return dsparts
 
     def to_dask(self) -> xa.Dataset:
