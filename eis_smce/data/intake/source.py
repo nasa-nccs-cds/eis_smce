@@ -78,18 +78,11 @@ class EISDataSource( DataSource ):   # , tlc.Configurable
 
     def translate( self, **kwargs ) -> List[str]:
         self._load_metadata()
-        dsparts: List[str] = [self._translate_file( i, **kwargs ) for i in range(self.nparts)]
-        return dsparts
+        dsparts = [ dask.delayed(self._translate_file)( i, **kwargs ) for i in range(self.nparts)]
+        return dask.delayed( self._merge_translations )( dsparts ).compute( )
 
-    def read_delay( self, merge_axis = None ) -> xa.Dataset:
-        if self._ds is None:
-            self._load_metadata()
-            if self.nparts == 1:
-                self._ds = self._get_partition(0)
-            else:
-                dsparts: List[str] = [ dask.delayed(self._translate_file)(i) for i in range(self.nparts) ]
-                self._ds = dask.delayed( self._merge_files )( dsparts )
-        return self._ds
+    def _merge_translations( self, nc_file_paths: List[str] ) -> List[str]:
+        return nc_file_paths
 
     def to_dask(self) -> xa.Dataset:
         return self.read()
@@ -116,25 +109,30 @@ class EISDataSource( DataSource ):   # , tlc.Configurable
         return merged_attrs
 
     def export( self, path: str, **kwargs ) -> List[ZarrSource]:
-        merge = kwargs.get('merge', True )
+        from eis_smce.data.intake.catalog import CatalogManager, cm
         self.merge_dim = kwargs.get( 'merge_dim', 'sample' )
         self._ds_attr_map = collections.OrderedDict()
         location = os.path.dirname(path)
-        if merge:
+
+        if kwargs.get('merge', True ):
             try:
                 inputs = self.translate( **kwargs )
                 merged_dataset: xa.Dataset = xa.open_mfdataset( inputs, concat_dim=self.merge_dim, preprocess=self._preprocess_for_export, parallel=kwargs.get('parallel',True) )
                 merged_dataset.attrs.update( self._get_merged_attrs() )
                 merged_dataset.to_zarr( path, mode="w" )
                 print(f"Exporting to zarr file: {path}")
-                return [ ZarrSource(path) ]
+                zsrc = [ ZarrSource(path) ]
             except Exception as err:
                 print(f"Merge ERROR: {err}")
                 traceback.print_exc()
                 print(f"\n\nMerge failed, exporting files individually to {location}")
-                return self._multi_export( location )
+                zsrc = self._multi_export( location )
         else:
-            return self._multi_export( location )
+            zsrc = self._multi_export( location )
+
+        if kwargs.get( 'update_cat', True ):
+            for zs in zsrc: cm().addEntry(zs)
+        return zsrc
 
     def export1( self, path: str, **kwargs ) -> List[ZarrSource]:
         try:
