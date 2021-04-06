@@ -20,7 +20,7 @@ for iF in file_indices:
     print( f"Processing data file: {data_files[iF]}" )
     file_name = os.path.basename( data_files[iF] )
     single_dataset: xr.Dataset = xr.open_dataset( data_files[iF] )
-    single_dataset.attrs['sample'] = str(iF)
+    if 'sample' not in list(single_dataset.attrs.keys()): single_dataset.attrs['sample'] = str(iF)
     outfile = f"{cache}/{file_name}"
     single_dataset.to_netcdf( outfile, "w" )
     new_files.append( outfile )

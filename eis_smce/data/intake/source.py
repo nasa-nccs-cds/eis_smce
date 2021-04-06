@@ -55,7 +55,7 @@ class EISDataSource( DataSource ):
         nc_file_path =  os.path.join( self.cache_dir, ncfile_name )
         if overwrite or not os.path.exists(nc_file_path):
             xds.attrs['local_file'] = nc_file_path
-            xds.attrs['sample'] = ipart
+            if 'sample' not in list(xds.attrs.keys()): xds.attrs['sample'] = ipart
             print( f"Translating file {file_path} to {nc_file_path}" )
             xds.to_netcdf( nc_file_path, "w" )
         if kwargs.get('cache_cleanup', False ): os.remove( file_path )

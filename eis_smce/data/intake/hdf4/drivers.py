@@ -49,9 +49,9 @@ class HDF4Source( EISDataSource ):
             file_path = rfile_path = file_specs.pop("resolved")
             if rfile_path.startswith("s3"):
                 file_path = s3m().download(rfile_path, self.cache_dir)
-                print(f"Reading file {file_path} (downloade3d from {rfile_path})")
+                print(f"Reading file {file_path} (downloade3d from {rfile_path}) with specs {file_specs}")
             else:
-                print(f"Reading file {file_path}")
+                print(f"Reading file {file_path} with specs {file_specs}")
             rxr_dsets = rxr.open_rasterio(file_path)
             dsattr = nc_keys( rxr_dsets[0].attrs if isinstance(rxr_dsets, list) else rxr_dsets.attrs )
             dsattr.update(file_specs)
