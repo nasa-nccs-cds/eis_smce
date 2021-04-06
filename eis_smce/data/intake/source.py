@@ -33,11 +33,7 @@ class EISDataSource( DataSource ):
 
     @property
     def cache_dir(self):
-        if self._instance_cache is None:
-            cid = ''.join( random.choices( string.ascii_uppercase + string.digits, k=8 ) )
-            self._instance_cache = os.path.join( self._cache_dir, cid )
-            os.makedirs( self._instance_cache )
-        return self._instance_cache
+        return self._cache_dir
 
     def _open_file(self, ipart: int ) -> xa.Dataset:
         raise NotImplementedError()
