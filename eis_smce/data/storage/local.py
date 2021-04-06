@@ -19,7 +19,7 @@ class LocalFileManager(tlc.SingletonConfigurable ):
         def has_char(string: str, chars: str): return 1 in [c in string for c in chars]
         filepath_pattern = self._parse_urlpath( urlpath )
         is_glob = has_char( filepath_pattern, "*?[" )
-        filepath_glob = filepath_pattern if is_glob else path_to_glob( filepath_pattern )
+        filepath_glob = path_to_glob( filepath_pattern )
         files_list = []
         for file_path in  glob.glob(filepath_glob):
             try:

@@ -1,4 +1,3 @@
-
 import os, xarray as xr
 from eis_smce.data.intake.hdf4.drivers import HDF4Source
 from intake_xarray.xzarr import ZarrSource
@@ -8,7 +7,7 @@ cache_dir = "/att/nobackup/tpmaxwel/ILAB/scratch"
 collection = "MOD17A2H-GPP"
 year = "2004"
 day = "0*"
-file_names = "MOD17A2H.*.h09v09.006.*.hdf"
+file_names = "MOD17A2H.{sample}.h09v09.006.{sid}.hdf"
 batch = f"{year}/{day}/{file_names}"
 output_file = f"{cache_dir}/{collection}/h09v09.zarr"
 os.makedirs( os.path.dirname(output_file), exist_ok=True )

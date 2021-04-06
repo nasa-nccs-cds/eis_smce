@@ -56,7 +56,7 @@ class S3Manager(tlc.SingletonConfigurable):
         (bucketname, pattern) = self._parse_urlpath( urlpath )
         print( f"get_file_list: urlpath={urlpath}, bucketname={bucketname}, pattern={pattern}")
         is_glob = has_char( pattern, "*?[" )
-        gpattern = pattern if is_glob else path_to_glob( pattern )
+        gpattern = path_to_glob( pattern )
         files_list = []
         for bucket in s3.buckets.all():
             if fnmatch.fnmatch(bucket.name,bucketname):

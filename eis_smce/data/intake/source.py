@@ -13,12 +13,11 @@ import intake_xarray as ixa   # Need this import to register 'xarray' container.
 
 def dsort( d: Dict ) -> Dict: return { k:d[k] for k in sorted(d.keys()) }
 
-class EISDataSource( DataSource ):   # , tlc.Configurable
+class EISDataSource( DataSource ):
     """Common behaviours for plugins in this repo"""
     version = 0.1
     container = 'xarray'
     partition_access = True
-#    _cache_dir = tlc.Unicode( os.path.expanduser( "~/.eis_smce/cache") ).tag(config=True)
 
     def __init__(self, **kwargs ):
         super(EISDataSource, self).__init__( **kwargs )
@@ -140,22 +139,6 @@ class EISDataSource( DataSource ):   # , tlc.Configurable
         if kwargs.get( 'update_cat', True ):
             for zs in zsrc: cm().addEntry(zs)
         return zsrc
-
-    def export1( self, path: str, **kwargs ) -> List[ZarrSource]:
-        try:
-            inputs = self.translate()
-            source = NetCDFSource( inputs )
-            print(f"Exporting to zarr file: {path}")
-            source.export( path, mode="w" )
-            print( f"Merged dataset = {source._ds}")
-            print( f"Exported merged dataset to {path}, specs = {source.yaml()}")
-            return [ ZarrSource(path) ]
-        except Exception as err:
-            print(f"Merge ERROR: {err}")
-            traceback.print_exc()
-            location = os.path.dirname(path)
-            print(f"\n\nMerge failed, exporting files individually to {location}")
-            return self._multi_export( location )
 
     def _multi_export(self, location ):
         sources = []
