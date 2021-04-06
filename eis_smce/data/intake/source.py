@@ -78,6 +78,7 @@ class EISDataSource( DataSource ):   # , tlc.Configurable
 
     def translate( self, **kwargs ) -> List[str]:
         self._load_metadata()
+        print( "Transforming inputs")
         dsparts = [ dask.delayed(self._translate_file)( i, **kwargs ) for i in range(self.nparts)]
         return dask.delayed( self._merge_translations )( dsparts ).compute( )
 
