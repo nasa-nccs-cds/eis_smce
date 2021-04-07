@@ -120,16 +120,41 @@ class EISDataSource( DataSource ):
             else:  merged_attrs[ attr_name ] = str( dsort(att_map) )
         return merged_attrs
 
+    def _merge_datasets(self, dset_paths: List[str], concat_dim: str, **kwargs ) -> xa.Dataset:
+        concat_vars, merge_vars = dict(), dict()
+        merge_dim = kwargs.get( 'merge_dim',self.merge_dim )
+        coords = {}
+        for dset_path in dset_paths:
+            ds: xa.Dataset = xa.open_dataset(dset_path)
+            coords.update( ds.coords )
+            merge_axis_val = ds.attrs[self.merge_dim]
+            self._ds_attr_map[merge_axis_val] = ds.attrs
+            for vid, xar in ds.items():
+                if (concat_dim in xar.dims):
+                    concat_vars.setdefault( vid, [] ).append( xar )
+                    xar.attrs[ merge_dim ] = merge_axis_val
+                else:
+                    xar = xar.expand_dims({self.merge_dim: np.array([merge_axis_val])}, 0)
+                    merge_vars.setdefault(vid, []).append( xar )
+
+        result_vars = {}
+        for vid, cvars in concat_vars.items(): result_vars[vid] = xa.concat( cvars, dim=concat_dim )
+        for vid, mvars in merge_vars.items():  result_vars[vid] = xa.concat( mvars, dim=merge_dim )
+        result_dset = xa.Dataset(concat_vars, coords, self._get_merged_attrs() )
+        return result_dset
+
     def export( self, path: str, **kwargs ) -> List[ZarrSource]:
         from eis_smce.data.intake.catalog import CatalogManager, cm
-        self.merge_dim = kwargs.get( 'merge_dim', 'sample' )
+        merge_dim = kwargs.get( 'merge_dim', 'sample' )
+        concat_dim = kwargs.get( 'concat_dim', None )
         self._ds_attr_map = collections.OrderedDict()
         location = os.path.dirname(path)
 
         if kwargs.get('merge', True ):
             try:
                 inputs = self.translate( **kwargs )
-                merged_dataset: xa.Dataset = xa.open_mfdataset( inputs, concat_dim=self.merge_dim, preprocess=self._preprocess_for_export, parallel=kwargs.get('parallel',True) )
+                if concat_dim is not None:  merged_dataset: xa.Dataset = self._merge_datasets( inputs, concat_dim=concat_dim )
+                else:                       merged_dataset: xa.Dataset = xa.open_mfdataset( inputs, concat_dim=merge_dim, preprocess=self._preprocess_for_export, parallel=kwargs.get('parallel',True) )
                 merged_dataset.attrs.update( self._get_merged_attrs() )
                 merged_dataset.to_zarr( path, mode="w" )
                 print(f"Exporting to zarr file: {path}")

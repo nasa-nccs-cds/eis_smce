@@ -1,6 +1,5 @@
 import os, xarray as xr
 import intake
-from intake_xarray.xzarr import ZarrSource
 
 base_dir = "/css/modis/Collection6/L3/"
 cache_dir = "/att/nobackup/tpmaxwel/ILAB/scratch"
@@ -17,7 +16,7 @@ if __name__ == '__main__':
 
     h4s = intake.open_hdf4( data_url )
     h4s.export( output_file )
-    zs = ZarrSource( output_file )
+    zs = intake.open_zarr( output_file )
 
     print( "\nZarrSource:" )
     dset: xr.Dataset = zs.to_dask()
