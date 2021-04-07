@@ -23,7 +23,7 @@ if __name__ == '__main__':
     for vid, v in ds0.variables.items():
         print(f" ----> {vid}{v.dims} ({v.shape})")
 
-    xzSources: List[ZarrSource] = h4s.export( remote_zarr_file )                   # Exports the current partition (index = 0), Zarr is the default export format
+    xzSources: List[ZarrSource] = h4s.export( remote_zarr_file, concat_dim='number_of_active_fires' )   # Exports the current partition (index = 0), Zarr is the default export format
 
     print( f"Exported file '{remote_input_file}' (cached at '{local_input_file}') to '{remote_zarr_file}'")
     print( "Catalog entry:" )

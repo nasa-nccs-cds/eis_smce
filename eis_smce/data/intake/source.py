@@ -154,7 +154,7 @@ class EISDataSource( DataSource ):
         if kwargs.get('merge', True ):
             try:
                 inputs = self.translate( **kwargs )
-                if concat_dim is not None:  merged_dataset: xa.Dataset = self._merge_datasets( inputs, concat_dim=concat_dim )
+                if  is not None:  merged_dataset: xa.Dataset = self._merge_datasets( inputs, concat_dim=concat_dim )
                 else:                       merged_dataset: xa.Dataset = xa.open_mfdataset( inputs, concat_dim=merge_dim, preprocess=self._preprocess_for_export, parallel=kwargs.get('parallel',True) )
                 merged_dataset.attrs.update( self._get_merged_attrs() )
                 merged_dataset.to_zarr( path, mode="w" )
