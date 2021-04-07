@@ -130,13 +130,14 @@ class EISDataSource( DataSource ):
             merge_axis_val = ds.attrs[self.merge_dim]
             self._ds_attr_map[merge_axis_val] = ds.attrs
             for vid, xar in ds.items():
-                if (concat_dim in xar.dims):
-                    concat_vars.setdefault( vid, [] ).append( xar )
-                    xar.attrs[ merge_dim ] = merge_axis_val
-                else:
+                try:
+                    ic = xar.dims.index( concat_dim )
+                    if xar.shape[ic] > 0:
+                        concat_vars.setdefault( vid, [] ).append( xar )
+                        xar.attrs[ merge_dim ] = merge_axis_val
+                except ValueError:  # concat_dim not in xar.dims:
                     xar = xar.expand_dims({self.merge_dim: np.array([merge_axis_val])}, 0)
                     merge_vars.setdefault(vid, []).append( xar )
-
         result_vars = {}
         for vid, cvars in concat_vars.items(): result_vars[vid] = xa.concat( cvars, dim=concat_dim )
         for vid, mvars in merge_vars.items():  result_vars[vid] = xa.concat( mvars, dim=merge_dim )
