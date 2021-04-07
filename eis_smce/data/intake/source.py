@@ -14,6 +14,19 @@ import intake_xarray as ixa   # Need this import to register 'xarray' container.
 
 def dsort( d: Dict ) -> Dict: return { k:d[k] for k in sorted(d.keys()) }
 
+class Varspec:
+    def __init__(self, dims: List[str], shape: List[int] ):
+        self.dims: List[str] = dims
+        self.shape: List[int] = shape
+        self.files: List[str] = []
+
+    def dsize( self, dim: str ) -> int:
+        try:
+            ic = self.dims.index(dim)
+            return self.shape[ic]
+        except ValueError:  # concat_dim not in xar.dims:
+            return -1
+
 class EISDataSource( DataSource ):
     """Common behaviours for plugins in this repo"""
     version = 0.1
@@ -32,6 +45,7 @@ class EISDataSource( DataSource ):
         self._ds_attr_map = collections.OrderedDict()
         self.merge_dim = "sample"
         self._instance_cache = None
+        self._varspecs: Dict[str,Varspec] = {}
 
     @property
     def cache_dir(self):
@@ -58,15 +72,19 @@ class EISDataSource( DataSource ):
         local_file_path =  self.get_local_file_path( file_specs.get("resolved") )
         ncfile_name = os.path.splitext( os.path.basename(local_file_path) )[0] + ".nc"
         nc_file_path =  os.path.join( self.cache_dir, ncfile_name )
+        print(f"Creating translated file {nc_file_path}")
+        xds: xa.Dataset = self._open_file(ipart)
+        file_path = xds.attrs['local_file']
+        xds.attrs['local_file'] = nc_file_path
+        if 'sample' not in list(xds.attrs.keys()): xds.attrs['sample'] = ipart
+        for vid, xar in xds.items():
+            vspec = self._varspecs.setdefault( vid, Varspec(xar.dims, xar.shape) )
+            vspec.files.append( nc_file_path )
         if overwrite or not os.path.exists(nc_file_path):
-            print(f"Creating translated file {nc_file_path}")
-            xds: xa.Dataset = self._open_file(ipart)
-            file_path = xds.attrs['local_file']
-            xds.attrs['local_file'] = nc_file_path
-            if 'sample' not in list(xds.attrs.keys()): xds.attrs['sample'] = ipart
             print( f"Translating file {file_path} to {nc_file_path}" )
             xds.to_netcdf( nc_file_path, "w" )
-            xds.close()
+        xds.close()
+
         if kwargs.get('cache_cleanup', False ): os.remove( local_file_path )
         self._file_list[ipart]["translated"] = nc_file_path
         return nc_file_path
@@ -121,6 +139,25 @@ class EISDataSource( DataSource ):
         return merged_attrs
 
     def _merge_datasets(self, dset_paths: List[str], concat_dim: str, **kwargs ) -> xa.Dataset:
+        concat_vars, merge_vars = dict(), dict()
+        merge_dim = kwargs.get( 'merge_dim',self.merge_dim )
+        print( "Merge datasets: ")
+        for dset_path in dset_paths:
+            ds: xa.Dataset = xa.open_dataset(dset_path)
+            for vid, xar in ds.items():
+                vspec = self._varspecs.setdefault( vid, Varspec( xar.dims, xar.shape ) )
+                vspec.files.append( dset_path )
+            ds.close()
+
+        result_vars = {}
+        print( "Create merged variables")
+        for vid, cvars in concat_vars.items(): result_vars[vid] = xa.concat( cvars, dim=concat_dim )
+        for vid, mvars in merge_vars.items():  result_vars[vid] = xa.concat( mvars, dim=merge_dim )
+        print( "Create merged dataset")
+        result_dset = xa.Dataset(concat_vars, coords, self._get_merged_attrs() )
+        return result_dset
+
+    def _merge_datasets1(self, dset_paths: List[str], concat_dim: str, **kwargs ) -> xa.Dataset:
         concat_vars, merge_vars = dict(), dict()
         merge_dim = kwargs.get( 'merge_dim',self.merge_dim )
         print( "Merge datasets: ")
@@ -257,3 +294,4 @@ class EISDataSource( DataSource ):
         self._parts = {}
         self._ds = None
         self._schema = None
+        self._varspecs = {}
