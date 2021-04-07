@@ -6,26 +6,35 @@ import dask.delayed, boto3, os, traceback
 from intake_xarray.netcdf import NetCDFSource
 from intake_xarray.xzarr import ZarrSource
 import intake, zarr, numpy as np
-from dask.distributed import Client
 import dask.bag as db
-import pandas as pd
 import time, xarray as xa
 import intake_xarray as ixa   # Need this import to register 'xarray' container.
 
 def dsort( d: Dict ) -> Dict: return { k:d[k] for k in sorted(d.keys()) }
 
 class Varspec:
-    def __init__(self, dims: List[str], shape: List[int] ):
-        self.dims: List[str] = dims
-        self.shape: List[int] = shape
-        self.files: List[str] = []
+    file_list: Dict[int,str] = {}
 
-    def dsize( self, dim: str ) -> int:
+    def __init__( self, dims: List[str] ):
+        self.dims: List[str] = dims
+        self.instances: Dict[ int, List[int] ] = {}
+
+    def add_instance(self, ipart: int, shape: List[int] ):
+        self.instances[ipart] = shape
+
+    @classmethod
+    def addFile( cls, ipart: int, file_path ):
+        cls.file_list[ipart] = file_path
+
+    def dim_index( self, dim: str ) -> int:
         try:
-            ic = self.dims.index(dim)
-            return self.shape[ic]
+           return self.dims.index(dim)
         except ValueError:  # concat_dim not in xar.dims:
             return -1
+
+    @property
+    def nfiles(self) -> int:
+        return len( self.instances )
 
 class EISDataSource( DataSource ):
     """Common behaviours for plugins in this repo"""
@@ -77,9 +86,10 @@ class EISDataSource( DataSource ):
         file_path = xds.attrs['local_file']
         xds.attrs['local_file'] = nc_file_path
         if 'sample' not in list(xds.attrs.keys()): xds.attrs['sample'] = ipart
+        Varspec.addFile( ipart, nc_file_path )
         for vid, xar in xds.items():
-            vspec = self._varspecs.setdefault( vid, Varspec(xar.dims, xar.shape) )
-            vspec.files.append( nc_file_path )
+            vspec = self._varspecs.setdefault( vid, Varspec(xar.dims) )
+            vspec.add_instance( ipart, xar.shape )
         if overwrite or not os.path.exists(nc_file_path):
             print( f"Translating file {file_path} to {nc_file_path}" )
             xds.to_netcdf( nc_file_path, "w" )
@@ -138,10 +148,15 @@ class EISDataSource( DataSource ):
             else:  merged_attrs[ attr_name ] = str( dsort(att_map) )
         return merged_attrs
 
-    def _merge_datasets(self, dset_paths: List[str], concat_dim: str, **kwargs ) -> xa.Dataset:
+    def _merge_datasets(self, concat_dim: str, **kwargs ) -> xa.Dataset:
         concat_vars, merge_vars = dict(), dict()
         merge_dim = kwargs.get( 'merge_dim',self.merge_dim )
         print( "Merge datasets: ")
+        cvars, mvars = [], []
+        for vid, vspec in self._varspecs.items():
+            if vspec.nfiles == len( dset_paths ):
+                dsize = vspec.dsize( concat_dim )
+                if dsize > 0: full_concat_vars.append( )
         for dset_path in dset_paths:
             ds: xa.Dataset = xa.open_dataset(dset_path)
             for vid, xar in ds.items():
