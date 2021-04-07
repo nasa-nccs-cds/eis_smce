@@ -123,6 +123,7 @@ class EISDataSource( DataSource ):
     def _merge_datasets(self, dset_paths: List[str], concat_dim: str, **kwargs ) -> xa.Dataset:
         concat_vars, merge_vars = dict(), dict()
         merge_dim = kwargs.get( 'merge_dim',self.merge_dim )
+        print( "Merge datasets: ")
         coords = {}
         for dset_path in dset_paths:
             ds: xa.Dataset = xa.open_dataset(dset_path)
@@ -139,8 +140,10 @@ class EISDataSource( DataSource ):
                     xar = xar.expand_dims({self.merge_dim: np.array([merge_axis_val])}, 0)
                     merge_vars.setdefault(vid, []).append( xar )
         result_vars = {}
+        print( "Create merged variables")
         for vid, cvars in concat_vars.items(): result_vars[vid] = xa.concat( cvars, dim=concat_dim )
         for vid, mvars in merge_vars.items():  result_vars[vid] = xa.concat( mvars, dim=merge_dim )
+        print( "Create merged dataset")
         result_dset = xa.Dataset(concat_vars, coords, self._get_merged_attrs() )
         return result_dset
 
