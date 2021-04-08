@@ -20,7 +20,7 @@ class Varspec:
         self.vid = vid
         self.instances: Dict[ int, List[int] ] = {}
 
-    def non_empty_files(self, dim: str ):
+    def non_empty_files(self, dim: str ) -> List[str]:
         di = self.dim_index(dim)
 #        return [ self.file_list[ip] for (ip, shape) in self.instances.items() if (shape[di] > 0) ]
         nefiles = []
@@ -28,6 +28,7 @@ class Varspec:
             if (shape[di] > 0):
                 print( f"NON-empty file: var={self.vid}, merge_dim={dim}, shape = {shape}, file={self.file_list[ip]}")
                 nefiles.append( self.file_list[ip] )
+        nefiles.sort()
         return nefiles
 
     def add_instance(self, ipart: int, shape: List[int] ):
@@ -177,12 +178,13 @@ class EISDataSource( DataSource ):
 
     def _merge_variable_lists(self, mvars: List[str], merge_dim: str, preprocess: Callable = None ):
         mds: Optional[xa.Dataset] = None
-        file_lists = {}
+        sep_char= '#'
+        file_lists: Dict[str,List] = {}
         for var in mvars:
-            vflist = self._varspecs[var].non_empty_files(merge_dim)
-            file_lists.setdefault(vflist, []).append(var)
+            vflist: List[str] = self._varspecs[var].non_empty_files(merge_dim)
+            file_lists.setdefault( sep_char.join(*vflist), []).append(var)
         for (flist, vlist) in file_lists.items():
-            mds1 = xa.open_mfdataset( flist, concat_dim=merge_dim, data_vars=vlist, preprocess=preprocess )
+            mds1 = xa.open_mfdataset( flist.split(sep_char), concat_dim=merge_dim, data_vars=vlist, preprocess=preprocess )
             mds = mds1 if mds is None else mds.merge(mds1)
         return mds
 
