@@ -15,8 +15,9 @@ def dsort( d: Dict ) -> Dict: return { k:d[k] for k in sorted(d.keys()) }
 class Varspec:
     file_list: Dict[int,str] = {}
 
-    def __init__( self, dims: List[str] ):
+    def __init__( self, vid: str, dims: List[str] ):
         self.dims: List[str] = dims
+        self.vid = vid
         self.instances: Dict[ int, List[int] ] = {}
 
     def non_empty_files(self, dim: str ):
@@ -25,7 +26,7 @@ class Varspec:
         nefiles = []
         for (ip, shape) in self.instances.items():
             if (shape[di] > 0):
-                print( f"NON-empty file[{dim}]: shape = {shape} for {self.file_list[ip]}")
+                print( f"NON-empty file: var={self.vid}, merge_dim={dim}, shape = {shape}, file={self.file_list[ip]}")
                 nefiles.append( self.file_list[ip] )
         return nefiles
 
@@ -99,7 +100,7 @@ class EISDataSource( DataSource ):
         if 'sample' not in list(xds.attrs.keys()): xds.attrs['sample'] = ipart
         Varspec.addFile(ipart, nc_file_path)
         for vid, xar in xds.items():
-            vspec = self._varspecs.setdefault(vid, Varspec(xar.dims))
+            vspec = self._varspecs.setdefault(vid, Varspec(vid,xar.dims))
             vspec.add_instance(ipart, xar.shape)
         for vid in self._varspecs.keys():
             if vid not in xds.keys():

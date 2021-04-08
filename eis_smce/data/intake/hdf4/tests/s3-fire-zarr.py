@@ -4,16 +4,17 @@ from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapp
 from intake_xarray.xzarr import ZarrSource
 
 part_index: int = 0
-data_url: str      = "s3://eis-dh-fire/mod14/raw/MOD14.{sample}.061.{tid}.hdf"  # Matches files like glob: "s3://eis-dh-fire/mod14/raw/MOD14.*.hdf"
+batch_id = "A2020216"
+data_url: str  = f"s3://eis-dh-fire/mod14/raw/MOD14.{batch_id}" + ".{tid}.061.{sample}.hdf"                       # Matches files like glob: "s3://eis-dh-fire/mod14/raw/MOD14.*.hdf"
 data_file_url: str = "s3://eis-dh-fire/mod14/raw/MOD14.A2020303.0515.061.2020349105630.hdf"
 
 if __name__ == '__main__':
-    h4s: HDF4Source = HDF4Source( data_url  )                             # Creates source encapsulating all matched files in data_url
-    ds0: xr.Dataset = h4s.read_partition( part_index )                    # Each partition corresponds to a single file, downloads file from s3 to local cache before reading.
+    h4s: HDF4Source = HDF4Source( data_url  )               # Creates source encapsulating all matched files in data_url
+    ds0: xr.Dataset = h4s.read_partition( part_index )      # Each partition corresponds to a single file, downloads file from s3 to local cache before reading.
 
     remote_input_file: str = ds0.attrs['remote_file']
     local_input_file: str  = ds0.attrs['local_file']
-    remote_zarr_file: str = os.path.expanduser( "~/.eis_smce/cache/mod14/raw/MOD14.061.hdf" )
+    remote_zarr_file: str = os.path.expanduser( f"~/.eis_smce/cache/mod14/raw/MOD14.{batch_id}.061.hdf" )
 
     print(f"\n HDF4Source DATASET DS0:" )
     print( f"\n ***  attributes:")
