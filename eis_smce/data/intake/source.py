@@ -2,6 +2,7 @@ from intake.source.base import DataSource, Schema
 import collections, json
 import traitlets.config as tlc, random, string
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable, MutableMapping
+from functools import partial
 import dask.delayed, boto3, os, traceback
 from intake_xarray.netcdf import NetCDFSource
 from intake_xarray.xzarr import ZarrSource
@@ -141,15 +142,16 @@ class EISDataSource( DataSource ):
     def to_dask(self) -> xa.Dataset:
         return self.read()
 
-    def _preprocess_for_export(self, ds: xa.Dataset):
+    def _preprocess_for_export(self, vlist: List[str], ds: xa.Dataset):
         new_vars = {}
         merge_axis_val = ds.attrs[self.merge_dim]
         self._ds_attr_map[ merge_axis_val ] = ds.attrs
         print(f"Preprocessed vars:")
-        for name, xar in ds.items():
+        for vname in vlist:
+            xar = ds[vname]
             nvar = xar.expand_dims({self.merge_dim: np.array([merge_axis_val])}, 0)
-            print(f" -- {name}: shape={nvar.shape}, dims={nvar.dims}")
-            new_vars[name] = nvar
+            print(f" -- {vname}: shape={nvar.shape}, dims={nvar.dims}")
+            new_vars[vname] = nvar
         return xa.Dataset(new_vars)
 
     def _get_merged_attrs( self ) -> Dict:
@@ -189,7 +191,7 @@ class EISDataSource( DataSource ):
         for (fkey, vlist) in file_lists.items():
             flist = fkey.split(sep_char)
             print( f"MERGING vars {vlist} using files {flist} and merge_dim={merge_dim}")
-            mds1 = xa.open_mfdataset( flist, concat_dim=merge_dim, data_vars=vlist, preprocess=preprocess )
+            mds1 = xa.open_mfdataset( flist, concat_dim=merge_dim, data_vars=vlist, preprocess=partial(preprocess,vlist) )
             mds = mds1 if mds is None else mds.merge(mds1)
         return mds
 
