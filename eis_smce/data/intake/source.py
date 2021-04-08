@@ -21,7 +21,13 @@ class Varspec:
 
     def non_empty_files(self, dim: str ):
         di = self.dim_index(dim)
-        return [ self.file_list[ip] for (ip, shape) in self.instances.items() if (shape[di] > 0) ]
+#        return [ self.file_list[ip] for (ip, shape) in self.instances.items() if (shape[di] > 0) ]
+        nefiles = []
+        for (ip, shape) in self.instances.items():
+            if (shape[di] > 0):
+                print( f"NON-empty file[{dim}]: shape = {shape} for {self.file_list[ip]}")
+                nefiles.append( self.file_list[ip] )
+        return nefiles
 
     def add_instance(self, ipart: int, shape: List[int] ):
         self.instances[ipart] = shape
