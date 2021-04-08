@@ -145,8 +145,11 @@ class EISDataSource( DataSource ):
         new_vars = {}
         merge_axis_val = ds.attrs[self.merge_dim]
         self._ds_attr_map[ merge_axis_val ] = ds.attrs
+        print(f"Preprocessed vars:")
         for name, xar in ds.items():
-            new_vars[name] = xar.expand_dims({self.merge_dim: np.array([merge_axis_val])}, 0)
+            nvar = xar.expand_dims({self.merge_dim: np.array([merge_axis_val])}, 0)
+            print(f" -- {name}: shape={nvar.shape}, dims={nvar.dims}")
+            new_vars[name] = nvar
         return xa.Dataset(new_vars)
 
     def _get_merged_attrs( self ) -> Dict:
