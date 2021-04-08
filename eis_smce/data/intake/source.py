@@ -19,6 +19,10 @@ class Varspec:
         self.dims: List[str] = dims
         self.instances: Dict[ int, List[int] ] = {}
 
+    def non_empty_files(self, dim: str ):
+        di = self.dim_index(dim)
+        return [ self.file_list[ip] for (ip, shape) in self.file_list.items() if (shape[di] > 0) ]
+
     def add_instance(self, ipart: int, shape: List[int] ):
         self.instances[ipart] = shape
 
@@ -55,6 +59,7 @@ class EISDataSource( DataSource ):
         self.merge_dim = "sample"
         self._instance_cache = None
         self._varspecs: Dict[str,Varspec] = {}
+        self._intermittent_vars = set()
 
     @property
     def cache_dir(self):
@@ -77,25 +82,23 @@ class EISDataSource( DataSource ):
 
     def _translate_file(self, ipart: int, **kwargs ) -> str:
         overwrite = kwargs.get('cache_overwrite', False )
-        file_specs = self._file_list[ipart]
-        local_file_path =  self.get_local_file_path( file_specs.get("resolved") )
-        ncfile_name = os.path.splitext( os.path.basename(local_file_path) )[0] + ".nc"
-        nc_file_path =  os.path.join( self.cache_dir, ncfile_name )
+        nc_file_path =  Varspec.file_list[ ipart ]
         print(f"Creating translated file {nc_file_path}")
         xds: xa.Dataset = self._open_file(ipart)
         file_path = xds.attrs['local_file']
         xds.attrs['local_file'] = nc_file_path
         if 'sample' not in list(xds.attrs.keys()): xds.attrs['sample'] = ipart
-        Varspec.addFile( ipart, nc_file_path )
+        Varspec.addFile(ipart, nc_file_path)
         for vid, xar in xds.items():
-            vspec = self._varspecs.setdefault( vid, Varspec(xar.dims) )
-            vspec.add_instance( ipart, xar.shape )
+            vspec = self._varspecs.setdefault(vid, Varspec(xar.dims))
+            vspec.add_instance(ipart, xar.shape)
+        for vid in self._varspecs.keys():
+            if vid not in xds.keys():
+                self._intermittent_vars.add(vid)
         if overwrite or not os.path.exists(nc_file_path):
             print( f"Translating file {file_path} to {nc_file_path}" )
             xds.to_netcdf( nc_file_path, "w" )
         xds.close()
-
-        if kwargs.get('cache_cleanup', False ): os.remove( local_file_path )
         self._file_list[ipart]["translated"] = nc_file_path
         return nc_file_path
 
@@ -149,28 +152,23 @@ class EISDataSource( DataSource ):
         return merged_attrs
 
     def _merge_datasets(self, concat_dim: str, **kwargs ) -> xa.Dataset:
-        concat_vars, merge_vars = dict(), dict()
         merge_dim = kwargs.get( 'merge_dim',self.merge_dim )
         print( "Merge datasets: ")
-        cvars, mvars = [], []
+        cvars, mvars, cfiles, mfiles = [], [], [], []
         for vid, vspec in self._varspecs.items():
-            if vspec.nfiles == len( dset_paths ):
-                dsize = vspec.dsize( concat_dim )
-                if dsize > 0: full_concat_vars.append( )
-        for dset_path in dset_paths:
-            ds: xa.Dataset = xa.open_dataset(dset_path)
-            for vid, xar in ds.items():
-                vspec = self._varspecs.setdefault( vid, Varspec( xar.dims, xar.shape ) )
-                vspec.files.append( dset_path )
-            ds.close()
-
-        result_vars = {}
-        print( "Create merged variables")
-        for vid, cvars in concat_vars.items(): result_vars[vid] = xa.concat( cvars, dim=concat_dim )
-        for vid, mvars in merge_vars.items():  result_vars[vid] = xa.concat( mvars, dim=merge_dim )
-        print( "Create merged dataset")
-        result_dset = xa.Dataset(concat_vars, coords, self._get_merged_attrs() )
-        return result_dset
+            if vspec.dim_index( concat_dim ) == -1:
+                mvars.append( vid )
+            else:
+                cvars.append( vid )
+        mds: Optional[xa.Dataset] = None
+        if len( mvars ) > 0:
+            files = self._varspecs[mvars[0]].non_empty_files(merge_dim)
+            mds = xa.open_mfdataset( files, concat_dim=merge_dim, data_vars=mvars, preprocess=self._preprocess_for_export )
+        if len( cvars ) > 0:
+            files = self._varspecs[cvars[0]].non_empty_files(merge_dim)
+            cds: xa.Dataset = xa.open_mfdataset( files, concat_dim=concat_dim, data_vars=cvars )
+            mds = mds.merge( cds ) if (mds is not None) else cds
+        return mds
 
     def _merge_datasets1(self, dset_paths: List[str], concat_dim: str, **kwargs ) -> xa.Dataset:
         concat_vars, merge_vars = dict(), dict()
@@ -201,16 +199,15 @@ class EISDataSource( DataSource ):
 
     def export( self, path: str, **kwargs ) -> List[ZarrSource]:
         from eis_smce.data.intake.catalog import CatalogManager, cm
-        merge_dim = kwargs.get( 'merge_dim', 'sample' )
+        self.merge_dim = kwargs.get( 'merge_dim', self.merge_dim )
         concat_dim = kwargs.get( 'concat_dim', None )
         self._ds_attr_map = collections.OrderedDict()
         location = os.path.dirname(path)
 
         if kwargs.get('merge', True ):
             try:
-                inputs = self.translate( **kwargs )
-                if concat_dim is not None:  merged_dataset: xa.Dataset = self._merge_datasets( inputs, concat_dim=concat_dim )
-                else:                       merged_dataset: xa.Dataset = xa.open_mfdataset( inputs, concat_dim=merge_dim, preprocess=self._preprocess_for_export, parallel=kwargs.get('parallel',True) )
+                self.translate( **kwargs )
+                merged_dataset: xa.Dataset = self._merge_datasets( concat_dim=concat_dim )
                 merged_dataset.attrs.update( self._get_merged_attrs() )
                 merged_dataset.to_zarr( path, mode="w" )
                 print(f"Exporting to zarr file: {path}")
@@ -310,3 +307,4 @@ class EISDataSource( DataSource ):
         self._ds = None
         self._schema = None
         self._varspecs = {}
+        self._intermittent_vars = set()
