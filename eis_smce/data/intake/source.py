@@ -170,14 +170,20 @@ class EISDataSource( DataSource ):
                 mvars.append( vid )
             else:
                 cvars.append( vid )
+        mds = self._merge_variable_lists( mvars, merge_dim, self._preprocess_for_export )
+        cds = self._merge_variable_lists( cvars, concat_dim )
+        rds = mds if (cds is None) else cds if (mds is  None) else mds.merge( cds )
+        return rds
+
+    def _merge_variable_lists(self, mvars: List[str], merge_dim: str, preprocess: Callable = None ):
         mds: Optional[xa.Dataset] = None
-        if len( mvars ) > 0:
-            files = self._varspecs[mvars[0]].non_empty_files(merge_dim)
-            mds = xa.open_mfdataset( files, concat_dim=merge_dim, data_vars=mvars, preprocess=self._preprocess_for_export )
-        if len( cvars ) > 0:
-            files = self._varspecs[cvars[0]].non_empty_files(merge_dim)
-            cds: xa.Dataset = xa.open_mfdataset( files, concat_dim=concat_dim, data_vars=cvars )
-            mds = mds.merge( cds ) if (mds is not None) else cds
+        file_lists = {}
+        for var in mvars:
+            vflist = self._varspecs[var].non_empty_files(merge_dim)
+            file_lists.setdefault(vflist, []).append(var)
+        for (flist, vlist) in file_lists.items():
+            mds1 = xa.open_mfdataset( flist, concat_dim=merge_dim, data_vars=vlist, preprocess=preprocess )
+            mds = mds1 if mds is None else mds.merge(mds1)
         return mds
 
     def _merge_datasets1(self, dset_paths: List[str], concat_dim: str, **kwargs ) -> xa.Dataset:
