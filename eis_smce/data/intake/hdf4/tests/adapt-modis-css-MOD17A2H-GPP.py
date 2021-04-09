@@ -7,9 +7,10 @@ collection = "MOD17A2H-GPP"
 year = "2004"
 day = "0*"
 file_names = "MOD17A2H.{sample}.h09v09.006.{sid}.hdf"
+cat_path = f"{cache_dir}/catalog"
 batch = f"{year}/{day}/{file_names}"
 output_file = f"{cache_dir}/{collection}/h09v09.zarr"
-os.makedirs( os.path.dirname(output_file), exist_ok=True )
+for path in [ cat_path, os.path.dirname(output_file) ]:  os.makedirs( path, exist_ok=True )
 data_url = f"file://{base_dir}/{collection}/{batch}"
 
 if __name__ == '__main__':

@@ -9,7 +9,8 @@ class CatalogManager(tlc.SingletonConfigurable):
 
     def __init__( self, **kwargs ):
         tlc.SingletonConfigurable.__init__( self, **kwargs )
-        self._cat: YAMLFilesCatalog = YAMLFilesCatalog()
+        catalog_path = kwargs.get( 'cat_path', self.catalog_url )
+        self._cat: YAMLFilesCatalog = YAMLFilesCatalog( catalog_path )
         self._s3 = boto3.resource('s3')
 
     @property
@@ -26,4 +27,4 @@ class CatalogManager(tlc.SingletonConfigurable):
     def cat(self) -> YAMLFilesCatalog:
         return self._cat
 
-def cm() -> CatalogManager: return CatalogManager.instance()
+def cm(**kwargs) -> CatalogManager: return CatalogManager.instance(**kwargs)

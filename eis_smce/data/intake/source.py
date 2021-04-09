@@ -246,7 +246,7 @@ class EISDataSource( DataSource ):
             zsrc = self._multi_export( location )
 
         if kwargs.get( 'update_cat', True ):
-            for zs in zsrc: cm().addEntry(zs)
+            for zs in zsrc: cm(**kwargs).addEntry(zs)
         return zsrc
 
     def _multi_export(self, location ):
