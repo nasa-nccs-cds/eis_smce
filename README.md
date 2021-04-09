@@ -29,11 +29,12 @@ Setup Amazon Credentials
 
     > pip install awscli --upgrade --user
 
-* Setup Configuration (enter access keys create above):
+* Setup Configuration (enter access keys created above):
 
     > aws configure
 
 * Setup MFA (must be done daily):
+    From the base directory of this project, execute:
   
     > source ./config/mfa.sh
 
