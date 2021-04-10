@@ -57,7 +57,7 @@ class CatalogManager(tlc.SingletonConfigurable):
                    'description': description,
                    'dimensions': list(dset.dims),
                    'coordinates': list( dset.coords.keys() ),
-                   'variables': { key: list(v.dims.keys()) for key,v in dset.items() },
+                   'variables': { key: v.dims for key,v in dset.items() },
                    'metadata': metadata,
                 }}}
         return cat_name, yaml.dump( data, default_flow_style=False )
