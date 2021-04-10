@@ -95,8 +95,6 @@ class EISDataSource( DataSource ):
         local_file_path =  self.get_local_file_path( file_specs.get("resolved") )
         ncfile_name = os.path.splitext( os.path.basename(local_file_path) )[0] + ".nc"
         nc_file_path = os.path.join(self.cache_dir, ncfile_name)
-        Varspec.addFile(ipart, nc_file_path)
-        self._file_list[ipart]["translated"] = nc_file_path
         print(f"Creating translated file {nc_file_path}")
         if overwrite or not os.path.exists(nc_file_path):
             xds: xa.Dataset = self._open_file(ipart)
@@ -108,14 +106,19 @@ class EISDataSource( DataSource ):
         else:
             xds: xa.Dataset = xa.open_dataset(nc_file_path)
 
+        self.update_varspecs( ipart, nc_file_path, xds )
+        xds.close()
+        return nc_file_path
+
+    def update_varspecs(self, ipart: int, file_path: str, xds: xa.Dataset ):
+        Varspec.addFile(ipart, file_path)
+        self._file_list[ipart]["translated"] = file_path
         for vid, xar in xds.items():
             vspec = self._varspecs.setdefault(vid, Varspec(vid, xar.dims))
             vspec.add_instance(ipart, xar.shape)
         for vid in self._varspecs.keys():
             if vid not in xds.keys():
                 self._intermittent_vars.add(vid)
-        xds.close()
-        return nc_file_path
 
     def read( self ) -> xa.Dataset:
         if self._ds is None:
