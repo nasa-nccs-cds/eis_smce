@@ -33,21 +33,21 @@ class CatalogManager(tlc.SingletonConfigurable):
         else:                          self.write_cat_file( catalog, entry_yml )
         self._cat.reload()
 
-    def get_attribute(self, dset: xr.Dataset, name: str, default: str = None ):
-        rv = dset.attrs.get( name[4:], default ) if name.startswith('att:') else None
-        return  name if rv is None else rv
+    def get_attribute(self, dset: xr.Dataset, attval: str, default: str = "" ):
+        if attval.startswith('att:'):  return dset.attrs.get( attval[4:], default )
+        else:                          return attval
 
     @property
     def cat(self) -> YAMLFilesCatalog:
         return self._cat
 
-    def write_cat_file(self, catalog: str, entry: str ) -> Tuple[str,str]:
+    def write_cat_file(self, catalog: str, entry: str ):
         with open( catalog, "w" ) as fp:
             fp.write( entry )
 
-    def yaml( self, source: ZarrSource, **kwargs ):
+    def yaml( self, source: ZarrSource, **kwargs ) -> Tuple[str,str]:
         dset: xr.Dataset = source.to_dask()
-        description = self.get_attribute( dset, kwargs.get( 'description','att:LONG_NAME' ) )
+        description = self.get_attribute( dset, kwargs.get( 'description','att:LONGNAME' ) )
         cat_name = self.get_attribute( dset, kwargs.get( 'name','att:SHORTNAME' ), source.urlpath.split("/")[-1] )
         metadata = {}
         data = {
@@ -55,8 +55,11 @@ class CatalogManager(tlc.SingletonConfigurable):
                 { source.name: {
                    'driver': source.classname,
                    'description': description,
+                   'dimensions': list(dset.dims),
+                   'coordinates': list( dset.coords.keys() ),
+                   'variables': { key: list(v.dims.keys()) for key,v in dset.items() },
                    'metadata': metadata,
                 }}}
-        return cat_name, yaml.dump(data, default_flow_style=False)
+        return cat_name, yaml.dump( data, default_flow_style=False )
 
 def cm(**kwargs) -> CatalogManager: return CatalogManager.instance(**kwargs)
