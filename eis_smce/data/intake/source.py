@@ -95,8 +95,8 @@ class EISDataSource( DataSource ):
         local_file_path =  self.get_local_file_path( file_specs.get("resolved") )
         ncfile_name = os.path.splitext( os.path.basename(local_file_path) )[0] + ".nc"
         nc_file_path = os.path.join(self.cache_dir, ncfile_name)
-        print(f"Creating translated file {nc_file_path}")
         if overwrite or not os.path.exists(nc_file_path):
+            print(f"Creating translated file {nc_file_path}")
             xds: xa.Dataset = self._open_file(ipart)
             file_path = xds.attrs['local_file']
             xds.attrs['local_file'] = nc_file_path
@@ -104,6 +104,7 @@ class EISDataSource( DataSource ):
             print( f"Translating file {file_path} to {nc_file_path}" )
             xds.to_netcdf( nc_file_path, "w" )
         else:
+            print(f"Opening translated file {nc_file_path}")
             xds: xa.Dataset = xa.open_dataset(nc_file_path)
 
         self.update_varspecs( ipart, nc_file_path, xds )
