@@ -95,23 +95,26 @@ class EISDataSource( DataSource ):
         local_file_path =  self.get_local_file_path( file_specs.get("resolved") )
         ncfile_name = os.path.splitext( os.path.basename(local_file_path) )[0] + ".nc"
         nc_file_path = os.path.join(self.cache_dir, ncfile_name)
-        print(f"Creating translated file {nc_file_path}")
-        xds: xa.Dataset = self._open_file(ipart)
-        file_path = xds.attrs['local_file']
-        xds.attrs['local_file'] = nc_file_path
-        if 'sample' not in list(xds.attrs.keys()): xds.attrs['sample'] = ipart
         Varspec.addFile(ipart, nc_file_path)
+        self._file_list[ipart]["translated"] = nc_file_path
+        print(f"Creating translated file {nc_file_path}")
+        if overwrite or not os.path.exists(nc_file_path):
+            xds: xa.Dataset = self._open_file(ipart)
+            file_path = xds.attrs['local_file']
+            xds.attrs['local_file'] = nc_file_path
+            if 'sample' not in list(xds.attrs.keys()): xds.attrs['sample'] = ipart
+            print( f"Translating file {file_path} to {nc_file_path}" )
+            xds.to_netcdf( nc_file_path, "w" )
+        else:
+            xds: xa.Dataset = xa.open_dataset(nc_file_path)
+
         for vid, xar in xds.items():
-            vspec = self._varspecs.setdefault(vid, Varspec(vid,xar.dims))
+            vspec = self._varspecs.setdefault(vid, Varspec(vid, xar.dims))
             vspec.add_instance(ipart, xar.shape)
         for vid in self._varspecs.keys():
             if vid not in xds.keys():
                 self._intermittent_vars.add(vid)
-        if overwrite or not os.path.exists(nc_file_path):
-            print( f"Translating file {file_path} to {nc_file_path}" )
-            xds.to_netcdf( nc_file_path, "w" )
         xds.close()
-        self._file_list[ipart]["translated"] = nc_file_path
         return nc_file_path
 
     def read( self ) -> xa.Dataset:
