@@ -55,7 +55,6 @@ class CatalogManager(tlc.SingletonConfigurable):
                 { source.name: {
                    'driver': source.classname,
                    'description': description,
-                   'dimensions': list(dset.dims),
                    'coordinates': { key: list(c.shape) for key,c in dset.coords.items() },
                    'variables': { key: list(v.dims) for key,v in dset.items() },
                    'metadata': metadata,
