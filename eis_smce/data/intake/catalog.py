@@ -1,7 +1,7 @@
 import traitlets.config as tlc
 import intake, os, boto3
 from intake.catalog.local import YAMLFilesCatalog
-from intake.source.base import DataSource
+from intake_xarray.xzarr import ZarrSource
 
 class CatalogManager(tlc.SingletonConfigurable):
 
@@ -23,20 +23,21 @@ class CatalogManager(tlc.SingletonConfigurable):
     def default_catalog_path(self) -> str:
         return f"s3://{self.bucket}/catalog"
 
-    def addEntry( self, source: DataSource ):
+    def addEntry( self, source: ZarrSource ):
         entry_yml = source.yaml()
-        catalog = f"{self.catalog_path}/{source.name}.yml"
+        cat_name = source.urlpath.split("/")[-1]
+        catalog = f"{self.catalog_path}/{cat_name}.yml"
         print( f"addEntry: Catalog={catalog}, Entry = {entry_yml}" )
-        if self.catalog_path.startswith("s3:"):  self._s3.Object( self.bucket, catalog ).put( Body=entry_yml )
-        else:                                    self.write_cat_file( entry_yml )
+        if catalog.startswith("s3:"):  self._s3.Object( self.bucket, catalog ).put( Body=entry_yml )
+        else:                          self.write_cat_file( catalog, entry_yml )
         self._cat.reload()
 
     @property
     def cat(self) -> YAMLFilesCatalog:
         return self._cat
 
-    def write_cat_file(self, entry: str ):
-        with open( self.catalog_path, "w" ) as fp:
+    def write_cat_file(self, catalog: str, entry: str ):
+        with open( catalog, "w" ) as fp:
             fp.write( entry )
 
 def cm(**kwargs) -> CatalogManager: return CatalogManager.instance(**kwargs)
