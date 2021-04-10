@@ -1,5 +1,7 @@
 import traitlets.config as tlc
+from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 import intake, os, boto3
+import yaml, xarray as xr
 from intake.catalog.local import YAMLFilesCatalog
 from intake_xarray.xzarr import ZarrSource
 
@@ -23,21 +25,38 @@ class CatalogManager(tlc.SingletonConfigurable):
     def default_catalog_path(self) -> str:
         return f"s3://{self.bucket}/catalog"
 
-    def addEntry( self, source: ZarrSource ):
-        entry_yml = source.yaml()
-        cat_name = source.urlpath.split("/")[-1]
+    def addEntry( self, source: ZarrSource, **kwargs ):
+        cat_name, entry_yml = self.yaml( source, **kwargs )
         catalog = f"{self.catalog_path}/{cat_name}.yml"
         print( f"addEntry: Catalog={catalog}, Entry = {entry_yml}" )
         if catalog.startswith("s3:"):  self._s3.Object( self.bucket, catalog ).put( Body=entry_yml )
         else:                          self.write_cat_file( catalog, entry_yml )
         self._cat.reload()
 
+    def get_attribute(self, dset: xr.Dataset, name: str, default: str = None ):
+        rv = dset.attrs.get( name[4:], default ) if name.startswith('att:') else None
+        return  name if rv is None else rv
+
     @property
     def cat(self) -> YAMLFilesCatalog:
         return self._cat
 
-    def write_cat_file(self, catalog: str, entry: str ):
+    def write_cat_file(self, catalog: str, entry: str ) -> Tuple[str,str]:
         with open( catalog, "w" ) as fp:
             fp.write( entry )
+
+    def yaml( self, source: ZarrSource, **kwargs ):
+        dset: xr.Dataset = source.to_dask()
+        description = self.get_attribute( dset, kwargs.get( 'description','att:LONG_NAME' ) )
+        cat_name = self.get_attribute( dset, kwargs.get( 'name','att:SHORTNAME' ), source.urlpath.split("/")[-1] )
+        metadata = {}
+        data = {
+            'sources':
+                { source.name: {
+                   'driver': source.classname,
+                   'description': description,
+                   'metadata': metadata,
+                }}}
+        return cat_name, yaml.dump(data, default_flow_style=False)
 
 def cm(**kwargs) -> CatalogManager: return CatalogManager.instance(**kwargs)
