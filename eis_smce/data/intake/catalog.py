@@ -10,6 +10,7 @@ class CatalogManager(tlc.SingletonConfigurable):
     def __init__( self, **kwargs ):
         tlc.SingletonConfigurable.__init__( self, **kwargs )
         catalog_path = kwargs.get( 'cat_path', self.catalog_url )
+        print( f" Creating YAMLFilesCatalog with path = {catalog_path}, kwargs = {kwargs}")
         self._cat: YAMLFilesCatalog = YAMLFilesCatalog( catalog_path )
         self._s3 = boto3.resource('s3')
 
@@ -17,10 +18,10 @@ class CatalogManager(tlc.SingletonConfigurable):
     def catalog_url(self) -> str:
         return f"s3://{self.bucket}/catalog"
 
-    def addEntry( self, name: str, source: DataSource ):
+    def addEntry( self, source: DataSource ):
         entry_yml = source.yaml()
         print( f"Add Entry to Catalog: {entry_yml}" )
-        self._s3.Object( self.bucket, f"catalog/{name}.yml" ).put( Body=entry_yml )
+        self._s3.Object( self.bucket, f"catalog/{source.name}.yml" ).put( Body=entry_yml )
         self._cat.reload()
 
     @property
