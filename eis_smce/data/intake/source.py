@@ -224,6 +224,7 @@ class EISDataSource( DataSource ):
 
     def export( self, path: str, **kwargs ) -> List[ZarrSource]:
         from eis_smce.data.intake.catalog import CatalogManager, cm
+        from eis_smce.data.intake.catalog import CatalogManager, cm
         self.merge_dim = kwargs.get( 'merge_dim', self.merge_dim )
         concat_dim = kwargs.get( 'concat_dim', None )
         self._ds_attr_map = collections.OrderedDict()
@@ -237,19 +238,22 @@ class EISDataSource( DataSource ):
                 merged_dataset.to_zarr( path, mode="w" )
                 print(f"Exporting to zarr file: {path}")
                 zsrc = [ ZarrSource(path) ]
+                if kwargs.get('update_cat', True):
+                    name = path.split("/")[-1]
+                    for zs in zsrc: cm(**kwargs).addEntry( name, zs )
             except Exception as err:
                 print(f"Merge ERROR: {err}")
                 traceback.print_exc()
                 print(f"\n\nMerge failed, exporting files individually to {location}")
-                zsrc = self._multi_export( location )
+                zsrc = self._multi_export( location, **kwargs )
         else:
-            zsrc = self._multi_export( location )
+            zsrc = self._multi_export( location, **kwargs )
 
-        if kwargs.get( 'update_cat', True ):
-            for zs in zsrc: cm(**kwargs).addEntry(zs)
+
         return zsrc
 
-    def _multi_export(self, location ):
+    def _multi_export(self, location, **kwargs ):
+        from eis_smce.data.intake.catalog import CatalogManager, cm
         sources = []
         for i in range(self.nparts):
             file_spec = self._file_list[i]
@@ -259,7 +263,10 @@ class EISDataSource( DataSource ):
             zpath = f"{location}/{file_name}.zarr"
             print(f"Exporting to zarr file: {zpath}")
             source.export(zpath, mode="w")
-            sources.append(ZarrSource(zpath))
+            zs = ZarrSource(zpath)
+            sources.append(zs)
+            if kwargs.get('update_cat', True):
+                cm(**kwargs).addEntry( file_name, zs )
         return sources
 
     def get_zarr_source(self, zpath: str ):
