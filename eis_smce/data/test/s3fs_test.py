@@ -12,8 +12,10 @@ print( "Data Files:")
 print( s3f.ls( f"/{bucketname}/{source}" ) )
 
 print( "Catalog Files:")
-print( s3f.ls( f"/{bucketname}/catalog" ) )
-smce_dir = os.path.expanduser( "~/.eis_smce/")
+cat_bucket = f"s3://{bucketname}/catalog"
+files = s3f.ls(cat_bucket)
+print( list(files) )
+for file in files:
+    s3f.download( file, f"/tmp/catalog/{os.path.basename(file)}" )
 
-s3f.get( f"{bucketname}/catalog", "/tmp/", recursive = True )
 
