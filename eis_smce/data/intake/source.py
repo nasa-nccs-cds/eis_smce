@@ -1,5 +1,6 @@
 from intake.source.base import DataSource, Schema
 import collections, json
+from fsspec.mapping import FSMap
 import traitlets.config as tlc, random, string
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable, MutableMapping
 from functools import partial
@@ -242,8 +243,7 @@ class EISDataSource( DataSource ):
                 merged_dataset: xa.Dataset = self._merge_datasets( concat_dim=concat_dim )
                 merged_dataset.attrs.update( self._get_merged_attrs() )
                 print(f"Exporting to zarr file: {path}")
-                cache_path = f"{self._cache_dir}/catalogs/"
-                merged_dataset.to_zarr( path, mode="w" )
+                merged_dataset.to_zarr( self.get_store(path), mode="w" )
                 zsrc = [ EISZarrSource(path) ]
             except Exception as err:
                 print(f"Merge ERROR: {err}")
@@ -256,6 +256,12 @@ class EISDataSource( DataSource ):
         if kwargs.get('update_cat', True):
             for zs in zsrc: cm(**kwargs).addEntry(zs)
         return zsrc
+
+    def get_store(self, path: str ) -> Union[FSMap,str]:
+        from eis_smce.data.storage.s3 import s3m
+        real_path = s3m().realpath(path)
+        if path.startswith("s3:"):  return s3m().store( *s3m().parse( real_path ) )
+        else:                       return real_path
 
     def _multi_export(self, location, **kwargs ):
         sources = []
