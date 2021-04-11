@@ -241,8 +241,8 @@ class EISDataSource( DataSource ):
                 self.translate( **kwargs )
                 merged_dataset: xa.Dataset = self._merge_datasets( concat_dim=concat_dim )
                 merged_dataset.attrs.update( self._get_merged_attrs() )
-                merged_dataset.to_zarr( path, mode="w" )
                 print(f"Exporting to zarr file: {path}")
+                merged_dataset.to_zarr( path, mode="w" )
                 zsrc = [ EISZarrSource(path) ]
             except Exception as err:
                 print(f"Merge ERROR: {err}")
