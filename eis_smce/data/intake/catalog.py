@@ -11,6 +11,7 @@ class CatalogManager(tlc.SingletonConfigurable):
 
     def __init__( self, **kwargs ):
         tlc.SingletonConfigurable.__init__( self, **kwargs )
+        self._s3 = None
         self.catalog_path: str = kwargs.get( 'cat_path', self.default_catalog_path )
         print( f" Creating YAMLFilesCatalog with path = {self.catalog_path}, kwargs = {kwargs}")
         self._cat: YAMLFilesCatalog = YAMLFilesCatalog( self.catalog_path )
@@ -29,7 +30,7 @@ class CatalogManager(tlc.SingletonConfigurable):
         entry_yml = source.yaml( **kwargs )
         catalog = f"{self.catalog_path}/{source.cat_name}.yml"
         print( f"addEntry: Catalog={catalog}, Entry = {entry_yml}" )
-        if catalog.startswith("s3:"):  self._s3.Object( self.bucket, catalog ).put( Body=entry_yml )
+        if catalog.startswith("s3:"):  self.s3.Object( self.bucket, catalog ).put( Body=entry_yml )
         else:                          self.write_cat_file( catalog, entry_yml )
         self._cat.reload()
 
