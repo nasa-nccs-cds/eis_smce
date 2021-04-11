@@ -15,5 +15,5 @@ print( "Catalog Files:")
 print( s3f.ls( f"/{bucketname}/catalog" ) )
 smce_dir = os.path.expanduser( "~/.eis_smce/")
 
-s3f.get( f"{bucketname}/catalog", smce_dir, recursive = True )
+s3f.get( f"{bucketname}/catalog", "/tmp/", recursive = True )
 
