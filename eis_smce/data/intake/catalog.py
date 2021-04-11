@@ -26,8 +26,8 @@ class CatalogManager(tlc.SingletonConfigurable):
         return f"s3://{self.bucket}/catalog"
 
     def addEntry( self, source: EISZarrSource, **kwargs ):
-        cat_name, entry_yml = source.yaml( **kwargs )
-        catalog = f"{self.catalog_path}/{cat_name}.yml"
+        entry_yml = source.yaml( **kwargs )
+        catalog = f"{self.catalog_path}/{source.cat_name}.yml"
         print( f"addEntry: Catalog={catalog}, Entry = {entry_yml}" )
         if catalog.startswith("s3:"):  self._s3.Object( self.bucket, catalog ).put( Body=entry_yml )
         else:                          self.write_cat_file( catalog, entry_yml )

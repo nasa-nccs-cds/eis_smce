@@ -13,7 +13,7 @@ class EISZarrSource( ZarrSource ):
         if attval.startswith('att:'):  return dset.attrs.get( attval[4:], default )
         else:                          return attval
 
-    def yaml(self, **kwargs) -> Tuple[str, str]:
+    def yaml(self, **kwargs) -> str:
         dset: xr.Dataset = self.to_dask()
         description = self.get_attribute(dset, kwargs.get('description', 'att:LONGNAME'))
         self.cat_name = self.get_attribute(dset, kwargs.get('name', 'att:SHORTNAME'), self.urlpath.split("/")[-1])
