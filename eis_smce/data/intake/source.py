@@ -202,32 +202,32 @@ class EISDataSource( DataSource ):
             mds = mds1 if mds is None else mds.merge(mds1)
         return mds
 
-    def _merge_datasets1(self, dset_paths: List[str], concat_dim: str, **kwargs ) -> xa.Dataset:
-        concat_vars, merge_vars = dict(), dict()
-        merge_dim = kwargs.get( 'merge_dim',self.merge_dim )
-        print( "Merge datasets: ")
-        coords = {}
-        for dset_path in dset_paths:
-            ds: xa.Dataset = xa.open_dataset(dset_path)
-            coords.update( ds.coords )
-            merge_axis_val = ds.attrs[self.merge_dim]
-            self._ds_attr_map[merge_axis_val] = ds.attrs
-            for vid, xar in ds.items():
-                try:
-                    ic = xar.dims.index( concat_dim )
-                    if xar.shape[ic] > 0:
-                        concat_vars.setdefault( vid, [] ).append( xar )
-                        xar.attrs[ merge_dim ] = merge_axis_val
-                except ValueError:  # concat_dim not in xar.dims:
-                    xar = xar.expand_dims({self.merge_dim: np.array([merge_axis_val])}, 0)
-                    merge_vars.setdefault(vid, []).append( xar )
-        result_vars = {}
-        print( "Create merged variables")
-        for vid, cvars in concat_vars.items(): result_vars[vid] = xa.concat( cvars, dim=concat_dim )
-        for vid, mvars in merge_vars.items():  result_vars[vid] = xa.concat( mvars, dim=merge_dim )
-        print( "Create merged dataset")
-        result_dset = xa.Dataset(concat_vars, coords, self._get_merged_attrs() )
-        return result_dset
+    # def _merge_datasets1(self, dset_paths: List[str], concat_dim: str, **kwargs ) -> xa.Dataset:
+    #     concat_vars, merge_vars = dict(), dict()
+    #     merge_dim = kwargs.get( 'merge_dim',self.merge_dim )
+    #     print( "Merge datasets: ")
+    #     coords = {}
+    #     for dset_path in dset_paths:
+    #         ds: xa.Dataset = xa.open_dataset(dset_path)
+    #         coords.update( ds.coords )
+    #         merge_axis_val = ds.attrs[self.merge_dim]
+    #         self._ds_attr_map[merge_axis_val] = ds.attrs
+    #         for vid, xar in ds.items():
+    #             try:
+    #                 ic = xar.dims.index( concat_dim )
+    #                 if xar.shape[ic] > 0:
+    #                     concat_vars.setdefault( vid, [] ).append( xar )
+    #                     xar.attrs[ merge_dim ] = merge_axis_val
+    #             except ValueError:  # concat_dim not in xar.dims:
+    #                 xar = xar.expand_dims({self.merge_dim: np.array([merge_axis_val])}, 0)
+    #                 merge_vars.setdefault(vid, []).append( xar )
+    #     result_vars = {}
+    #     print( "Create merged variables")
+    #     for vid, cvars in concat_vars.items(): result_vars[vid] = xa.concat( cvars, dim=concat_dim )
+    #     for vid, mvars in merge_vars.items():  result_vars[vid] = xa.concat( mvars, dim=merge_dim )
+    #     print( "Create merged dataset")
+    #     result_dset = xa.Dataset(concat_vars, coords, self._get_merged_attrs() )
+    #     return result_dset
 
     def export( self, path: str, **kwargs ) -> List[EISZarrSource]:
         from eis_smce.data.intake.catalog import CatalogManager, cm
@@ -242,6 +242,7 @@ class EISDataSource( DataSource ):
                 merged_dataset: xa.Dataset = self._merge_datasets( concat_dim=concat_dim )
                 merged_dataset.attrs.update( self._get_merged_attrs() )
                 print(f"Exporting to zarr file: {path}")
+                cache_path = f"{self._cache_dir}/catalogs/"
                 merged_dataset.to_zarr( path, mode="w" )
                 zsrc = [ EISZarrSource(path) ]
             except Exception as err:
