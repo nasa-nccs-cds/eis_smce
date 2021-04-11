@@ -8,7 +8,7 @@ Create your conda environment as follows:
     > conda create --name eis_smce 
     > conda activate eis_smce
     > pip install awscli --upgrade --user
-    > conda install -c conda-forge rioxarray rasterio xarray numpy boto3 dask pyhdf zarr traitlets s3fs intake intake-xarray ipykernel
+    > conda install -c conda-forge -c pyviz hvplot rioxarray rasterio xarray numpy boto3 dask pyhdf zarr traitlets s3fs intake intake-xarray ipykernelps
     > python -m ipykernel install --user --name=eis_smce
 
 
