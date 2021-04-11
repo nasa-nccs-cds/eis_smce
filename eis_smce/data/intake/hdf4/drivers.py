@@ -145,32 +145,3 @@ class HDF4Source( EISDataSource ):
     #
     #     self._ds = self._open_file()
 
-
-    # def _add_path_to_ds(self, ds):
-    #     """Adding path info to a coord for a particular file
-    #     """
-    #     var = next(var for var in ds)
-    #     new_coords = reverse_format(self.pattern, ds[var].encoding['source'])
-    #     return ds.assign_coords(**new_coords)
-
-    # def clear_path( self, path: str ):
-    #     import s3fs
-    #     if path.startswith("s3:"):
-    #         s3f: s3fs.S3FileSystem = s3fs.S3FileSystem(anon=True)
-    #         s3f_path = path.split(':')[-1].strip("/")
-    #         if s3f.exists(s3f_path):
-    #             print( f"Clearing existing s3 item: {s3f_path}")
-    #             s3f.delete(s3f_path, recursive=True)
-    #         else:
-    #             print(f"S3 path clear for writing: {s3f_path}")
-    #     elif os.path.exists(path):
-    #         print(f"Clearing existing file: {path}")
-    #         if os.path.isfile(path):    os.remove(path)
-    #         else:                       shutil.rmtree(path)
-    #
-    # def file_exists( self, path: str ):
-    #     import s3fs
-    #     if path.startswith("s3:"):
-    #         s3f: s3fs.S3FileSystem = s3fs.S3FileSystem(anon=True)
-    #         return s3f.exists(path)
-    #     else: return os.path.exists(path)
