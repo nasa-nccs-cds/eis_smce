@@ -16,6 +16,6 @@ cat_files = s3f.ls( f"/{bucketname}/catalog" )
 print( list(cat_files) )
 
 for file in cat_files:
-    s3f.download( file, f"/tmp/catalog/{os.path.basename(file)}" )
+    s3f.download( file, 'test.yml' )
 
 
