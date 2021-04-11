@@ -14,5 +14,5 @@ print( s3f.ls( f"/{bucketname}/{source}" ) )
 print( "Catalog Files:")
 print( s3f.ls( f"/{bucketname}/catalog" ) )
 
-s3f.get( f"/{bucketname}/catalog", "/tmp/catalog", recursive = True )
+s3f.get( f"/{bucketname}/catalog/", "/tmp/catalog/", recursive = True )
 
