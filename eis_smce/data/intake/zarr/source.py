@@ -21,7 +21,7 @@ class EISZarrSource( ZarrSource ):
         metadata.update( kwargs.get("metadata", {} ) )
         data = {
             'sources':
-                {self.name: {
+                {self.cat_name: {
                     'driver': self.classname,
                     'description': description,
                     'dimensions': {key: list(c.shape) for key, c in dset.coords.items()},
