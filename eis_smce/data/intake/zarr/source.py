@@ -17,13 +17,14 @@ class EISZarrSource( ZarrSource ):
         dset: xr.Dataset = self.to_dask()
         description = self.get_attribute(dset, kwargs.get('description', 'att:LONGNAME'))
         self.cat_name = self.get_attribute(dset, kwargs.get('name', 'att:SHORTNAME'), self.urlpath.split("/")[-1])
-        metadata = {}
+        metadata = { **dset.attrs }
+        metadata.update( kwargs.get("metadata", {} ) )
         data = {
             'sources':
                 {self.name: {
                     'driver': self.classname,
                     'description': description,
-                    'coordinates': {key: list(c.shape) for key, c in dset.coords.items()},
+                    'dimensions': {key: list(c.shape) for key, c in dset.coords.items()},
                     'variables': {key: list(v.dims) for key, v in dset.items()},
                     'metadata': metadata,
                 }}}
