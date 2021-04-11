@@ -25,7 +25,7 @@ class CatalogManager(tlc.SingletonConfigurable):
 
     @property
     def default_catalog_path(self) -> str:
-        return f"s3://{self.bucket}/intake/catalog"
+        return f"s3://{self.bucket}/catalog"
 
     def cat( self ) -> intake.Catalog:
         cat_path = f"{self.catalog_path}/*.yml"
