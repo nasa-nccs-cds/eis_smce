@@ -1,4 +1,4 @@
 import intake
 # intake.output_notebook()
 
-list(intake.cat)
+print( f" cat = {list(intake.cat)}" )
