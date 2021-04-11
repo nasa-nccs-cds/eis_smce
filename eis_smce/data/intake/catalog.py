@@ -3,7 +3,7 @@ from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapp
 import intake, os, boto3
 import yaml, xarray as xr
 from intake.catalog.local import YAMLFilesCatalog
-from intake_xarray.xzarr import ZarrSource
+from eis_smce.data.intake.zarr.source import EISZarrSource
 
 class CatalogManager(tlc.SingletonConfigurable):
 
@@ -25,17 +25,13 @@ class CatalogManager(tlc.SingletonConfigurable):
     def default_catalog_path(self) -> str:
         return f"s3://{self.bucket}/catalog"
 
-    def addEntry( self, source: ZarrSource, **kwargs ):
-        cat_name, entry_yml = self.yaml( source, **kwargs )
+    def addEntry( self, source: EISZarrSource, **kwargs ):
+        cat_name, entry_yml = source.yaml( **kwargs )
         catalog = f"{self.catalog_path}/{cat_name}.yml"
         print( f"addEntry: Catalog={catalog}, Entry = {entry_yml}" )
         if catalog.startswith("s3:"):  self._s3.Object( self.bucket, catalog ).put( Body=entry_yml )
         else:                          self.write_cat_file( catalog, entry_yml )
         self._cat.reload()
-
-    def get_attribute(self, dset: xr.Dataset, attval: str, default: str = "" ):
-        if attval.startswith('att:'):  return dset.attrs.get( attval[4:], default )
-        else:                          return attval
 
     @property
     def cat(self) -> YAMLFilesCatalog:
@@ -44,21 +40,5 @@ class CatalogManager(tlc.SingletonConfigurable):
     def write_cat_file(self, catalog: str, entry: str ):
         with open( catalog, "w" ) as fp:
             fp.write( entry )
-
-    def yaml( self, source: ZarrSource, **kwargs ) -> Tuple[str,str]:
-        dset: xr.Dataset = source.to_dask()
-        description = self.get_attribute( dset, kwargs.get( 'description','att:LONGNAME' ) )
-        cat_name = self.get_attribute( dset, kwargs.get( 'name','att:SHORTNAME' ), source.urlpath.split("/")[-1] )
-        metadata = {}
-        data = {
-            'sources':
-                { source.name: {
-                   'driver': source.classname,
-                   'description': description,
-                   'coordinates': { key: list(c.shape) for key,c in dset.coords.items() },
-                   'variables': { key: list(v.dims) for key,v in dset.items() },
-                   'metadata': metadata,
-                }}}
-        return cat_name, yaml.dump( data, default_flow_style=False )
 
 def cm(**kwargs) -> CatalogManager: return CatalogManager.instance(**kwargs)

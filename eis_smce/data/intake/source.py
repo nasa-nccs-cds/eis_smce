@@ -5,7 +5,7 @@ from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapp
 from functools import partial
 import dask.delayed, boto3, os, traceback
 from intake_xarray.netcdf import NetCDFSource
-from intake_xarray.xzarr import ZarrSource
+from eis_smce.data.intake.zarr.source import EISZarrSource
 import intake, zarr, numpy as np
 import dask.bag as db
 import time, xarray as xa
@@ -229,7 +229,7 @@ class EISDataSource( DataSource ):
         result_dset = xa.Dataset(concat_vars, coords, self._get_merged_attrs() )
         return result_dset
 
-    def export( self, path: str, **kwargs ) -> List[ZarrSource]:
+    def export( self, path: str, **kwargs ) -> List[EISZarrSource]:
         from eis_smce.data.intake.catalog import CatalogManager, cm
         self.merge_dim = kwargs.get( 'merge_dim', self.merge_dim )
         concat_dim = kwargs.get( 'concat_dim', None )
@@ -243,7 +243,7 @@ class EISDataSource( DataSource ):
                 merged_dataset.attrs.update( self._get_merged_attrs() )
                 merged_dataset.to_zarr( path, mode="w" )
                 print(f"Exporting to zarr file: {path}")
-                zsrc = [ ZarrSource(path) ]
+                zsrc = [ EISZarrSource(path) ]
             except Exception as err:
                 print(f"Merge ERROR: {err}")
                 traceback.print_exc()
@@ -266,12 +266,12 @@ class EISDataSource( DataSource ):
             zpath = f"{location}/{file_name}.zarr"
             print(f"Exporting to zarr file: {zpath}")
             source.export(zpath, mode="w")
-            zs = ZarrSource(zpath)
+            zs = EISZarrSource(zpath)
             sources.append(zs)
         return sources
 
     def get_zarr_source(self, zpath: str ):
-        zsrc = ZarrSource(zpath)
+        zsrc = EISZarrSource(zpath)
         zsrc.yaml()
 
     def print_bucket_contents(self, bucket_prefix: str ):
