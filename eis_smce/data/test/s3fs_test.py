@@ -12,10 +12,10 @@ print( "Data Files:")
 print( s3f.ls( f"/{bucketname}/{source}" ) )
 
 print( "Catalog Files:")
-cat_bucket = f"s3://{bucketname}/catalog"
-files = s3f.ls(cat_bucket)
-print( list(files) )
-for file in files:
+cat_files = s3f.ls( f"/{bucketname}/catalog" )
+print( list(cat_files) )
+
+for file in cat_files:
     s3f.download( file, f"/tmp/catalog/{os.path.basename(file)}" )
 
 
