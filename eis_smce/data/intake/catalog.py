@@ -12,10 +12,11 @@ class CatalogManager(tlc.SingletonConfigurable):
     def __init__( self, **kwargs ):
         tlc.SingletonConfigurable.__init__( self, **kwargs )
         self._s3 = None
+        new_bucket = kwargs.get( 'bucket', None )
+        if new_bucket: self.bucket = new_bucket
         self.catalog_path: str = kwargs.get( 'cat_path', self.default_catalog_path )
         print( f" Creating YAMLFilesCatalog with path = {self.catalog_path}, kwargs = {kwargs}")
         self._cat: YAMLFilesCatalog = YAMLFilesCatalog( self.catalog_path )
-
 
     @property
     def s3(self):
@@ -24,7 +25,11 @@ class CatalogManager(tlc.SingletonConfigurable):
 
     @property
     def default_catalog_path(self) -> str:
-        return f"s3://{self.bucket}/catalog"
+        return f"s3://{self.bucket}/intake/catalog"
+
+    def cat( self ) -> intake.Catalog:
+        cat_path = f"{self.catalog_path}/*.yml"
+        return intake.open_catalog( cat_path )
 
     def addEntry( self, source: EISZarrSource, **kwargs ):
         entry_yml = source.yaml( **kwargs )

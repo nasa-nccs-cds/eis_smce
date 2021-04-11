@@ -2,7 +2,7 @@ import traitlets.config as tlc
 import fnmatch
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 import glob, os
-import boto3
+import boto3, intake
 from fsspec.mapping import FSMap
 from intake.source.utils import path_to_glob
 import s3fs
@@ -28,7 +28,6 @@ class S3Manager(tlc.SingletonConfigurable):
         if self._fs is None:
             self._fs = s3fs.S3FileSystem()
         return self._fs
-
 
     def store(self, bucketname: str, s3path: str = "" ) -> FSMap:
          store: FSMap = s3fs.S3Map( root=f"{bucketname}/{s3path}", s3=self.fs, check=False, create=True )
