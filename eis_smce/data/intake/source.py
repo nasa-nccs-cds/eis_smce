@@ -56,9 +56,9 @@ class EISDataSource( DataSource ):
     partition_access = True
 
     def __init__(self, **kwargs ):
+        self._cache_dir = kwargs.pop('cache_dir', os.path.expanduser("~/.eis_smce/cache"))
         super(EISDataSource, self).__init__( **kwargs )
-        dask.config.set(scheduler='threading')
-        self._cache_dir = kwargs.get( 'cache_dir', os.path.expanduser( "~/.eis_smce/cache") )
+#        dask.config.set(scheduler='threading')
         self._file_list: List[ Dict[str,str] ] = None
         self._parts: Dict[int,xa.Dataset] = {}
         self._schema: Schema = None
