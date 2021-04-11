@@ -22,7 +22,9 @@ class CatalogManager(tlc.SingletonConfigurable):
         return f"s3://{bucket}/catalog/*.yml"
 
     def cat( self, bucket: str ) -> intake.Catalog:
-        return intake.open_catalog( self.cat_path(bucket) )
+        cat_path = self.cat_path(bucket)
+        print( f"Open catalog from url: {cat_path}")
+        return intake.open_catalog(  cat_path )
 
     def addEntry( self, source: EISZarrSource, **kwargs ):
         entry_yml = source.yaml( **kwargs )
