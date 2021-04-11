@@ -7,5 +7,6 @@ aws_secret_key = os.environ.get( 'AWS_ACCESS_KEY_ID' )
 region="us-east-1"
 
 s3f: s3fs.S3FileSystem  = s3fs.S3FileSystem()
-print( s3f.ls( f"/{bucketname}" ) )
+print( "Catalog Files:")
+print( s3f.ls( f"/{bucketname}/catalog" ) )
 
