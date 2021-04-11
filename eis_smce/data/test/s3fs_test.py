@@ -8,5 +8,5 @@ region="us-east-1"
 
 s3f: s3fs.S3FileSystem  = s3fs.S3FileSystem()
 print( "Catalog Files:")
-print( s3f.ls( f"/{bucketname}/catalog" ) )
+print( s3f.ls( f"/{bucketname}/" ) )
 
