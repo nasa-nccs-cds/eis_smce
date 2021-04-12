@@ -3,14 +3,11 @@ import intake
 
 bucket_id = "eis-dh-fire"
 base_dir = "/css/modis/Collection6/L3/"
-cache_dir = "/att/nobackup/tpmaxwel/ILAB/scratch"
 collection = "MOD13Q1-Vegetation"
 year = "2001"
 day = "*"
 file_names = "MOD13Q1.{sample}.h09v09.006.{sid}.hdf"
-cat_path = f"{cache_dir}/catalog"
 batch = f"{year}/{day}/{file_names}"
-local_output_file = f"{cache_dir}/{collection}/h09v09-{year}.zarr"
 s3_output_file = f"s3://{bucket_id}/{collection}/h09v09-{year}.zarr"
 data_url = f"file://{base_dir}/{collection}/{batch}"
 
