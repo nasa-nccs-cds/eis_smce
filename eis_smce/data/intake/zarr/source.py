@@ -14,7 +14,7 @@ class EISZarrSource( ZarrSource ):
         else:                          return attval
 
     def get_plots(self) -> Dict:
-        return {}
+        return dict( contour = dict( kind='contourf', groupby='sample', width = 800, height=600, levels=20 ) )
 
     def yaml(self, **kwargs) -> str:
         dset: xr.Dataset = self.to_dask()
