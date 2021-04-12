@@ -50,7 +50,7 @@ class CatalogManager(tlc.SingletonConfigurable):
             bucket = kwargs.get('bucket', None)
             assert bucket is not None, "Must supply the 'bucket' argument when adding an entry to an s3 catalog"
             catalog = f"catalog/{source.cat_name}.yml"
-            self.s3.Object( bucket, catalog ).put( Body=entry_yml )
+            self.s3.Object( bucket, catalog ).put( Body=entry_yml, ACL="bucket-owner-full-control" )
         else:
             catalog = f"{file_path}/{source.cat_name}.yml"
             self.write_cat_file( catalog, entry_yml )
