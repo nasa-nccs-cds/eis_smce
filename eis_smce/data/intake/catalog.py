@@ -32,9 +32,10 @@ class CatalogManager(tlc.SingletonConfigurable):
     def cat_path( self, bucket: str ) -> str:
         return f"s3://{bucket}/catalog/*.yml"
 
-    def gui(self):
-        gui = GUI()
-        return gui
+    def gui( self, bucket: str ):
+        bucket = self.s3.Bucket(bucket)
+        catalogs = [ f"s3://{obj.bucket_name}/{obj.key}" for obj in bucket.objects.filter(Prefix="catalog") ]
+        return GUI( catalogs )
 
     def cat( self, bucket: str ) -> intake.Catalog:
         cat_path = self.cat_path(bucket)
