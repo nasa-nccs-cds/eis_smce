@@ -27,7 +27,7 @@ class EISZarrSource( ZarrSource ):
         metadata['plots'] = self.get_plots()
         data = {
             'sources': {
-                self.cat_name: { 'driver': self.classname, 'description': description, 'metadata': metadata }
+                self.cat_name: { 'driver': self.classname, 'description': description, 'metadata': metadata, 'args': dict( urlpath=self.urlpath ) }
             }
         }
         return yaml.dump(data, default_flow_style=False)
