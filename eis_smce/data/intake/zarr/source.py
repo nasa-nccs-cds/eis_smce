@@ -13,6 +13,9 @@ class EISZarrSource( ZarrSource ):
         if attval.startswith('att:'):  return dset.attrs.get( attval[4:], default )
         else:                          return attval
 
+    def get_plots(self) -> Dict:
+        return {}
+
     def yaml(self, **kwargs) -> str:
         dset: xr.Dataset = self.to_dask()
         description = self.get_attribute(dset, kwargs.get('description', 'att:LONGNAME'))
@@ -27,5 +30,6 @@ class EISZarrSource( ZarrSource ):
                     'dimensions': {key: list(c.shape) for key, c in dset.coords.items()},
                     'variables': {key: list(v.dims) for key, v in dset.items()},
                     'metadata': metadata,
+                    'plots': self.get_plots()
                 }}}
         return yaml.dump(data, default_flow_style=False)
