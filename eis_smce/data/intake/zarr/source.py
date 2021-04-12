@@ -22,14 +22,12 @@ class EISZarrSource( ZarrSource ):
         self.cat_name = self.get_attribute(dset, kwargs.get('name', 'att:SHORTNAME'), self.urlpath.split("/")[-1])
         metadata = { **dset.attrs }
         metadata.update( kwargs.get("metadata", {} ) )
+        metadata['dimensions'] = {key: list(c.shape) for key, c in dset.coords.items()}
+        metadata['variables'] = {key: list(v.dims) for key, v in dset.items()}
+        metadata['plots'] = self.get_plots()
         data = {
-            'sources':
-                {self.cat_name: {
-                    'driver': self.classname,
-                    'description': description,
-                    'dimensions': {key: list(c.shape) for key, c in dset.coords.items()},
-                    'variables': {key: list(v.dims) for key, v in dset.items()},
-                    'metadata': metadata,
-                    'plots': self.get_plots()
-                }}}
+            'sources': {
+                self.cat_name: { 'driver': self.classname, 'description': description, 'metadata': metadata }
+            }
+        }
         return yaml.dump(data, default_flow_style=False)
