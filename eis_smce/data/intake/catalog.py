@@ -19,14 +19,14 @@ class CatalogManager(tlc.SingletonConfigurable):
         return self._s3
 
 
-    def download( self, bucketName, cache_dir: str ) -> str:
-        s3_resource = boto3.resource('s3')
-        bucket = s3_resource.Bucket(bucketName)
-        for obj in bucket.objects.filter(Prefix="catalog"):
-            obj_dir = f"{cache_dir}/catalog/{os.path.dirname(obj.key)}"
-            if not os.path.exists(obj_dir): os.makedirs(obj_dir)
-            bucket.download_file( obj.key, f"{obj_dir}/{os.path.basename(obj.key)}" )
-        return
+    # def download( self, bucketName, cache_dir: str ) -> str:
+    #     s3_resource = boto3.resource('s3')
+    #     bucket = s3_resource.Bucket(bucketName)
+    #     for obj in bucket.objects.filter(Prefix="catalog"):
+    #         obj_dir = f"{cache_dir}/catalog/{os.path.dirname(obj.key)}"
+    #         if not os.path.exists(obj_dir): os.makedirs(obj_dir)
+    #         bucket.download_file( obj.key, f"{obj_dir}/{os.path.basename(obj.key)}" )
+    #     return
 
     def cat_path( self, bucket: str ) -> str:
         return f"s3://{bucket}/catalog/*.yml"

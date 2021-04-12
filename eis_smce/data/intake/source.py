@@ -254,7 +254,7 @@ class EISDataSource( DataSource ):
             zsrc = self._multi_export( location, **kwargs )
 
         if kwargs.get('update_cat', True):
-            for zs in zsrc: cm(**kwargs).addEntry(zs)
+            for zs in zsrc: cm().addEntry(zs, **kwargs )
         return zsrc
 
     def get_store(self, path: str ) -> Union[FSMap,str]:

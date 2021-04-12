@@ -1,6 +1,7 @@
 import os, xarray as xr
 import intake
 
+bucket_id = "eis-dh-fire"
 base_dir = "/css/modis/Collection6/L3/"
 cache_dir = "/att/nobackup/tpmaxwel/ILAB/scratch"
 collection = "MOD13Q1-Vegetation"
@@ -16,7 +17,7 @@ data_url = f"file://{base_dir}/{collection}/{batch}"
 if __name__ == '__main__':
 
     h4s = intake.open_hdf4( data_url )
-    h4s.export( output_file, cat_path=cat_path )
+    h4s.export( output_file, bucket=bucket_id )
 
 
 
