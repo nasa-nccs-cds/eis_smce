@@ -35,6 +35,7 @@ class CatalogManager(tlc.SingletonConfigurable):
     def gui( self, bucket: str ):
         bucket = self.s3.Bucket(bucket)
         catalogs = [ f"s3://{obj.bucket_name}/{obj.key}" for obj in bucket.objects.filter(Prefix="catalog") ]
+        print( f"Opening gui with catalogs: {catalogs}")
         return GUI( catalogs )
 
     def cat( self, bucket: str ) -> intake.Catalog:
