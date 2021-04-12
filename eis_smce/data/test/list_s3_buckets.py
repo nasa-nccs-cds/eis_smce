@@ -9,4 +9,5 @@ for bucket in s3r.buckets.all():
 print( "Catalog objects:")
 bucket = s3r.Bucket(bucketname)
 for obj in bucket.objects.filter(Prefix="catalog"):
+     print( obj )
 

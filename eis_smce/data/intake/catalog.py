@@ -3,6 +3,7 @@ from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapp
 import intake, os, boto3
 import yaml, xarray as xr
 from intake.catalog.local import YAMLFilesCatalog
+from intake.interface.gui import GUI
 from eis_smce.data.intake.zarr.source import EISZarrSource
 
 class CatalogManager(tlc.SingletonConfigurable):
@@ -30,6 +31,10 @@ class CatalogManager(tlc.SingletonConfigurable):
 
     def cat_path( self, bucket: str ) -> str:
         return f"s3://{bucket}/catalog/*.yml"
+
+    def gui(self):
+        gui = GUI()
+        return gui
 
     def cat( self, bucket: str ) -> intake.Catalog:
         cat_path = self.cat_path(bucket)
