@@ -1,6 +1,5 @@
 from intake.source.base import DataSource, Schema
-import collections, json, s3fs
-from fsspec.mapping import FSMap
+import collections, json
 import traitlets.config as tlc, random, string
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable, MutableMapping
 from functools import partial

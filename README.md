@@ -7,11 +7,9 @@ Create your conda environment as follows:
 
     > conda create --name eis_smce 
     > conda activate eis_smce
-    > pip install awscli --upgrade --user
-    > conda install -c conda-forge hvplot rioxarray rasterio xarray numpy boto3 dask pyhdf zarr traitlets s3fs intake intake-xarray ipykernel panel
-    > python -m ipykernel install --user --name=eis_smce
+    > conda install -c conda-forge -c pyviz/label/dev hvplot rioxarray rasterio xarray numpy boto3 dask pyhdf zarr traitlets intake intake-xarray ipykernel panel pyviz jupyterlab awscli
     > jupyter labextension install @pyviz/jupyterlab_pyviz
-
+    > python -m ipykernel install --user --name=eis_smce
 
 eis_smce Setup
 ---------------

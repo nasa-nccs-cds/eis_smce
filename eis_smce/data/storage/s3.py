@@ -5,7 +5,6 @@ import glob, os
 import boto3, intake
 from fsspec.mapping import FSMap
 from intake.source.utils import path_to_glob
-import s3fs
 
 def s3m(): return S3Manager.instance()
 def has_char(string: str, chars: str): return 1 in [c in string for c in chars]
@@ -16,7 +15,6 @@ class S3Manager(tlc.SingletonConfigurable):
         tlc.SingletonConfigurable.__init__( self, **kwargs )
         self._client = None
         self._resource = None
-        self._fs: s3fs.S3FileSystem = None
 
     @property
     def client(self):
@@ -29,21 +27,6 @@ class S3Manager(tlc.SingletonConfigurable):
         if self._resource is None:
             self._resource = boto3.resource('s3')
         return self._resource
-
-    @property
-    def fs(self) -> s3fs.S3FileSystem:
-        if self._fs is None:
- #           acl = dict(ACL="bucket-owner-full-control")
-            self._fs = s3fs.S3FileSystem(  )
-        return self._fs
-
-    def set_acl(self, key: str ):
-        print( f"Setting ACL on key {key}")
-        self.fs.chmod( key, "bucket-owner-full-control" )
-
-    def store(self, bucketname: str, s3path: str = "" ) -> FSMap:
-         store: FSMap = s3fs.S3Map( root=f"{bucketname}/{s3path}", s3=self.fs, check=False, create=True )
-         return store
 
     def item_path(self, path: str) -> str:
         return path.split(":")[-1].replace("//", "/").replace("//", "/")
