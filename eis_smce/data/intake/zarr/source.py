@@ -7,7 +7,7 @@ class EISZarrSource( ZarrSource ):
     def __init__(self, urlpath, storage_options=None, metadata=None, **kwargs):
         from eis_smce.data.storage.s3 import s3m
         ZarrSource.__init__( self, urlpath, storage_options, metadata, **kwargs )
-        s3m().set_acl( urlpath )
+ #       s3m().set_acl( urlpath )
         self.cat_name = None
 
     def get_attribute(self, dset: xr.Dataset, attval: str, default: str = "" ):

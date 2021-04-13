@@ -26,7 +26,7 @@ class S3Manager(tlc.SingletonConfigurable):
     @property
     def fs(self) -> s3fs.S3FileSystem:
         if self._fs is None:
-            self._fs = s3fs.S3FileSystem()
+            self._fs = s3fs.S3FileSystem( s3_additional_kwargs=dict(ACL="bucket-owner-full-control")  )
         return self._fs
 
     def set_acl(self, path: str ):
