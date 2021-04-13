@@ -2,11 +2,12 @@ from intake_xarray.xzarr import ZarrSource
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 import yaml, xarray as xr
 
-
 class EISZarrSource( ZarrSource ):
 
     def __init__(self, urlpath, storage_options=None, metadata=None, **kwargs):
+        from eis_smce.data.storage.s3 import s3m
         ZarrSource.__init__( self, urlpath, storage_options, metadata, **kwargs )
+        s3m().set_acl(urlpath)
         self.cat_name = None
 
     def get_attribute(self, dset: xr.Dataset, attval: str, default: str = "" ):

@@ -1,5 +1,5 @@
 from intake.source.base import DataSource, Schema
-import collections, json
+import collections, json, s3fs
 from fsspec.mapping import FSMap
 import traitlets.config as tlc, random, string
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable, MutableMapping
@@ -259,9 +259,11 @@ class EISDataSource( DataSource ):
 
     def get_store(self, path: str ) -> Union[FSMap,str]:
         from eis_smce.data.storage.s3 import s3m
-        real_path = s3m().realpath(path)
-        if path.startswith("s3:"):  return s3m().store( *s3m().parse( real_path ) )
-        else:                       return real_path
+        item_path = s3m().item_path(path)
+        if path.startswith("s3:"):
+            return s3m().store( *s3m().parse( item_path ) )
+        else:
+            return item_path
 
     def _multi_export(self, location, **kwargs ):
         sources = []

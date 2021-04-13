@@ -29,11 +29,14 @@ class S3Manager(tlc.SingletonConfigurable):
             self._fs = s3fs.S3FileSystem()
         return self._fs
 
+    def set_acl(self, path: str ):
+        self._fs.chmod( path, "bucket-owner-full-control" )
+
     def store(self, bucketname: str, s3path: str = "" ) -> FSMap:
          store: FSMap = s3fs.S3Map( root=f"{bucketname}/{s3path}", s3=self.fs, check=False, create=True )
          return store
 
-    def realpath(self, path: str ) -> str:
+    def item_path(self, path: str) -> str:
         return path.split(":")[-1].replace("//", "/").replace("//", "/")
 
     def parse(self, urlpath: str) -> Tuple[str, str]:
