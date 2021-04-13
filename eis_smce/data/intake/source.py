@@ -230,6 +230,14 @@ class EISDataSource( DataSource ):
     #     result_dset = xa.Dataset(concat_vars, coords, self._get_merged_attrs() )
     #     return result_dset
 
+    def get_cache_path(self, path: str ) -> str:
+        from eis_smce.data.storage.s3 import s3m
+        if path.startswith("s3:"):
+            (bucket, item) = s3m().parse(path)
+            path = f"{self._cache_dir}/{item}"
+        return path
+
+
     def export( self, path: str, **kwargs ) -> List[EISZarrSource]:
         from eis_smce.data.intake.catalog import CatalogManager, cm
         from eis_smce.data.storage.s3 import s3m
@@ -244,8 +252,9 @@ class EISDataSource( DataSource ):
                 merged_dataset: xa.Dataset = self._merge_datasets( concat_dim=concat_dim )
                 merged_dataset.attrs.update( self._get_merged_attrs() )
                 print(f"Exporting to zarr file: {path}")
-                merged_dataset.to_zarr( self.get_store(path), mode="w" )
-#                s3m().upload_files( src_path, dest_path )
+                local_path = self.get_cache_path(path)
+                merged_dataset.to_zarr( local_path, mode="w" )
+                s3m().upload_files( local_path, path )
                 zsrc = [ EISZarrSource(path) ]
             except Exception as err:
                 print(f"Merge ERROR: {err}")

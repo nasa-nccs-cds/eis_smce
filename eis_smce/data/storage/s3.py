@@ -69,14 +69,16 @@ class S3Manager(tlc.SingletonConfigurable):
         return file_path
 
     def upload_files(self, src_path: str, dest_path: str ):
-        ( bucket, item ) = self.parse( dest_path )
-        bucket = self.resource.Bucket(f"{bucket}/{item}")
-
-        for subdir, dirs, files in os.walk(src_path):
-            for file in files:
-                full_path = os.path.join(subdir, file)
-                with open(full_path, 'rb') as data:
-                    bucket.put_object( Key=full_path[len(src_path) + 1:], Body=data, ACL="bucket-owner-full-control" )
+        if src_path != dest_path:
+            ( bucket, item ) = self.parse( dest_path )
+            bucket = self.resource.Bucket(f"{bucket}/{item}")
+            for subdir, dirs, files in os.walk(src_path):
+                for file in files:
+                    full_path = os.path.join(subdir, file)
+                    with open(full_path, 'rb') as data:
+                        key = full_path[len(src_path) + 1:]
+                        print(f"Uploading item: {bucket}:{key}")
+                        bucket.put_object( Key=key, Body=data, ACL="bucket-owner-full-control" )
 
     def get_file_list(self, urlpath: str ) -> List[Dict]:
         from intake.source.utils import reverse_format
