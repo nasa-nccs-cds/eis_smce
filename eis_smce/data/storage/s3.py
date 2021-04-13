@@ -39,7 +39,7 @@ class S3Manager(tlc.SingletonConfigurable):
 
     def set_acl(self, key: str ):
         print( f"Setting ACL on key {key}")
-        self._fs.chmod( key, "bucket-owner-full-control" )
+        self.fs.chmod( key, "bucket-owner-full-control" )
 
     def store(self, bucketname: str, s3path: str = "" ) -> FSMap:
          store: FSMap = s3fs.S3Map( root=f"{bucketname}/{s3path}", s3=self.fs, check=False, create=True )
