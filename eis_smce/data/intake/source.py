@@ -268,14 +268,6 @@ class EISDataSource( DataSource ):
             for zs in zsrc: cm().addEntry(zs, **kwargs )
         return zsrc
 
-    def get_store(self, path: str ) -> Union[FSMap,str]:
-        from eis_smce.data.storage.s3 import s3m
-        item_path = s3m().item_path(path)
-        if path.startswith("s3:"):
-            return s3m().store( *s3m().parse( item_path ) )
-        else:
-            return item_path
-
     def _multi_export(self, location, **kwargs ):
         sources = []
         for i in range(self.nparts):
