@@ -15,6 +15,7 @@ class S3Manager(tlc.SingletonConfigurable):
     def __init__( self, **kwargs ):
         tlc.SingletonConfigurable.__init__( self, **kwargs )
         self._client = None
+        self._resource = None
         self._fs: s3fs.S3FileSystem = None
 
     @property
@@ -22,6 +23,12 @@ class S3Manager(tlc.SingletonConfigurable):
         if self._client is None:
             self._client = boto3.client('s3')
         return self._client
+
+    @property
+    def resource(self):
+        if self._resource is None:
+            self._resource = boto3.resource('s3')
+        return self._resource
 
     @property
     def fs(self) -> s3fs.S3FileSystem:
@@ -62,6 +69,16 @@ class S3Manager(tlc.SingletonConfigurable):
             client = boto3.client('s3')
             client.download_file( bucketname, s3_item, file_path )
         return file_path
+
+    def upload_files(self, src_path: str, dest_path: str ):
+        ( bucket, item ) = self.parse( dest_path )
+        bucket = self.resource.Bucket(f"{bucket}/{item}")
+
+        for subdir, dirs, files in os.walk(src_path):
+            for file in files:
+                full_path = os.path.join(subdir, file)
+                with open(full_path, 'rb') as data:
+                    bucket.put_object( Key=full_path[len(src_path) + 1:], Body=data, ACL="bucket-owner-full-control" )
 
     def get_file_list(self, urlpath: str ) -> List[Dict]:
         from intake.source.utils import reverse_format

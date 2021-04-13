@@ -232,6 +232,7 @@ class EISDataSource( DataSource ):
 
     def export( self, path: str, **kwargs ) -> List[EISZarrSource]:
         from eis_smce.data.intake.catalog import CatalogManager, cm
+        from eis_smce.data.storage.s3 import s3m
         self.merge_dim = kwargs.get( 'merge_dim', self.merge_dim )
         concat_dim = kwargs.get( 'concat_dim', None )
         self._ds_attr_map = collections.OrderedDict()
@@ -244,6 +245,7 @@ class EISDataSource( DataSource ):
                 merged_dataset.attrs.update( self._get_merged_attrs() )
                 print(f"Exporting to zarr file: {path}")
                 merged_dataset.to_zarr( self.get_store(path), mode="w" )
+#                s3m().upload_files( src_path, dest_path )
                 zsrc = [ EISZarrSource(path) ]
             except Exception as err:
                 print(f"Merge ERROR: {err}")
