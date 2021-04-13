@@ -242,6 +242,7 @@ class EISDataSource( DataSource ):
         from eis_smce.data.storage.s3 import s3m
         self.merge_dim = kwargs.get( 'merge_dim', self.merge_dim )
         concat_dim = kwargs.get( 'concat_dim', None )
+        group = kwargs.get( 'group', None )
         self._ds_attr_map = collections.OrderedDict()
         location = os.path.dirname(path)
 
@@ -252,7 +253,7 @@ class EISDataSource( DataSource ):
                 merged_dataset.attrs.update( self._get_merged_attrs() )
                 print(f"Exporting to zarr file: {path}")
                 local_path = self.get_cache_path(path)
-                merged_dataset.to_zarr( local_path, mode="w" )
+                merged_dataset.to_zarr( local_path, mode="w", group = group )
                 s3m().upload_files( local_path, path )
                 zsrc = [ EISZarrSource(path) ]
             except Exception as err:
