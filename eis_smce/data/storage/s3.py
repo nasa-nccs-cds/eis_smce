@@ -71,7 +71,7 @@ class S3Manager(tlc.SingletonConfigurable):
     def upload_files(self, src_path: str, dest_path: str ):
         if src_path != dest_path:
             ( bucket, item ) = self.parse( dest_path )
-            bucket = self.resource.Bucket(f"{bucket}/{item}")
+            bucket = self.resource.Bucket(bucket)
             for subdir, dirs, files in os.walk(src_path):
                 for file in files:
                     full_path = os.path.join(subdir, file)
