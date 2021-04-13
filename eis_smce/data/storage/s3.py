@@ -76,7 +76,7 @@ class S3Manager(tlc.SingletonConfigurable):
                 for file in files:
                     full_path = os.path.join(subdir, file)
                     with open(full_path, 'rb') as data:
-                        key = full_path[len(src_path) + 1:]
+                        key = f"{item}/{full_path[len(src_path) + 1:]}"
                         print(f"Uploading item: {bucket}:{key}")
                         bucket.put_object( Key=key, Body=data, ACL="bucket-owner-full-control" )
 
