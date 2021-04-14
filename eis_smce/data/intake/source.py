@@ -95,24 +95,18 @@ class EISDataSource( DataSource ):
         return file_path
 
     def _translate_file(self, ipart: int, **kwargs ) -> str:
-        overwrite = kwargs.get('cache_overwrite', False )
         file_specs = self._file_list[ipart]
         local_file_path =  self.get_downloaded_filepath( file_specs.get("resolved") )
         (base_path, file_ext ) = os.path.splitext( os.path.basename(local_file_path) )
         xds: xa.Dataset = self._open_partition(ipart)
-        if file_ext in [ ".nc", ".nc4" ]:
-            nc_file_path = local_file_path
-            print(f"Opening translated file {nc_file_path}")
-        else:
-            ncfile_name = base_path + ".nc"
-            nc_file_path = os.path.join(self.cache_dir, ncfile_name)
+        ncfile_name = base_path + ".nc"
+        nc_file_path = os.path.join(self.cache_dir, ncfile_name)
         xds.attrs['local_file'] = nc_file_path
         if 'sample' not in list(xds.attrs.keys()): xds.attrs['sample'] = ipart
-        if overwrite or not os.path.exists(nc_file_path):
-            print(f"Creating translated file {nc_file_path}")
-            file_path = xds.attrs['local_file']
-            print( f"Translating file {file_path} to {nc_file_path}" )
-            xds.to_netcdf( nc_file_path, "w" )
+        print(f"Creating translated file {nc_file_path}")
+        file_path = xds.attrs['local_file']
+        print( f"Translating file {file_path} to {nc_file_path}" )
+        xds.to_netcdf( nc_file_path, "w" )
         self.update_varspecs(ipart, nc_file_path, xds)
         xds.close()
         return nc_file_path
