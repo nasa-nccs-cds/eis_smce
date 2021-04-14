@@ -43,7 +43,6 @@ class HDF4Source( EISDataSource ):
                 return np.array(sds[:, :, :, :, :]).reshape(shape)
 
         def _open_file( self, ipart: int  ) -> xa.Dataset:
-
             # Use rasterio/GDAL to read the metadata and pyHDF to read the variable data.
             file_specs = nc_keys( self._file_list[ipart] )
             rfile_path = file_specs.pop("resolved")
@@ -55,7 +54,6 @@ class HDF4Source( EISDataSource ):
             elif file_ext in [ '.hdf' ]:
                 rxr_dsets = rxr.open_rasterio(file_path)
                 dsattr = nc_keys( rxr_dsets[0].attrs if isinstance(rxr_dsets, list) else rxr_dsets.attrs )
-                dsattr.update(file_specs)
                 sd: SD = SD(file_path, SDC.READ)
                 dsets = sd.datasets().keys()
                 dims = {}
@@ -95,6 +93,7 @@ class HDF4Source( EISDataSource ):
 
             xds.attrs['remote_file'] = rfile_path
             xds.attrs['local_file'] = file_path
+            xds.attrs.update(file_specs)
             return xds
 
 
