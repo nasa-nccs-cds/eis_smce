@@ -74,12 +74,12 @@ class EISDataSource( DataSource ):
     def cache_dir(self):
         return self._cache_dir
 
-    def _open_file(self, ipart: int ) -> xa.Dataset:
+    def _open_partition(self, ipart: int) -> xa.Dataset:
         raise NotImplementedError()
 
     def _get_partition(self, ipart: int ) -> xa.Dataset:
         if ipart not in self._parts:
-            self._parts[ipart] = self._open_file( ipart )
+            self._parts[ipart] = self._open_partition(ipart)
         return self._parts[ipart]
 
     def get_local_file_path(self, data_url: str):
@@ -99,21 +99,20 @@ class EISDataSource( DataSource ):
         file_specs = self._file_list[ipart]
         local_file_path =  self.get_downloaded_filepath( file_specs.get("resolved") )
         (base_path, file_ext ) = os.path.splitext( os.path.basename(local_file_path) )
+        xds: xa.Dataset = self._open_partition(ipart)
         if file_ext in [ ".nc", ".nc4" ]:
             nc_file_path = local_file_path
+            print(f"Opening translated file {nc_file_path}")
         else:
             ncfile_name = base_path + ".nc"
             nc_file_path = os.path.join(self.cache_dir, ncfile_name)
-            if overwrite or not os.path.exists(nc_file_path):
-                print(f"Creating translated file {nc_file_path}")
-                xds: xa.Dataset = self._open_file(ipart)
-                file_path = xds.attrs['local_file']
-                xds.attrs['local_file'] = nc_file_path
-                if 'sample' not in list(xds.attrs.keys()): xds.attrs['sample'] = ipart
-                print( f"Translating file {file_path} to {nc_file_path}" )
-                xds.to_netcdf( nc_file_path, "w" )
-        print(f"Opening translated file {nc_file_path}")
-        xds: xa.Dataset = xa.open_dataset(nc_file_path)
+        xds.attrs['local_file'] = nc_file_path
+        if 'sample' not in list(xds.attrs.keys()): xds.attrs['sample'] = ipart
+        if overwrite or not os.path.exists(nc_file_path):
+            print(f"Creating translated file {nc_file_path}")
+            file_path = xds.attrs['local_file']
+            print( f"Translating file {file_path} to {nc_file_path}" )
+            xds.to_netcdf( nc_file_path, "w" )
         self.update_varspecs(ipart, nc_file_path, xds)
         xds.close()
         return nc_file_path

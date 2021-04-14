@@ -42,7 +42,7 @@ class HDF4Source( EISDataSource ):
             elif ndim == 5:
                 return np.array(sds[:, :, :, :, :]).reshape(shape)
 
-        def _open_file( self, ipart: int  ) -> xa.Dataset:
+        def _open_partition(self, ipart: int) -> xa.Dataset:
             # Use rasterio/GDAL to read the metadata and pyHDF to read the variable data.
             file_specs = nc_keys( self._file_list[ipart] )
             rfile_path = file_specs.pop("resolved")
