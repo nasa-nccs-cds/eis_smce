@@ -95,6 +95,7 @@ class EISDataSource( DataSource ):
         return file_path
 
     def _translate_file(self, ipart: int, **kwargs ) -> str:
+        overwrite = kwargs.get('cache_overwrite', True )
         file_specs = self._file_list[ipart]
         local_file_path =  self.get_downloaded_filepath( file_specs.get("resolved") )
         (base_path, file_ext ) = os.path.splitext( os.path.basename(local_file_path) )
