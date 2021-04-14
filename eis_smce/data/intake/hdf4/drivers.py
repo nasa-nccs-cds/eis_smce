@@ -43,15 +43,12 @@ class HDF4Source( EISDataSource ):
                 return np.array(sds[:, :, :, :, :]).reshape(shape)
 
         def _open_file( self, ipart: int  ) -> xa.Dataset:
-            from eis_smce.data.storage.s3 import s3m
+
             # Use rasterio/GDAL to read the metadata and pyHDF to read the variable data.
             file_specs = nc_keys( self._file_list[ipart] )
-            file_path = rfile_path = file_specs.pop("resolved")
-            if rfile_path.startswith("s3"):
-                file_path = s3m().download(rfile_path, self.cache_dir)
-                print(f"Reading file {file_path} (downloade3d from {rfile_path}) with specs {file_specs}")
-            else:
-                print(f"Reading file {file_path} with specs {file_specs}")
+            rfile_path = file_specs.pop("resolved")
+            file_path = self.get_downloaded_filepath(rfile_path)
+            print(f"Reading file {file_path} (remote: {rfile_path}) with specs {file_specs}")
             (base_path, file_ext) = os.path.splitext(os.path.basename(file_path))
             if file_ext in [ '.nc', '.nc4']:
                 xds = xa.open_dataset(file_path)

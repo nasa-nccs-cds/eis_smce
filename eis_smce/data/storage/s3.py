@@ -38,7 +38,7 @@ class S3Manager(tlc.SingletonConfigurable):
         ptoks = urlpath.split(":")[-1].strip("/").split("/")
         return ( ptoks[0], "/".join( ptoks[1:] ) )
 
-    def download( self, data_url: str, destination: str, refresh = True ):
+    def download( self, data_url: str, destination: str, refresh = False ):
         os.makedirs( destination, exist_ok=True )
         toks = data_url.split("/")
         file_name = toks[-1]
