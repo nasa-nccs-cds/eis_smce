@@ -53,9 +53,9 @@ class HDF4Source( EISDataSource ):
             else:
                 print(f"Reading file {file_path} with specs {file_specs}")
             (base_path, file_ext) = os.path.splitext(os.path.basename(file_path))
-            if file_ext in [ 'nc', 'nc4']:
+            if file_ext in [ '.nc', '.nc4']:
                 xds = xa.open_dataset(file_path)
-            elif file_ext in [ 'hdf' ]:
+            elif file_ext in [ '.hdf' ]:
                 rxr_dsets = rxr.open_rasterio(file_path)
                 dsattr = nc_keys( rxr_dsets[0].attrs if isinstance(rxr_dsets, list) else rxr_dsets.attrs )
                 dsattr.update(file_specs)
