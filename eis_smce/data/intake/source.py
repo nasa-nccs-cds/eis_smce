@@ -158,7 +158,7 @@ class EISDataSource( DataSource ):
 
     def translate( self, **kwargs ) -> List[str]:
         t0 = time.time()
-        parallel = kwargs.get('parallel', True )
+        parallel = kwargs.pop('parallel', False )
         self._load_metadata()
         print( "Transforming inputs")
         if  parallel:
@@ -283,7 +283,7 @@ class EISDataSource( DataSource ):
                 merged_dataset: xa.Dataset = self._merge_datasets( concat_dim=concat_dim )
                 merged_dataset.attrs.update( self._get_merged_attrs() )
                 local_path = self.get_cache_path(path)
-                print(f"Saving zarr file to local path: {path}")
+                print(f"Saving zarr file to local path: {local_path}")
                 merged_dataset.to_zarr( local_path, mode="w" )
                 print(f"Uploading zarr file to: {path}")
                 s3m().upload_files( local_path, path )
