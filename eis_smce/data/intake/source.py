@@ -206,9 +206,10 @@ class EISDataSource( DataSource ):
             file_lists.setdefault( sep_char.join(vflist), []).append(var)
         for (fkey, vlist) in file_lists.items():
             flist = fkey.split(sep_char)
-            print( f"MERGING vars {vlist} using files {flist} and merge_dim={merge_dim}")
+            print( f"MERGING vars {vlist} using files {flist}")
             mds1 = xa.open_mfdataset( flist, concat_dim=merge_dim, data_vars=vlist, preprocess=partial(preprocess,vlist) )
             mds = mds1 if mds is None else mds.merge(mds1)
+        print(f" --> merge_variable_lists with mvars {mvars} and merge_dim={merge_dim}\n ** file_lists = {file_lists}\n ** mds = {mds}")
         return mds
 
     # def _merge_datasets1(self, dset_paths: List[str], concat_dim: str, **kwargs ) -> xa.Dataset:
