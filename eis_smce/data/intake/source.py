@@ -291,7 +291,7 @@ class EISDataSource( DataSource ):
                 for ic in range( merged_dataset.dims[chunk_dim] ):
                     region = { chunk_dim: slice( ic ) }
                     dset_chunk = merged_dataset[ region ]
-                    print(f"  -->  Appending chunk {ic}, dims = {dset_chunk.dims} ")
+                    print(f"  -->  Appending chunk {ic}, dims = {dict(dset_chunk.dims)} ")
                     dset_chunk.to_zarr( local_path, mode="a", append_dim='time' )
                 print(f"Uploading zarr file to: {path}")
                 s3m().upload_files( local_path, path )
