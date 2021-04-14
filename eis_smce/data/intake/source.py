@@ -115,6 +115,7 @@ class EISDataSource( DataSource ):
         return nc_file_path
 
     def _translate_file(self, ipart: int, **kwargs ) -> str:
+        overwrite = kwargs.get('cache_overwrite', True)
         file_specs = self._file_list[ipart]
         local_file_path =  self.get_downloaded_filepath( file_specs.get("resolved") )
         (base_path, file_ext ) = os.path.splitext( os.path.basename(local_file_path) )
@@ -123,10 +124,11 @@ class EISDataSource( DataSource ):
         nc_file_path = os.path.join(self.cache_dir, ncfile_name)
         xds.attrs['local_file'] = nc_file_path
         if 'sample' not in list(xds.attrs.keys()): xds.attrs['sample'] = ipart
-        print(f"Creating translated file {nc_file_path}")
-        file_path = xds.attrs['local_file']
-        print( f"Translating file {file_path} to {nc_file_path}" )
-        xds.to_netcdf( nc_file_path, "w" )
+        if overwrite or not os.path.exists(nc_file_path):
+            print(f"Creating translated file {nc_file_path}")
+            file_path = xds.attrs['local_file']
+            print( f"Translating file {file_path} to {nc_file_path}" )
+            xds.to_netcdf( nc_file_path, "w" )
         file_specs[ 'translated'] = nc_file_path
         self.update_varspecs(ipart, file_specs, xds)
         xds.close()
@@ -280,9 +282,10 @@ class EISDataSource( DataSource ):
                 self.translate( **kwargs )
                 merged_dataset: xa.Dataset = self._merge_datasets( concat_dim=concat_dim )
                 merged_dataset.attrs.update( self._get_merged_attrs() )
-                print(f"Exporting to zarr file: {path}")
                 local_path = self.get_cache_path(path)
-                merged_dataset.to_zarr( local_path, mode="w", group = group )
+                print(f"Saving zarr file to local path: {path}")
+                merged_dataset.to_zarr( local_path, mode="w" )
+                print(f"Uploading zarr file to: {path}")
                 s3m().upload_files( local_path, path )
                 zsrc = EISZarrSource(path)
             except Exception as err:
