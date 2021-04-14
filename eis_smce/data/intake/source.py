@@ -216,6 +216,7 @@ class EISDataSource( DataSource ):
         mds = self._merge_variable_lists( mvars, merge_dim, self._preprocess_for_export )
         cds = self._merge_variable_lists( cvars, concat_dim )
         rds = mds if (cds is None) else cds if (mds is  None) else mds.merge( cds )
+        mds.attrs['chunk_dim'] = merge_dim
         return rds
 
     def _merge_variable_lists(self, mvars: List[str], merge_dim: str, preprocess: Callable = None ):
@@ -285,7 +286,12 @@ class EISDataSource( DataSource ):
                 local_path = self.get_cache_path(path)
                 print(f"Saving zarr file to local path: {local_path}")
                 os.makedirs( os.path.dirname(local_path), exist_ok=True)
-                merged_dataset.to_zarr( local_path, mode="w" )
+                chunk_dim = merged_dataset.attrs['chunk_dim']
+                chunk_coord: xa.DataArray  = merged_dataset.coords[ chunk_dim ]
+                for ic in range( chunk_coord.size ):
+                    region = { chunk_dim: slice( chunk_coord.tolist()[ic] ) }
+                    dset_chunk = merged_dataset[ region ]
+                    dset_chunk.to_zarr( local_path, mode="a", region=region )
                 print(f"Uploading zarr file to: {path}")
                 s3m().upload_files( local_path, path )
                 zsrc = EISZarrSource(path)
