@@ -52,46 +52,52 @@ class HDF4Source( EISDataSource ):
                 print(f"Reading file {file_path} (downloade3d from {rfile_path}) with specs {file_specs}")
             else:
                 print(f"Reading file {file_path} with specs {file_specs}")
-            rxr_dsets = rxr.open_rasterio(file_path)
-            dsattr = nc_keys( rxr_dsets[0].attrs if isinstance(rxr_dsets, list) else rxr_dsets.attrs )
-            dsattr.update(file_specs)
-            sd: SD = SD(file_path, SDC.READ)
-            dsets = sd.datasets().keys()
-            dims = {}
-            coords = {}
-            data_vars = {}
-            for dsid in dsets:
-                nc_vid = nc_id( dsid )
-                sds = sd.select(dsid)
-                sd_dims: Dict[str,int] = sds.dimensions()
-                nc_dims: Dict[str,int] = nc_keys( sd_dims )
-                attrs = nc_keys( sds.attributes() )
-                attrs['DIMS'] = list(nc_dims.keys())
-                for did, dsize in nc_dims.items():
-                    if did in dims:
-                        assert dsize == dims[did], f"Dimension size discrepancy for dimension {did}"
-                    else:
-                        dims[did] = dsize
-                    if did not in coords.keys():
-                        coords[did] = np.arange(0, dsize)
+            (base_path, file_ext) = os.path.splitext(os.path.basename(file_path))
+            if file_ext in [ 'nc', 'nc4']:
+                xds = xa.open_dataset(file_path)
+            elif file_ext in [ 'hdf' ]:
+                rxr_dsets = rxr.open_rasterio(file_path)
+                dsattr = nc_keys( rxr_dsets[0].attrs if isinstance(rxr_dsets, list) else rxr_dsets.attrs )
+                dsattr.update(file_specs)
+                sd: SD = SD(file_path, SDC.READ)
+                dsets = sd.datasets().keys()
+                dims = {}
+                coords = {}
+                data_vars = {}
+                for dsid in dsets:
+                    nc_vid = nc_id( dsid )
+                    sds = sd.select(dsid)
+                    sd_dims: Dict[str,int] = sds.dimensions()
+                    nc_dims: Dict[str,int] = nc_keys( sd_dims )
+                    attrs = nc_keys( sds.attributes() )
+                    attrs['DIMS'] = list(nc_dims.keys())
+                    for did, dsize in nc_dims.items():
+                        if did in dims:
+                            assert dsize == dims[did], f"Dimension size discrepancy for dimension {did}"
+                        else:
+                            dims[did] = dsize
+                        if did not in coords.keys():
+                            coords[did] = np.arange(0, dsize)
 
-                xcoords = [coords[did] for did in nc_dims.keys()]
-                xdims = nc_dims.keys()
-                shape = [dims[did] for did in nc_dims.keys()]
-                try:
-                    data = self._get_data(sds, shape)
-#                    print(f"Creating DataArray {dsid}, DIMS = {attrs['DIMS']}, file = {file_path}")
-                    data_vars[nc_vid] = xa.DataArray(data, xcoords, xdims, nc_vid, attrs)
-                except Exception as err:
-                    print(
-                        f"Error extracting data for sds {dsid}, xdims={xdims}, xcoords={xcoords}, shape={shape}: {err}")
-                    print(f"sd_dims.items() = {sd_dims.items()}, coords={coords}, dims={dims}")
+                    xcoords = [coords[did] for did in nc_dims.keys()]
+                    xdims = nc_dims.keys()
+                    shape = [dims[did] for did in nc_dims.keys()]
+                    try:
+                        data = self._get_data(sds, shape)
+    #                    print(f"Creating DataArray {dsid}, DIMS = {attrs['DIMS']}, file = {file_path}")
+                        data_vars[nc_vid] = xa.DataArray(data, xcoords, xdims, nc_vid, attrs)
+                    except Exception as err:
+                        print(
+                            f"Error extracting data for sds {dsid}, xdims={xdims}, xcoords={xcoords}, shape={shape}: {err}")
+                        print(f"sd_dims.items() = {sd_dims.items()}, coords={coords}, dims={dims}")
 
-            xds = xa.Dataset(data_vars, coords, dsattr)
+                xds = xa.Dataset(data_vars, coords, dsattr)
+                sd.end()
+            else:
+                raise Exception( f"Unsupported file extension: {file_ext}")
+
             xds.attrs['remote_file'] = rfile_path
             xds.attrs['local_file'] = file_path
-            sd.end()
-
             return xds
 
 

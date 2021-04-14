@@ -93,7 +93,8 @@ class EISDataSource( DataSource ):
         overwrite = kwargs.get('cache_overwrite', False )
         file_specs = self._file_list[ipart]
         local_file_path =  self.get_local_file_path( file_specs.get("resolved") )
-        ncfile_name = os.path.splitext( os.path.basename(local_file_path) )[0] + ".nc"
+        (base_path, file_ext ) = os.path.splitext( os.path.basename(local_file_path) )
+        ncfile_name = base_path + ".nc"
         nc_file_path = os.path.join(self.cache_dir, ncfile_name)
         if overwrite or not os.path.exists(nc_file_path):
             print(f"Creating translated file {nc_file_path}")
