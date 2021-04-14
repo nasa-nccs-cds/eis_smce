@@ -287,9 +287,9 @@ class EISDataSource( DataSource ):
                 print(f"Saving zarr file to local path: {local_path}")
                 os.makedirs( os.path.dirname(local_path), exist_ok=True)
                 chunk_dim = merged_dataset.attrs['chunk_dim']
-                chunk_coord: xa.DataArray  = merged_dataset.coords[ chunk_dim ]
-                for ic in range( chunk_coord.size ):
-                    region = { chunk_dim: slice( chunk_coord.data[ic] ) }
+ #               chunk_coord: xa.DataArray  = merged_dataset.coords[ chunk_dim ]
+                for ic in range( merged_dataset.dims[chunk_dim] ):
+                    region = { chunk_dim: slice( ic ) }
                     dset_chunk = merged_dataset[ region ]
                     dset_chunk.to_zarr( local_path, mode="a", region=region )
                 print(f"Uploading zarr file to: {path}")
