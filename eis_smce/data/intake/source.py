@@ -284,6 +284,7 @@ class EISDataSource( DataSource ):
                 merged_dataset.attrs.update( self._get_merged_attrs() )
                 local_path = self.get_cache_path(path)
                 print(f"Saving zarr file to local path: {local_path}")
+                os.makedirs( os.path.dirname(local_path), exist_ok=True)
                 merged_dataset.to_zarr( local_path, mode="w" )
                 print(f"Uploading zarr file to: {path}")
                 s3m().upload_files( local_path, path )
