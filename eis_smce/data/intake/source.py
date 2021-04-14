@@ -289,7 +289,7 @@ class EISDataSource( DataSource ):
                 chunk_dim = merged_dataset.attrs['chunk_dim']
  #               chunk_coord: xa.DataArray  = merged_dataset.coords[ chunk_dim ]
                 for ic in range( merged_dataset.dims[chunk_dim] ):
-                    region = { chunk_dim: slice( ic ) }
+                    region = { chunk_dim: slice( ic, ic+1 ) }
                     dset_chunk = merged_dataset[ region ]
                     print(f"  -->  Appending chunk {ic}, dims = {dict(dset_chunk.dims)} ")
                     dset_chunk.to_zarr( local_path, mode="a", append_dim='time' )
