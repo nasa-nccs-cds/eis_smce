@@ -94,7 +94,7 @@ class EISDataSource( DataSource ):
         if file_path.startswith("s3"): file_path = s3m().download( file_path, self.cache_dir )
         return file_path
 
-    def _translate_file(self, ipart: int, **kwargs ) -> str:
+    def _translate_file_nocopy(self, ipart: int, **kwargs ) -> str:
         overwrite = kwargs.get('cache_overwrite', True )
         file_specs = self._file_list[ipart]
         local_file_path =  self.get_downloaded_filepath( file_specs.get("resolved") )
@@ -109,6 +109,24 @@ class EISDataSource( DataSource ):
             if overwrite or not os.path.exists(nc_file_path):
                 print(f"Creating translated file {nc_file_path}")
                 xds.to_netcdf( nc_file_path, "w" )
+        file_specs[ 'translated'] = nc_file_path
+        self.update_varspecs(ipart, file_specs, xds)
+        xds.close()
+        return nc_file_path
+
+    def _translate_file(self, ipart: int, **kwargs ) -> str:
+        file_specs = self._file_list[ipart]
+        local_file_path =  self.get_downloaded_filepath( file_specs.get("resolved") )
+        (base_path, file_ext ) = os.path.splitext( os.path.basename(local_file_path) )
+        xds: xa.Dataset = self._open_partition(ipart)
+        ncfile_name = base_path + ".nc"
+        nc_file_path = os.path.join(self.cache_dir, ncfile_name)
+        xds.attrs['local_file'] = nc_file_path
+        if 'sample' not in list(xds.attrs.keys()): xds.attrs['sample'] = ipart
+        print(f"Creating translated file {nc_file_path}")
+        file_path = xds.attrs['local_file']
+        print( f"Translating file {file_path} to {nc_file_path}" )
+        xds.to_netcdf( nc_file_path, "w" )
         file_specs[ 'translated'] = nc_file_path
         self.update_varspecs(ipart, file_specs, xds)
         xds.close()
@@ -153,7 +171,7 @@ class EISDataSource( DataSource ):
         return self.read()
 
     def _preprocess_for_export(self, vlist: List[str], ds: xa.Dataset):
-        print(f"Preprocessed vars for dataset {ds} with attrs {ds.attrs}, ds: {dir(ds)}")
+        print(f"Preprocessed vars for dataset {ds} ") # with attrs {ds.attrs}\n ds: {dir(ds)}")
         new_vars = {}
         merge_axis_val = ds.attrs[self.merge_dim]
         self._ds_attr_map[ merge_axis_val ] = ds.attrs
@@ -209,6 +227,7 @@ class EISDataSource( DataSource ):
             plist = fkey.split(sep_char)
             flist = [ Varspec.file_list[ int(ip)] for ip in plist ]
             print( f"MERGING vars {vlist} using files {flist}")
+            mds1 = xa.open_dataset()
             mds1 = xa.open_mfdataset( flist, concat_dim=merge_dim, data_vars=vlist, preprocess=partial(preprocess,vlist) )
             mds = mds1 if mds is None else mds.merge(mds1)
         print(f" --> merge_variable_lists with mvars {mvars} and merge_dim={merge_dim}\n ** file_lists = {file_lists}\n ** mds = {mds}")
