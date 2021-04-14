@@ -28,7 +28,7 @@ class Varspec:
         for (ip, shape) in self.instances.items():
             if (shape[di] > 0):
                 print( f"NON-empty file: var={self.vid}, merge_dim={dim}, shape = {shape}, file={self.file_list[ip]}")
-                nefiles.append( self.file_list[ip] )
+                nefiles.append( str(ip) )
         nefiles.sort()
         return nefiles
 
@@ -100,21 +100,23 @@ class EISDataSource( DataSource ):
         local_file_path =  self.get_downloaded_filepath( file_specs.get("resolved") )
         (base_path, file_ext ) = os.path.splitext( os.path.basename(local_file_path) )
         xds: xa.Dataset = self._open_partition(ipart)
-        ncfile_name = base_path + ".nc"
-        nc_file_path = os.path.join(self.cache_dir, ncfile_name)
-        xds.attrs['local_file'] = nc_file_path
-        if 'sample' not in list(xds.attrs.keys()): xds.attrs['sample'] = ipart
-        print(f"Creating translated file {nc_file_path}")
-        file_path = xds.attrs['local_file']
-        print( f"Translating file {file_path} to {nc_file_path}" )
-        xds.to_netcdf( nc_file_path, "w" )
-        self.update_varspecs(ipart, nc_file_path, xds)
+        if file_ext in [ ".nc", ".nc4" ]:
+            nc_file_path = local_file_path
+            print(f"Opening translated file {nc_file_path}")
+        else:
+            ncfile_name = base_path + ".nc"
+            nc_file_path = os.path.join(self.cache_dir, ncfile_name)
+            if overwrite or not os.path.exists(nc_file_path):
+                print(f"Creating translated file {nc_file_path}")
+                xds.to_netcdf( nc_file_path, "w" )
+        file_specs[ 'translated'] = nc_file_path
+        self.update_varspecs(ipart, file_specs, xds)
         xds.close()
         return nc_file_path
 
-    def update_varspecs(self, ipart: int, file_path: str, xds: xa.Dataset ):
-        Varspec.addFile(ipart, file_path)
-        self._file_list[ipart]["translated"] = file_path
+    def update_varspecs(self, ipart: int, file_specs: Dict[str,str], xds: xa.Dataset ):
+        Varspec.addFile(ipart, file_specs['translated'] )
+        self._file_list[ipart].update( file_specs )
         for vid, xar in xds.items():
             vspec = self._varspecs.setdefault(vid, Varspec(vid, xar.dims))
             vspec.add_instance(ipart, xar.shape)
@@ -154,13 +156,20 @@ class EISDataSource( DataSource ):
         new_vars = {}
         merge_axis_val = ds.attrs[self.merge_dim]
         self._ds_attr_map[ merge_axis_val ] = ds.attrs
-        print(f"Preprocessed vars:")
+        print(f"Preprocessed vars for dataset with attrs {ds.attrs}")
         for vname in vlist:
             xar = ds[vname]
             nvar = xar.expand_dims({self.merge_dim: np.array([merge_axis_val])}, 0)
             print(f" -- {vname}: shape={nvar.shape}, dims={nvar.dims}")
             new_vars[vname] = nvar
         return xa.Dataset(new_vars)
+
+    def test_for_equality(self, attvals: List[Any]):
+        if ( len(attvals) != self.nparts ): return False
+        if isinstance( attvals[0], np.ndarray ):
+            return all( (x == attvals[0]).all() for x in attvals)
+        else:
+            return all( (x == attvals[0]) for x in attvals)
 
     def _get_merged_attrs( self ) -> Dict:
         merged_attrs = dict()
@@ -170,7 +179,7 @@ class EISDataSource( DataSource ):
                 att_dict[ axval ] = v
         for attr_name, att_map in  merged_attrs.items():
             attvals = list(att_map.values())
-            if (len(attvals) == self.nparts) and all(x == attvals[0] for x in attvals):
+            if self.test_for_equality( attvals ):
                    merged_attrs[ attr_name ] = attvals[0]
             else:  merged_attrs[ attr_name ] = str( dsort(att_map) )
         return merged_attrs
@@ -191,13 +200,14 @@ class EISDataSource( DataSource ):
 
     def _merge_variable_lists(self, mvars: List[str], merge_dim: str, preprocess: Callable = None ):
         mds: Optional[xa.Dataset] = None
-        sep_char= '#'
+        sep_char= '.'
         file_lists: Dict[str,List] = {}
         for var in mvars:
-            vflist: List[str] = self._varspecs[var].non_empty_files(merge_dim)
-            file_lists.setdefault( sep_char.join(vflist), []).append(var)
+            plist: List[str] = self._varspecs[var].non_empty_files(merge_dim)
+            file_lists.setdefault( sep_char.join(plist), []).append(var)
         for (fkey, vlist) in file_lists.items():
-            flist = fkey.split(sep_char)
+            plist = fkey.split(sep_char)
+            flist = [ Varspec.file_list[ int(ip)] for ip in plist ]
             print( f"MERGING vars {vlist} using files {flist}")
             mds1 = xa.open_mfdataset( flist, concat_dim=merge_dim, data_vars=vlist, preprocess=partial(preprocess,vlist) )
             mds = mds1 if mds is None else mds.merge(mds1)
