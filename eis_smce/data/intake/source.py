@@ -112,12 +112,10 @@ class EISDataSource( DataSource ):
                 if 'sample' not in list(xds.attrs.keys()): xds.attrs['sample'] = ipart
                 print( f"Translating file {file_path} to {nc_file_path}" )
                 xds.to_netcdf( nc_file_path, "w" )
-            else:
-                print(f"Opening translated file {nc_file_path}")
-                xds: xa.Dataset = xa.open_dataset(nc_file_path)
-
-            self.update_varspecs( ipart, nc_file_path, xds )
-            xds.close()
+        print(f"Opening translated file {nc_file_path}")
+        xds: xa.Dataset = xa.open_dataset(nc_file_path)
+        self.update_varspecs(ipart, nc_file_path, xds)
+        xds.close()
         return nc_file_path
 
     def update_varspecs(self, ipart: int, file_path: str, xds: xa.Dataset ):

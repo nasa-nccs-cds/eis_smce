@@ -24,10 +24,6 @@ Setup Amazon Credentials
 
 * Create Access Keys:  https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html#Using_CreateAccessKey
 
-* Install CLI:  https://docs.aws.amazon.com/cli/latest/userguide/install-linux.html
-
-    > pip install awscli --upgrade --user
-
 * Setup Configuration (enter access keys created above):
 
     > aws configure
