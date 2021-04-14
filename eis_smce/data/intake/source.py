@@ -153,10 +153,10 @@ class EISDataSource( DataSource ):
         return self.read()
 
     def _preprocess_for_export(self, vlist: List[str], ds: xa.Dataset):
+        print(f"Preprocessed vars for dataset with attrs {ds.attrs}")
         new_vars = {}
         merge_axis_val = ds.attrs[self.merge_dim]
         self._ds_attr_map[ merge_axis_val ] = ds.attrs
-        print(f"Preprocessed vars for dataset with attrs {ds.attrs}")
         for vname in vlist:
             xar = ds[vname]
             nvar = xar.expand_dims({self.merge_dim: np.array([merge_axis_val])}, 0)
