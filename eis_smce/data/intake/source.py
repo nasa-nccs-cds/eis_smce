@@ -289,7 +289,7 @@ class EISDataSource( DataSource ):
                 chunk_dim = merged_dataset.attrs['chunk_dim']
                 chunk_coord: xa.DataArray  = merged_dataset.coords[ chunk_dim ]
                 for ic in range( chunk_coord.size ):
-                    region = { chunk_dim: slice( chunk_coord.tolist()[ic] ) }
+                    region = { chunk_dim: slice( chunk_coord.data[ic] ) }
                     dset_chunk = merged_dataset[ region ]
                     dset_chunk.to_zarr( local_path, mode="a", region=region )
                 print(f"Uploading zarr file to: {path}")
