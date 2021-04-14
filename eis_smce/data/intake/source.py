@@ -152,7 +152,7 @@ class EISDataSource( DataSource ):
             dsparts = dask.compute( *dsparts_delayed )
         else:
             dsparts = [ self._translate_file( i, **kwargs ) for i in range(self.nparts) ]
-        print( f"Completed translate (parallel={parallel}) in {time.time()-t0} sec")
+        print( f"Completed translate (parallel={parallel}) in {time.time()-t0} sec, result = {dsparts}")
         return dsparts
 
     def to_dask(self) -> xa.Dataset:
