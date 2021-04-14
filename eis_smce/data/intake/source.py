@@ -237,8 +237,7 @@ class EISDataSource( DataSource ):
         return path
 
 
-    def export( self, path: str, **kwargs ) -> List[EISZarrSource]:
-        from eis_smce.data.intake.catalog import CatalogManager, cm
+    def export( self, path: str, **kwargs ) -> EISZarrSource:
         from eis_smce.data.storage.s3 import s3m
         self.merge_dim = kwargs.get( 'merge_dim', self.merge_dim )
         concat_dim = kwargs.get( 'concat_dim', None )
@@ -255,7 +254,7 @@ class EISDataSource( DataSource ):
                 local_path = self.get_cache_path(path)
                 merged_dataset.to_zarr( local_path, mode="w", group = group )
                 s3m().upload_files( local_path, path )
-                zsrc = [ EISZarrSource(path) ]
+                zsrc = EISZarrSource(path)
             except Exception as err:
                 print(f"Merge ERROR: {err}")
                 traceback.print_exc()
@@ -264,11 +263,9 @@ class EISDataSource( DataSource ):
         else:
             zsrc = self._multi_export( location, **kwargs )
 
-        if kwargs.get('update_cat', True):
-            for zs in zsrc: cm().addEntry(zs, **kwargs )
         return zsrc
 
-    def _multi_export(self, location, **kwargs ):
+    def _multi_export(self, location, **kwargs ) -> EISZarrSource:
         sources = []
         for i in range(self.nparts):
             file_spec = self._file_list[i]
@@ -280,7 +277,7 @@ class EISDataSource( DataSource ):
             source.export(zpath, mode="w")
             zs = EISZarrSource(zpath)
             sources.append(zs)
-        return sources
+        return sources[0]                           # TODO: Create zarr group
 
     def get_zarr_source(self, zpath: str ):
         zsrc = EISZarrSource(zpath)

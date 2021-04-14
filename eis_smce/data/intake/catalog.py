@@ -13,6 +13,7 @@ class CatalogManager(tlc.SingletonConfigurable):
     def __init__( self, **kwargs ):
         tlc.SingletonConfigurable.__init__( self, **kwargs )
         self._s3 = None
+        self._sources = [ "sources:" ]
 
     @property
     def s3(self):
@@ -44,20 +45,23 @@ class CatalogManager(tlc.SingletonConfigurable):
         return intake.open_catalog(  cat_path )
 
     def addEntry( self, source: EISZarrSource, **kwargs ):
-        entry_yml = source.yaml( **kwargs )
-        file_path = kwargs.get( 'path', None )
-        if file_path is None:
-            bucket = kwargs.get('bucket', None)
-            assert bucket is not None, "Must supply the 'bucket' argument when adding an entry to an s3 catalog"
-            catalog = f"catalog/{source.cat_name}.yml"
-            self.s3.Object( bucket, catalog ).put( Body=entry_yml, ACL="bucket-owner-full-control" )
-        else:
-            catalog = f"{file_path}/{source.cat_name}.yml"
-            self.write_cat_file( catalog, entry_yml )
-        print(f"addEntry: Catalog={catalog}, Entry = {entry_yml}")
+        source_yml = source.yaml( **kwargs )
+        self._sources.append( source_yml )
 
-    def write_cat_file(self, catalog: str, entry: str ):
-        with open( catalog, "w" ) as fp:
-            fp.write( entry )
+    def get_cat_yml( self ):
+        return "\n".join( self._sources )
+
+    def write_s3( self, bucket: str, cat_name: str ):
+        catalog = f"catalog/{cat_name}.yml"
+        self.s3.Object( bucket, catalog ).put( Body=self.get_cat_yml() , ACL="bucket-owner-full-control" )
+
+    def write_local(self, path: str, cat_name: str):
+        catalog = f"{path}/{cat_name}.yml"
+        with open(catalog, "w") as fp:
+            fp.write( self.get_cat_yml() )
+
+    def clear(self):
+        self._s3 = None
+        self._sources = [ "sources:" ]
 
 def cm() -> CatalogManager: return CatalogManager.instance()

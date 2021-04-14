@@ -24,9 +24,5 @@ class EISZarrSource( ZarrSource ):
         metadata['dimensions'] = {key: list(c.shape) for key, c in dset.coords.items()}
         metadata['variables'] = {key: list(v.dims) for key, v in dset.items()}
         metadata['plots'] = self.get_plots()
-        data = {
-            'sources': {
-                self.cat_name: { 'driver': self.classname, 'description': description, 'metadata': metadata, 'args': dict( urlpath=self.urlpath ) }
-            }
-        }
-        return yaml.dump(data, default_flow_style=False)
+        data = { self.cat_name: { 'driver': self.classname, 'description': description, 'metadata': metadata, 'args': dict( urlpath=self.urlpath ) } }
+        return yaml.dump( data, indent=2 )

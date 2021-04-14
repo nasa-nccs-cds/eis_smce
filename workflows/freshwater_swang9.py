@@ -1,6 +1,8 @@
 import intake
+from eis_smce.data.intake.catalog import cm
 
 input_dir = "/discover/nobackup/projects/eis_freshwater/swang9/OL_1km/OUTPUT.RST.2013"
+name = "freshwater.swang9.OL_1km.2013"
 bucket = "eis-dh-hydro"
 month = "201302"
 s3_prefix = f"projects/eis_freshwater/swang9/OL_1km/OUTPUT.RST.2013"
@@ -28,6 +30,9 @@ if __name__ == '__main__':
     for dset in dsets:
         [input, output] = [dset.pop(key) for key in [ 'input', 'output' ] ]
         h4s = intake.open_hdf4( input )
-        h4s.export( output, bucket=bucket, **dset )
+        zs = h4s.export( output, bucket=bucket, **dset )
+        cm().addEntry( zs  )
+
+    cm().write_s3( bucket, name )
 
 
