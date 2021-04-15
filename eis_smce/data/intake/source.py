@@ -76,13 +76,13 @@ class EISDataSource( DataSource ):
     def _get_partition(self, ipart: int ) -> xa.Dataset:
         if ipart not in self._parts:
             xds: xa.Dataset = self._open_partition(ipart)
-            if self.merge_dim not in xds.dims.keys():
+            if self.merge_dim in xds.dims.keys():
+                self._parts[ipart] = xds
+            else:
                 merge_coord_val = xds.attrs.get( self.merge_dim, ipart )
                 merge_coord = { self.merge_dim: np.array(merge_coord_val) }
-                xds.expand_dims(merge_coord, 0)
-            self._parts[ipart] = xds
-        else:
-            xds = self._parts[ipart]
+                self._parts[ipart] = xds.expand_dims(merge_coord, 0)
+        xds = self._parts[ipart]
         xds.to_netcdf("/tmp/xds.nc", "w")
         return xds
 
