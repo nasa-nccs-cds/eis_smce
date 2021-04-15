@@ -120,6 +120,7 @@ class EISDataSource( DataSource ):
     def export(self, path: str, **kwargs) -> EISZarrSource:
         from eis_smce.data.storage.s3 import s3m
         local_path = self.get_cache_path(path)
+        self.merge_dim = kwargs.get( 'merge_dim', self.merge_dim )
         mds: xa.Dataset = self.to_dask( **kwargs )
         print(f" merged_dset[{self.merge_dim}] -> zarr: {local_path}\n   mds = {mds}")
         store = zarr.DirectoryStore(local_path)
