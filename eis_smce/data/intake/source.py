@@ -117,7 +117,7 @@ class EISDataSource( DataSource ):
             path = f"{self._cache_dir}/{item}"
         return path
 
-    def export(self, path: str, **kwargs) -> EISZarrSource:
+    def export_serial(self, path: str, **kwargs) -> EISZarrSource:
         from eis_smce.data.storage.s3 import s3m
         local_path = self.get_cache_path(path)
         self.merge_dim = kwargs.get( 'merge_dim', self.merge_dim )
@@ -135,11 +135,41 @@ class EISDataSource( DataSource ):
         zsrc = EISZarrSource(path)
         return zsrc
 
-    def _export_partition( self, store: zarr.DirectoryStore, dset: xa.Dataset, ipart: int ):
-        region = { self.merge_dim: slice(ipart, ipart + 1) }
+    def export(self, path: str, **kwargs) -> EISZarrSource:
+        from eis_smce.data.storage.s3 import s3m
+        local_path = self.get_cache_path(path)
+        npart_blocks = kwargs.get( 'parallel_parts', 1 )
+        self.merge_dim = kwargs.get( 'merge_dim', self.merge_dim )
+        mds: xa.Dataset = self.to_dask( **kwargs )
+        print(f" merged_dset[{self.merge_dim}] -> zarr: {local_path}\n   mds = {mds}")
+        mds.to_zarr( local_path, mode="w", compute=False, consolidated=True )
+
+        if npart_blocks == 1:
+            for ip in range(0,self.nparts):
+                print( f"Exporting partition {ip}")
+                self._export_partition( local_path, mds, self.merge_dim, ip )
+        else:
+            for ip in range(0,self.nparts,npart_blocks):
+                npart_block = min( npart_blocks, self.nparts-ip )
+                print(f"Exporting {npart_block} partitions at p0={ip}")
+                self._export_partitions( local_path, mds, self.merge_dim, ip, npart_block )
+        mds.close()
+
+        print(f"Uploading zarr file to: {path}")
+        s3m().upload_files(local_path, path)
+        zsrc = EISZarrSource(path)
+        return zsrc
+
+    def _export_partitions( self, local_path: str, dset: xa.Dataset, merge_dim: str, ipart0: int, nparts: int ):
+        ops = [ dask.delayed(self._export_partition)( local_path, dset, merge_dim, ip ) for ip in range(ipart0,ipart0+nparts) ]
+        dask.compute( ops )
+
+    @staticmethod
+    def _export_partition(  local_path: str, dset: xa.Dataset, merge_dim: str, ipart: int ):
+        region = { merge_dim: slice(ipart, ipart + 1) }
         xds: xa.Dataset = dset[region]
         print(f" Exporting P{ipart}" )
-        xds.to_zarr(store, mode='a', region=region)
+        xds.to_zarr(local_path, mode='a', region=region)
         xds.close()
 
     def get_zarr_source(self, zpath: str ):
