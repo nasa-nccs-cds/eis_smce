@@ -164,32 +164,28 @@ class EISDataSource( DataSource ):
         from eis_smce.data.storage.s3 import s3m
         self.merge_dim = kwargs.get('merge_dim', self.merge_dim)
         self._load_metadata()
-        # concat_dim = kwargs.get( 'concat_dim', None )
-        # group = kwargs.get( 'group', None )
-        # location = os.path.dirname(path)
         local_path = self.get_cache_path(path)
-        if os.path.exists(local_path): shutil.rmtree(local_path)
+#        if os.path.exists(local_path): shutil.rmtree(local_path)
         mds = xa.open_mfdataset(self.get_file_list(), concat_dim=self.merge_dim, coords="minimal", data_vars="all")
         print(f" merged_dset[{self.merge_dim}] -> zarr: {local_path}\n   mds = {mds}")
         store = zarr.DirectoryStore(local_path)
-        mds.to_zarr(store, compute=False)
-#        coords = list(mds.coords.keys())
- #       data_cars = list(mds.keys())
- #       print(f" Exporting P{ip}")
+        mds.to_zarr( store, mode="w", compute=False, consolidated=True )
 
-        for ip in range(self.nparts):
-            region = {self.merge_dim: slice(ip, ip + 1)}
-            xds: xa.Dataset = mds[region]
-            print(f" Exporting P{ip}")
-            #            print(f" P{ip}: export_to_zarr[{self.merge_dim}]: xds: {xds}")
-            xds.to_zarr(store, mode='a', region=region)
-            xds.close()
+        dsparts_delayed = [ dask.delayed(self._export_partition)( store, mds, self.merge_dim, ip ) for ip in range(self.nparts)]
+        dask.compute( *dsparts_delayed )
         mds.close()
 
         print(f"Uploading zarr file to: {path}")
         s3m().upload_files(local_path, path)
         zsrc = EISZarrSource(path)
         return zsrc
+
+    def _export_partition(self, store: zarr.DirectoryStore, dset: xa.Dataset, merge_dim: str, ipart: int ):
+        region = { merge_dim: slice(ipart, ipart + 1) }
+        xds: xa.Dataset = dset[region]
+        print(f" Exporting P{ipart}" )
+        xds.to_zarr(store, mode='a', region=region)
+        xds.close()
 
     def get_zarr_source(self, zpath: str ):
         zsrc = EISZarrSource(zpath)
