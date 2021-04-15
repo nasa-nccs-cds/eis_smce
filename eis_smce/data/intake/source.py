@@ -85,6 +85,13 @@ class EISDataSource( DataSource ):
         xds = self._parts[ipart]
         return xds
 
+    def get_file_path(self, ipart: int ) -> str:
+        rfile_path = self._file_list[ipart].get("resolved")
+        return self.get_downloaded_filepath( rfile_path )
+
+    def get_file_list(self) -> List[str]:
+        return [ self.get_file_path(ip) for ip in range(self.nparts) ]
+
     def get_local_file_path(self, data_url: str):
         if data_url.startswith("s3"):
             toks = data_url.split("/")
@@ -135,14 +142,16 @@ class EISDataSource( DataSource ):
         # group = kwargs.get( 'group', None )
         # location = os.path.dirname(path)
         local_path = self.get_cache_path(path)
-        mds = xa.concat( [ self._get_partition( ip ) for ip in range(self.nparts)], dim=self.merge_dim )
-        print(f" merged_dset[{self.merge_dim}]: mds = {mds}")
+        mds = xa.open_mfdataset( self.get_file_list(), concat_dim=self.merge_dim, coords= "minimal" )
+        print(f" merged_dset[{self.merge_dim}] -> zarr: {local_path}\n   mds = {mds}")
+        mds.to_zarr( local_path, compute=False )
 
         for ip in range( self.nparts ):
             xds: xa.Dataset= self._get_partition( ip )
-#            region = { self.merge_dim: slice( ip, ip+1 ) }
-            print(f" P{ip}: export_to_zarr[{self.merge_dim}]: xds: {xds}")
-            xds.to_zarr( local_path, mode="a", append_dim=self.merge_dim )
+            region = { self.merge_dim: slice( ip, ip+1 ) }
+            print(f" Exporting P{ip}" )
+#            print(f" P{ip}: export_to_zarr[{self.merge_dim}]: xds: {xds}")
+            xds.to_zarr( local_path, region=region )
             xds.close()
 
         print(f"Uploading zarr file to: {path}")
