@@ -151,7 +151,7 @@ class EISDataSource( DataSource ):
             region = { self.merge_dim: slice( ip, ip+1 ) }
             print(f" Exporting P{ip}" )
 #            print(f" P{ip}: export_to_zarr[{self.merge_dim}]: xds: {xds}")
-            xds.to_zarr( local_path, region=region )
+            xds.to_zarr( local_path, mode='a', region=region )
             xds.close()
 
         print(f"Uploading zarr file to: {path}")
