@@ -61,6 +61,7 @@ class EISDataSource( DataSource ):
 #        dask.config.set(scheduler='threading')
         self._file_list: List[ Dict[str,str] ] = None
         self._parts: Dict[int,xa.Dataset] = {}
+        self.merge_dim = "sample"
         self._schema: Schema = None
         self._ds: xa.Dataset = None
         self.nparts = -1
