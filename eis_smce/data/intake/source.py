@@ -129,6 +129,7 @@ class EISDataSource( DataSource ):
     def export( self, path: str, **kwargs ) -> EISZarrSource:
         from eis_smce.data.storage.s3 import s3m
         self.merge_dim = kwargs.get( 'merge_dim', self.merge_dim )
+        self._load_metadata()
         # concat_dim = kwargs.get( 'concat_dim', None )
         # group = kwargs.get( 'group', None )
         # location = os.path.dirname(path)
