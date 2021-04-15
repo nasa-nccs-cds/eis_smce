@@ -58,7 +58,6 @@ class EISDataSource( DataSource ):
     def __init__(self, **kwargs ):
         self._cache_dir = kwargs.pop('cache_dir', os.path.expanduser("~/.eis_smce/cache"))
         super(EISDataSource, self).__init__( **kwargs )
-        dask.config.set(scheduler='threading')   # "processes" 'threading'
         self._file_list: List[ Dict[str,str] ] = None
         self._parts: Dict[int,xa.Dataset] = {}
         self.merge_dim = "sample"
@@ -99,6 +98,7 @@ class EISDataSource( DataSource ):
         return self.read( **kwargs )
 
     def read( self, **kwargs ) -> xa.Dataset:
+        dask.config.set(scheduler='processes')  # "processes" 'threading'
         self._load_metadata()
         self.merge_dim = kwargs.get('merge_dim', self.merge_dim)
         file_list = self.get_file_list()
@@ -130,6 +130,7 @@ class EISDataSource( DataSource ):
         mds: xa.Dataset = self.to_dask( **kwargs )
         print(f" merged_dset[{self.merge_dim}] -> zarr: {local_path}\n   mds = {mds}")
         mds.to_zarr( local_path, mode="w", compute=False, consolidated=True )
+        dask.config.set(scheduler='threading')
 
         if npart_blocks == 1:
             for ip in range(0,self.nparts):
