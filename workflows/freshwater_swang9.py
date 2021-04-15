@@ -15,7 +15,8 @@ dsets = [
             cache_overwrite = False ),
 
     dict(   input=f"file://{input_dir}/ROUTING/{month}/LIS_HIST" + "_{time}.d01.nc",
-            output=f"s3://{bucket}/{s3_prefix}/ROUTING/LIS_HIST.d01.zarr" ),
+            output=f"s3://{bucket}/{s3_prefix}/ROUTING/LIS_HIST.d01.zarr",
+            cache_overwrite = False  ),
 
     dict(   input=f"file://{input_dir}/SURFACEMODEL/{month}/LIS_HIST" + "_{time}.d01.nc",
             output=f"s3://{bucket}/{s3_prefix}/SURFACEMODEL/LIS_HIST.d01.zarr" ),
