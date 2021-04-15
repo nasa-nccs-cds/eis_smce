@@ -134,7 +134,7 @@ class EISDataSource( DataSource ):
             path = f"{self._cache_dir}/{item}"
         return path
 
-    def export( self, path: str, **kwargs ) -> EISZarrSource:
+    def export_append( self, path: str, **kwargs ) -> EISZarrSource:
         from eis_smce.data.storage.s3 import s3m
         self.merge_dim = kwargs.get( 'merge_dim', self.merge_dim )
         self._load_metadata()
@@ -160,7 +160,7 @@ class EISDataSource( DataSource ):
         zsrc = EISZarrSource(path)
         return zsrc
 
-    def export_region(self, path: str, **kwargs) -> EISZarrSource:
+    def export(self, path: str, **kwargs) -> EISZarrSource:
         from eis_smce.data.storage.s3 import s3m
         self.merge_dim = kwargs.get('merge_dim', self.merge_dim)
         self._load_metadata()
@@ -168,6 +168,7 @@ class EISDataSource( DataSource ):
         # group = kwargs.get( 'group', None )
         # location = os.path.dirname(path)
         local_path = self.get_cache_path(path)
+        if os.path.exists(local_path): os.rmdir(local_path)
         mds = xa.open_mfdataset(self.get_file_list(), concat_dim=self.merge_dim, coords="minimal", data_vars="all")
         print(f" merged_dset[{self.merge_dim}] -> zarr: {local_path}\n   mds = {mds}")
         store = zarr.DirectoryStore(local_path)
