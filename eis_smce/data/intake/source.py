@@ -173,18 +173,18 @@ class EISDataSource( DataSource ):
         print(f" merged_dset[{self.merge_dim}] -> zarr: {local_path}\n   mds = {mds}")
         store = zarr.DirectoryStore(local_path)
         mds.to_zarr(store, compute=False)
-        coords = list(mds.coords.keys())
-        data_cars = list(mds.keys())
+#        coords = list(mds.coords.keys())
+ #       data_cars = list(mds.keys())
  #       print(f" Exporting P{ip}")
 
         for ip in range(self.nparts):
-            xds: xa.Dataset = mds
             region = {self.merge_dim: slice(ip, ip + 1)}
-            dset_chunk = xds[region]
+            xds: xa.Dataset = mds[region]
             print(f" Exporting P{ip}")
             #            print(f" P{ip}: export_to_zarr[{self.merge_dim}]: xds: {xds}")
-            dset_chunk.to_zarr(store, mode='a', region=region)
+            xds.to_zarr(store, mode='a', region=region)
             xds.close()
+        mds.close()
 
         print(f"Uploading zarr file to: {path}")
         s3m().upload_files(local_path, path)
