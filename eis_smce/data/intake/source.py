@@ -142,22 +142,48 @@ class EISDataSource( DataSource ):
         # group = kwargs.get( 'group', None )
         # location = os.path.dirname(path)
         local_path = self.get_cache_path(path)
-        mds = xa.open_mfdataset( self.get_file_list(), concat_dim=self.merge_dim, coords= "minimal", data_vars="all" )
-        print(f" merged_dset[{self.merge_dim}] -> zarr: {local_path}\n   mds = {mds}")
-        store = zarr.DirectoryStore(local_path)
-        mds.to_zarr( store, compute=False )
+#        mds = xa.open_mfdataset( self.get_file_list(), concat_dim=self.merge_dim, coords= "minimal", data_vars="all" )
+#        print(f" merged_dset[{self.merge_dim}] -> zarr: {local_path}\n   mds = {mds}")
+#        store = zarr.DirectoryStore(local_path)
+#        mds.to_zarr( store, compute=False )
 
         for ip in range( self.nparts ):
             xds: xa.Dataset= self._get_partition( ip )
-            region = { self.merge_dim: slice( ip, ip+1 ) }
+#            region = { self.merge_dim: slice( ip, ip+1 ) }
             print(f" Exporting P{ip}" )
-
 #            print(f" P{ip}: export_to_zarr[{self.merge_dim}]: xds: {xds}")
-            xds.to_zarr( store, mode='a', region=region )
+            xds.to_zarr( local_path, mode='a', append_dim=self.merge_dim ) # region=region )
             xds.close()
 
         print(f"Uploading zarr file to: {path}")
         s3m().upload_files( local_path, path )
+        zsrc = EISZarrSource(path)
+        return zsrc
+
+    def export_region(self, path: str, **kwargs) -> EISZarrSource:
+        from eis_smce.data.storage.s3 import s3m
+        self.merge_dim = kwargs.get('merge_dim', self.merge_dim)
+        self._load_metadata()
+        # concat_dim = kwargs.get( 'concat_dim', None )
+        # group = kwargs.get( 'group', None )
+        # location = os.path.dirname(path)
+        local_path = self.get_cache_path(path)
+        mds = xa.open_mfdataset(self.get_file_list(), concat_dim=self.merge_dim, coords="minimal", data_vars="all")
+        print(f" merged_dset[{self.merge_dim}] -> zarr: {local_path}\n   mds = {mds}")
+        store = zarr.DirectoryStore(local_path)
+        mds.to_zarr(store, compute=False)
+
+        for ip in range(self.nparts):
+            xds: xa.Dataset = self._get_partition(ip)
+            region = {self.merge_dim: slice(ip, ip + 1)}
+            print(f" Exporting P{ip}")
+
+            #            print(f" P{ip}: export_to_zarr[{self.merge_dim}]: xds: {xds}")
+            xds.to_zarr(store, mode='a', region=region)
+            xds.close()
+
+        print(f"Uploading zarr file to: {path}")
+        s3m().upload_files(local_path, path)
         zsrc = EISZarrSource(path)
         return zsrc
 
