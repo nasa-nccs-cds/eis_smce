@@ -83,7 +83,6 @@ class EISDataSource( DataSource ):
                 merge_coord = { self.merge_dim: np.array(merge_coord_val) }
                 self._parts[ipart] = xds.expand_dims(merge_coord, 0)
         xds = self._parts[ipart]
-        print( f"_get_partition[{self.merge_dim}]: xds: {xds}")
         return xds
 
     def get_local_file_path(self, data_url: str):
@@ -140,6 +139,7 @@ class EISDataSource( DataSource ):
         for ip in range( self.nparts ):
             xds: xa.Dataset= self._get_partition( ip )
 #            region = { self.merge_dim: slice( ip, ip+1 ) }
+            print(f" P{ip}: export_to_zarr[{self.merge_dim}]: xds: {xds}")
             xds.to_zarr( local_path, mode="a", append_dim=self.merge_dim )
             xds.close()
 
