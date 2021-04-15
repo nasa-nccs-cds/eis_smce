@@ -7,6 +7,7 @@ cache_dir = "/discover/nobackup/tpmaxwel/cache"
 name = "freshwater.swang9.OL_1km.2013"
 bucket = "eis-dh-hydro"
 month = "201302" if reduced_run else  "*"
+nparallel = 25
 s3_prefix = f"projects/eis_freshwater/swang9/OL_1km/OUTPUT.RST.2013"
 
 dsets = [
@@ -28,7 +29,7 @@ if __name__ == '__main__':
     for dset in dsets:
         [input, output] = [dset.pop(key) for key in [ 'input', 'output' ] ]
         h4s = intake.open_hdf4( input, cache_dir=cache_dir )
-        zs = h4s.export( output, bucket=bucket, merge_dim = "time", nparallel=10, **dset )
+        zs = h4s.export( output, bucket=bucket, merge_dim = "time", nparallel=nparallel, **dset )
         cm().addEntry( zs  )
 
     cm().write_s3( bucket, name )

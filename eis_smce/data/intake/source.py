@@ -161,7 +161,8 @@ class EISDataSource( DataSource ):
         return zsrc
 
     def _export_partitions( self, local_path: str, dset: xa.Dataset, merge_dim: str, ipart0: int, nparts: int ):
-        ops = [ self._export_partition( local_path, dset, merge_dim, ip, False ) for ip in range(ipart0,ipart0+nparts) ]
+        ddset = dask.delayed( dset )
+        ops = [ self._export_partition( local_path, ddset, merge_dim, ip, False ) for ip in range(ipart0,ipart0+nparts) ]
         dask.compute( ops )
 
     @staticmethod
