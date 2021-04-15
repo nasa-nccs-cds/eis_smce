@@ -74,16 +74,7 @@ class EISDataSource( DataSource ):
         raise NotImplementedError()
 
     def _get_partition(self, ipart: int ) -> xa.Dataset:
-        if ipart not in self._parts:
-            xds: xa.Dataset = self._open_partition(ipart)
-            if self.merge_dim in xds.dims.keys():
-                self._parts[ipart] = xds
-            else:
-                merge_coord_val = xds.attrs.get( self.merge_dim, ipart )
-                merge_coord = { self.merge_dim: np.array(merge_coord_val) }
-                self._parts[ipart] = xds.expand_dims(merge_coord, 0)
-        xds = self._parts[ipart]
-        return xds
+        return self._open_partition(ipart)
 
     def get_file_path(self, ipart: int ) -> str:
         rfile_path = self._file_list[ipart].get("resolved")
@@ -104,21 +95,13 @@ class EISDataSource( DataSource ):
         if file_path.startswith("s3"): file_path = s3m().download( file_path, self.cache_dir )
         return file_path
 
-    # def translate( self, **kwargs ) -> List[str]:
-    #     t0 = time.time()
-    #     parallel = kwargs.pop('parallel', False )
-    #     self._load_metadata()
-    #     print( "Transforming inputs")
-    #     if  parallel:
-    #         dsparts_delayed = [ dask.delayed(self._translate_file)( i, **kwargs ) for i in range(self.nparts)]
-    #         dsparts = dask.compute( *dsparts_delayed )
-    #     else:
-    #         dsparts = [ self._translate_file( i, **kwargs ) for i in range(self.nparts) ]
-    #     print( f"Completed translate (parallel={parallel}) in {time.time()-t0} sec, result = {dsparts}")
-    #     return dsparts
-
-    def to_dask(self) -> xa.Dataset:
+    def to_dask( self, **kwargs ) -> xa.Dataset:
         return self.read()
+
+    def read( self, **kwargs ) -> xa.Dataset:
+        self._load_metadata()
+        self.merge_dim = kwargs.get('merge_dim', self.merge_dim)
+        return xa.open_mfdataset(self.get_file_list(), concat_dim=self.merge_dim, coords="minimal", data_vars="all")
 
     def test_for_equality(self, attvals: List[Any]):
         if ( len(attvals) != self.nparts ): return False
@@ -134,60 +117,25 @@ class EISDataSource( DataSource ):
             path = f"{self._cache_dir}/{item}"
         return path
 
-    def export_append( self, path: str, **kwargs ) -> EISZarrSource:
-        from eis_smce.data.storage.s3 import s3m
-        self.merge_dim = kwargs.get( 'merge_dim', self.merge_dim )
-        self._load_metadata()
-        # concat_dim = kwargs.get( 'concat_dim', None )
-        # group = kwargs.get( 'group', None )
-        # location = os.path.dirname(path)
-        local_path = self.get_cache_path(path)
-#        mds = xa.open_mfdataset( self.get_file_list(), concat_dim=self.merge_dim, coords= "minimal", data_vars="all" )
-#        print(f" merged_dset[{self.merge_dim}] -> zarr: {local_path}\n   mds = {mds}")
-#        store = zarr.DirectoryStore(local_path)
-#        mds.to_zarr( store, compute=False )
-
-        for ip in range( self.nparts ):
-            xds: xa.Dataset= self._get_partition( ip )
-#            region = { self.merge_dim: slice( ip, ip+1 ) }
-            print(f" Exporting P{ip}" )
-#            print(f" P{ip}: export_to_zarr[{self.merge_dim}]: xds: {xds}")
-            xds.to_zarr( local_path, mode='a', append_dim=self.merge_dim ) # region=region )
-            xds.close()
-
-        print(f"Uploading zarr file to: {path}")
-        s3m().upload_files( local_path, path )
-        zsrc = EISZarrSource(path)
-        return zsrc
-
     def export(self, path: str, **kwargs) -> EISZarrSource:
         from eis_smce.data.storage.s3 import s3m
-        self.merge_dim = kwargs.get('merge_dim', self.merge_dim)
-        parallel = kwargs.get( 'parallel', False )
-        self._load_metadata()
         local_path = self.get_cache_path(path)
-#        if os.path.exists(local_path): shutil.rmtree(local_path)
-        mds = xa.open_mfdataset(self.get_file_list(), concat_dim=self.merge_dim, coords="minimal", data_vars="all")
+        mds: xa.Dataset = self.to_dask( **kwargs )
         print(f" merged_dset[{self.merge_dim}] -> zarr: {local_path}\n   mds = {mds}")
         store = zarr.DirectoryStore(local_path)
         mds.to_zarr( store, mode="w", compute=False, consolidated=True )
 
-        if parallel:
-            dsparts_delayed = [ dask.delayed( self._export_partition )( store, mds, self.merge_dim, ip ) for ip in range(self.nparts) ]
-            dask.compute( *dsparts_delayed )
-        else:
-            for ip in range(self.nparts):
-                self._export_partition( store, mds, self.merge_dim, ip )
-            mds.close()
+        for ip in range(self.nparts):
+            self._export_partition( store, mds, ip )
+        mds.close()
 
         print(f"Uploading zarr file to: {path}")
         s3m().upload_files(local_path, path)
         zsrc = EISZarrSource(path)
         return zsrc
 
-    @staticmethod
-    def _export_partition( store: zarr.DirectoryStore, dset: xa.Dataset, merge_dim: str, ipart: int ):
-        region = { merge_dim: slice(ipart, ipart + 1) }
+    def _export_partition( self, store: zarr.DirectoryStore, dset: xa.Dataset, ipart: int ):
+        region = { self.merge_dim: slice(ipart, ipart + 1) }
         xds: xa.Dataset = dset[region]
         print(f" Exporting P{ipart}" )
         xds.to_zarr(store, mode='a', region=region)
