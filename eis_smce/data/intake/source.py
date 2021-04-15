@@ -142,7 +142,7 @@ class EISDataSource( DataSource ):
         # group = kwargs.get( 'group', None )
         # location = os.path.dirname(path)
         local_path = self.get_cache_path(path)
-        mds = xa.open_mfdataset( self.get_file_list(), concat_dim=self.merge_dim, coords= "minimal" )
+        mds = xa.open_mfdataset( self.get_file_list(), concat_dim=self.merge_dim, coords= "minimal", data_vars="all" )
         print(f" merged_dset[{self.merge_dim}] -> zarr: {local_path}\n   mds = {mds}")
         mds.to_zarr( local_path, compute=False )
 
