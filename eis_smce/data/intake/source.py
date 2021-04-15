@@ -147,12 +147,12 @@ class EISDataSource( DataSource ):
         mds.to_zarr( local_path, compute=False )
 
         for ip in range( self.nparts ):
-            xds: xa.Dataset= self._get_partition( ip )
+#            xds: xa.Dataset= self._get_partition( ip )
             region = { self.merge_dim: slice( ip, ip+1 ) }
             print(f" Exporting P{ip}" )
 #            print(f" P{ip}: export_to_zarr[{self.merge_dim}]: xds: {xds}")
-            xds.to_zarr( local_path, mode='a', region=region )
-            xds.close()
+            mds.to_zarr( local_path, mode='a', region=region )
+        mds.close()
 
         print(f"Uploading zarr file to: {path}")
         s3m().upload_files( local_path, path )
