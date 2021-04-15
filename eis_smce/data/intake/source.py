@@ -96,13 +96,18 @@ class EISDataSource( DataSource ):
         return file_path
 
     def to_dask( self, **kwargs ) -> xa.Dataset:
-        return self.read()
+        return self.read( **kwargs )
 
     def read( self, **kwargs ) -> xa.Dataset:
         self._load_metadata()
         self.merge_dim = kwargs.get('merge_dim', self.merge_dim)
-        return xa.open_mfdataset(self.get_file_list(), concat_dim=self.merge_dim, coords="minimal",
-                                 data_vars="all", parallel=kwargs.get( 'parallel', True ) )
+        file_list = self.get_file_list()
+        parallel = kwargs.get( 'parallel_merge', False )
+        t0 = time.time()
+        print( f"Reading merged dataset from {len(file_list)} files, parallel = {parallel}" )
+        rv = xa.open_mfdataset( file_list, concat_dim=self.merge_dim, coords="minimal", data_vars="all", parallel=parallel )
+        print( f"Completed merge in {time.time()-t0} secs" )
+        return rv
 
     def test_for_equality(self, attvals: List[Any]):
         if ( len(attvals) != self.nparts ): return False
@@ -118,29 +123,10 @@ class EISDataSource( DataSource ):
             path = f"{self._cache_dir}/{item}"
         return path
 
-    def export_serial(self, path: str, **kwargs) -> EISZarrSource:
-        from eis_smce.data.storage.s3 import s3m
-        local_path = self.get_cache_path(path)
-        self.merge_dim = kwargs.get( 'merge_dim', self.merge_dim )
-        mds: xa.Dataset = self.to_dask( **kwargs )
-        print(f" merged_dset[{self.merge_dim}] -> zarr: {local_path}\n   mds = {mds}")
-        store = zarr.DirectoryStore(local_path)
-        mds.to_zarr( store, mode="w", compute=False, consolidated=True )
-
-        for ip in range(self.nparts):
-            self._export_partition( store, mds, ip )
-        mds.close()
-
-        print(f"Uploading zarr file to: {path}")
-        s3m().upload_files(local_path, path)
-        zsrc = EISZarrSource(path)
-        return zsrc
-
-    def export(self, path: str, **kwargs) -> EISZarrSource:
+    def export(self, path: str, **kwargs ) -> EISZarrSource:
         from eis_smce.data.storage.s3 import s3m
         local_path = self.get_cache_path(path)
         npart_blocks = kwargs.get( 'nparallel', 1 )
-        self.merge_dim = kwargs.get( 'merge_dim', self.merge_dim )
         mds: xa.Dataset = self.to_dask( **kwargs )
         print(f" merged_dset[{self.merge_dim}] -> zarr: {local_path}\n   mds = {mds}")
         mds.to_zarr( local_path, mode="w", compute=False, consolidated=True )
@@ -152,7 +138,6 @@ class EISDataSource( DataSource ):
         else:
             for ip in range(0,self.nparts,npart_blocks):
                 npart_block = min( npart_blocks, self.nparts-ip )
-                print(f"Exporting {npart_block} partitions at p0={ip}")
                 self._export_partitions( local_path, mds, self.merge_dim, ip, npart_block )
         mds.close()
 
@@ -162,9 +147,13 @@ class EISDataSource( DataSource ):
         return zsrc
 
     def _export_partitions( self, local_path: str, dset: xa.Dataset, merge_dim: str, ipart0: int, nparts: int ):
+        print(f"Exporting {nparts} partitions at p0={ipart0}")
+        t0 = time.time()
         ddset = dask.delayed( dset )
         ops = [ self._export_partition( local_path, ddset, merge_dim, ip, False ) for ip in range(ipart0,ipart0+nparts) ]
         dask.compute( ops )
+        dt = time.time() - t0
+        print(f"Completed Export in {dt} sec ( {dt/nparts} per partition )")
 
     @staticmethod
     def _export_partition(  local_path: str, dset: xa.Dataset, merge_dim: str, ipart: int, compute=True ):
