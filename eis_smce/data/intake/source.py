@@ -163,6 +163,7 @@ class EISDataSource( DataSource ):
     def export(self, path: str, **kwargs) -> EISZarrSource:
         from eis_smce.data.storage.s3 import s3m
         self.merge_dim = kwargs.get('merge_dim', self.merge_dim)
+        parallel = kwargs.get( 'parallel', False )
         self._load_metadata()
         local_path = self.get_cache_path(path)
 #        if os.path.exists(local_path): shutil.rmtree(local_path)
@@ -171,16 +172,21 @@ class EISDataSource( DataSource ):
         store = zarr.DirectoryStore(local_path)
         mds.to_zarr( store, mode="w", compute=False, consolidated=True )
 
-        dsparts_delayed = [ dask.delayed(self._export_partition)( store, mds, self.merge_dim, ip ) for ip in range(self.nparts)]
-        dask.compute( *dsparts_delayed )
-        mds.close()
+        if parallel:
+            dsparts_delayed = [ dask.delayed( self._export_partition )( store, mds, self.merge_dim, ip ) for ip in range(self.nparts) ]
+            dask.compute( *dsparts_delayed )
+        else:
+            for ip in range(self.nparts):
+                self._export_partition( store, mds, self.merge_dim, ip )
+            mds.close()
 
         print(f"Uploading zarr file to: {path}")
         s3m().upload_files(local_path, path)
         zsrc = EISZarrSource(path)
         return zsrc
 
-    def _export_partition(self, store: zarr.DirectoryStore, dset: xa.Dataset, merge_dim: str, ipart: int ):
+    @staticmethod
+    def _export_partition( store: zarr.DirectoryStore, dset: xa.Dataset, merge_dim: str, ipart: int ):
         region = { merge_dim: slice(ipart, ipart + 1) }
         xds: xa.Dataset = dset[region]
         print(f" Exporting P{ipart}" )
