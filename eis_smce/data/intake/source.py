@@ -135,6 +135,8 @@ class EISDataSource( DataSource ):
         # group = kwargs.get( 'group', None )
         # location = os.path.dirname(path)
         local_path = self.get_cache_path(path)
+        mds = xa.concat( [ self._get_partition( ip ) for ip in range(self.nparts)], dim=self.merge_dim )
+        print(f" merged_dset[{self.merge_dim}]: mds = {mds}")
 
         for ip in range( self.nparts ):
             xds: xa.Dataset= self._get_partition( ip )
