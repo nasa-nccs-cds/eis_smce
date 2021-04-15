@@ -58,7 +58,7 @@ class EISDataSource( DataSource ):
     def __init__(self, **kwargs ):
         self._cache_dir = kwargs.pop('cache_dir', os.path.expanduser("~/.eis_smce/cache"))
         super(EISDataSource, self).__init__( **kwargs )
-#        dask.config.set(scheduler='threading')
+        dask.config.set(scheduler='processes')   # "processes" 'threading'
         self._file_list: List[ Dict[str,str] ] = None
         self._parts: Dict[int,xa.Dataset] = {}
         self.merge_dim = "sample"
@@ -102,7 +102,7 @@ class EISDataSource( DataSource ):
         self._load_metadata()
         self.merge_dim = kwargs.get('merge_dim', self.merge_dim)
         file_list = self.get_file_list()
-        parallel = kwargs.get( 'parallel_merge', False )
+        parallel = kwargs.get( 'parallel_merge', True )
         t0 = time.time()
         print( f"Reading merged dataset from {len(file_list)} files, parallel = {parallel}" )
         rv = xa.open_mfdataset( file_list, concat_dim=self.merge_dim, coords="minimal", data_vars="all", parallel=parallel )
@@ -133,8 +133,10 @@ class EISDataSource( DataSource ):
 
         if npart_blocks == 1:
             for ip in range(0,self.nparts):
+                t0 = time.time()
                 print( f"Exporting partition {ip}")
                 self._export_partition( local_path, mds, self.merge_dim, ip )
+                print(f"Completed partition export in {time.time()-t0} sec")
         else:
             for ip in range(0,self.nparts,npart_blocks):
                 npart_block = min( npart_blocks, self.nparts-ip )
