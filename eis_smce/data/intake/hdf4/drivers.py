@@ -47,7 +47,7 @@ class HDF4Source( EISDataSource ):
             file_specs = nc_keys( self._file_list[ipart] )
             rfile_path = file_specs.pop("resolved")
             file_path = self.get_downloaded_filepath(rfile_path)
-            print(f"Reading file {file_path} (remote: {rfile_path}) with specs {file_specs}")
+            self.logger.info(f"Reading file {file_path} (remote: {rfile_path}) with specs {file_specs}")
             (base_path, file_ext) = os.path.splitext(os.path.basename(file_path))
             if file_ext in [ '.nc', '.nc4']:
                 xds = xa.open_dataset(file_path)
@@ -79,12 +79,11 @@ class HDF4Source( EISDataSource ):
                     shape = [dims[did] for did in nc_dims.keys()]
                     try:
                         data = self._get_data(sds, shape)
-    #                    print(f"Creating DataArray {dsid}, DIMS = {attrs['DIMS']}, file = {file_path}")
+    #                    self.logger.info(f"Creating DataArray {dsid}, DIMS = {attrs['DIMS']}, file = {file_path}")
                         data_vars[nc_vid] = xa.DataArray(data, xcoords, xdims, nc_vid, attrs)
                     except Exception as err:
-                        print(
-                            f"Error extracting data for sds {dsid}, xdims={xdims}, xcoords={xcoords}, shape={shape}: {err}")
-                        print(f"sd_dims.items() = {sd_dims.items()}, coords={coords}, dims={dims}")
+                        self.logger.info(  f"Error extracting data for sds {dsid}, xdims={xdims}, xcoords={xcoords}, shape={shape}: {err}")
+                        self.logger.info(f"sd_dims.items() = {sd_dims.items()}, coords={coords}, dims={dims}")
 
                 xds = xa.Dataset(data_vars, coords, dsattr)
                 sd.end()
@@ -95,55 +94,4 @@ class HDF4Source( EISDataSource ):
             xds.attrs['local_file'] = file_path
             xds.attrs.update(file_specs)
             return xds
-
-
-
-
-    # def _add_path_to_ds(self, ds):
-    #     """Adding path info to a coord for a particular file
-    #     """
-    #     var = next(var for var in ds)
-    #     new_coords = reverse_format(self.pattern, ds[var].encoding['source'])
-    #     return ds.assign_coords(**new_coords)
-
-    # def clear_path( self, path: str ):
-    #     import s3fs
-    #     if path.startswith("s3:"):
-    #         s3f: s3fs.S3FileSystem = s3fs.S3FileSystem(anon=True)
-    #         s3f_path = path.split(':')[-1].strip("/")
-    #         if s3f.exists(s3f_path):
-    #             print( f"Clearing existing s3 item: {s3f_path}")
-    #             s3f.delete(s3f_path, recursive=True)
-    #         else:
-    #             print(f"S3 path clear for writing: {s3f_path}")
-    #     elif os.path.exists(path):
-    #         print(f"Clearing existing file: {path}")
-    #         if os.path.isfile(path):    os.remove(path)
-    #         else:                       shutil.rmtree(path)
-    #
-    # def file_exists( self, path: str ):
-    #     import s3fs
-    #     if path.startswith("s3:"):
-    #         s3f: s3fs.S3FileSystem = s3fs.S3FileSystem(anon=True)
-    #         return s3f.exists(path)
-    #     else: return os.path.exists(path)
-
-
-
-    #
-    #     # if "*" in url or isinstance(url, list):
-    #     #     _open_dataset = xr.open_mfdataset
-    #     #     if self.pattern:
-    #     #         kwargs.update(preprocess=self._add_path_to_ds)
-    #     #     if self.combine is not None:
-    #     #         if 'combine' in kwargs:
-    #     #             raise Exception("Setting 'combine' argument twice  in the catalog is invalid")
-    #     #         kwargs.update(combine=self.combine)
-    #     #     if self.concat_dim is not None:
-    #     #         if 'concat_dim' in kwargs:
-    #     #             raise Exception("Setting 'concat_dim' argument twice  in the catalog is invalid")
-    #     #         kwargs.update(concat_dim=self.concat_dim)
-    #     # else:
-    #
-    #     self._ds = self._open_file()
 

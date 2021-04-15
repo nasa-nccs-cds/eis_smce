@@ -8,52 +8,17 @@ from intake_xarray.netcdf import NetCDFSource
 from eis_smce.data.intake.zarr.source import EISZarrSource
 import intake, zarr, numpy as np
 import dask.bag as db
-import time, xarray as xa
+import time, logging,  xarray as xa
 import intake_xarray as ixa   # Need this import to register 'xarray' container.
 
 def dsort( d: Dict ) -> Dict: return { k:d[k] for k in sorted(d.keys()) }
-
-class Varspec:
-    file_list: Dict[int,str] = {}
-
-    def __init__( self, vid: str, dims: List[str] ):
-        self.dims: List[str] = dims
-        self.vid = vid
-        self.instances: Dict[ int, List[int] ] = {}
-
-    def non_empty_files(self, dim: str ) -> List[str]:
-        di = self.dim_index(dim)
-#        return [ self.file_list[ip] for (ip, shape) in self.instances.items() if (shape[di] > 0) ]
-        nefiles = []
-        for (ip, shape) in self.instances.items():
-            if (shape[di] > 0):
-                print( f"NON-empty file: var={self.vid}, merge_dim={dim}, shape = {shape}, file={self.file_list[ip]}")
-                nefiles.append( str(ip) )
-        nefiles.sort()
-        return nefiles
-
-    def add_instance(self, ipart: int, shape: List[int] ):
-        self.instances[ipart] = shape
-
-    @classmethod
-    def addFile( cls, ipart: int, file_path ):
-        cls.file_list[ipart] = file_path
-
-    def dim_index( self, dim: str ) -> int:
-        try:
-           return self.dims.index(dim)
-        except ValueError:  # concat_dim not in xar.dims:
-            return -1
-
-    @property
-    def nfiles(self) -> int:
-        return len( self.instances )
 
 class EISDataSource( DataSource ):
     """Common behaviours for plugins in this repo"""
     version = 0.1
     container = 'xarray'
     partition_access = True
+    logger = None
 
     def __init__(self, **kwargs ):
         self._cache_dir = kwargs.pop('cache_dir', os.path.expanduser("~/.eis_smce/cache"))
@@ -64,6 +29,23 @@ class EISDataSource( DataSource ):
         self._schema: Schema = None
         self._ds: xa.Dataset = None
         self.nparts = -1
+        self.setup_logging()
+
+    def setup_logging(self):
+        if self.logger is None:
+            self.logger = logging.getLogger('eis_smce')
+            self.logger.setLevel(logging.DEBUG)
+            log_file = f'{self._cache_dir}/logging/eis_smce.log'
+            os.makedirs( os.path.dirname(log_file), exist_ok=True )
+            fh = logging.FileHandler( log_file )
+            fh.setLevel(logging.DEBUG)
+            ch = logging.StreamHandler()
+            ch.setLevel(logging.ERROR)
+            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            fh.setFormatter(formatter)
+            ch.setFormatter(formatter)
+            self.logger.addHandler(fh)
+            self.logger.addHandler(ch)
 
     @property
     def cache_dir(self):
@@ -104,9 +86,9 @@ class EISDataSource( DataSource ):
         file_list = self.get_file_list()
         parallel = kwargs.get( 'parallel_merge', False )
         t0 = time.time()
-        print( f"Reading merged dataset from {len(file_list)} files, parallel = {parallel}" )
+        self.logger.info( f"Reading merged dataset from {len(file_list)} files, parallel = {parallel}" )
         rv = xa.open_mfdataset( file_list, concat_dim=self.merge_dim, coords="minimal", data_vars="all", parallel=parallel )
-        print( f"Completed merge in {time.time()-t0} secs" )
+        self.logger.info( f"Completed merge in {time.time()-t0} secs" )
         return rv
 
     def test_for_equality(self, attvals: List[Any]):
@@ -128,34 +110,34 @@ class EISDataSource( DataSource ):
         local_path = self.get_cache_path(path)
         npart_blocks = kwargs.get( 'nparallel', 1 )
         mds: xa.Dataset = self.to_dask( **kwargs )
-        print(f" merged_dset[{self.merge_dim}] -> zarr: {local_path}\n   mds = {mds}")
+        self.logger.info(f" merged_dset[{self.merge_dim}] -> zarr: {local_path}\n   mds = {mds}")
         mds.to_zarr( local_path, mode="w", compute=False, consolidated=True )
         dask.config.set(scheduler='threading')
 
         if npart_blocks == 1:
             for ip in range(0,self.nparts):
                 t0 = time.time()
-                print( f"Exporting partition {ip}")
+                self.logger.info( f"Exporting partition {ip}")
                 self._export_partition( local_path, mds, self.merge_dim, ip )
-                print(f"Completed partition export in {time.time()-t0} sec")
+                self.logger.info(f"Completed partition export in {time.time()-t0} sec")
         else:
             for ip in range(0,self.nparts,npart_blocks):
                 npart_block = min( npart_blocks, self.nparts-ip )
                 self._export_partitions( local_path, mds, self.merge_dim, ip, npart_block )
         mds.close()
 
-        print(f"Uploading zarr file to: {path}")
+        self.logger.info(f"Uploading zarr file to: {path}")
         s3m().upload_files(local_path, path)
         zsrc = EISZarrSource(path)
         return zsrc
 
     def _export_partitions( self, local_path: str, dset: xa.Dataset, merge_dim: str, ipart0: int, nparts: int ):
-        print(f"Exporting {nparts} partitions at p0={ipart0}")
+        self.logger.info(f"Exporting {nparts} partitions at p0={ipart0}")
         t0 = time.time()
         ops = [ self._export_partition( local_path, dset, merge_dim, ip, False ) for ip in range(ipart0,ipart0+nparts) ]
         dask.compute( ops )
         dt = time.time() - t0
-        print(f"Completed Export in {dt} sec ( {dt/nparts} per partition )")
+        self.logger.info(f"Completed Export in {dt} sec ( {dt/nparts} per partition )")
 
     @staticmethod
     def _export_partition(  local_path: str, dset: xa.Dataset, merge_dim: str, ipart: int, compute=True ):
@@ -170,9 +152,9 @@ class EISDataSource( DataSource ):
         s3 = boto3.resource('s3')
         for bucket in s3.buckets.all():
             if bucket.name.startswith( bucket_prefix ):
-                print(f'** {bucket.name}:')
+                self.logger.info(f'** {bucket.name}:')
                 for obj in bucket.objects.all():
-                    print(f'   -> {obj.key}: {obj.__class__}')
+                    self.logger.info(f'   -> {obj.key}: {obj.__class__}')
 
     def _collect_parts( self, parts: List[Any]  ) -> dask.bag.Bag:
         fparts = list( filter( lambda x: (x is not None), parts ) )
@@ -189,7 +171,7 @@ class EISDataSource( DataSource ):
                 from eis_smce.data.storage.local import lfm
                 self._file_list = lfm().get_file_list( self.urlpath )
             self.nparts = len(self._file_list)
-            print( f"Created file list from {self.urlpath} with {self.nparts} parts")
+            self.logger.info( f"Created file list from {self.urlpath} with {self.nparts} parts")
             ds0 =  self._get_partition( 0 )
             metadata = {
                 'dims': dict(ds0.dims),
