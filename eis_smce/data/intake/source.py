@@ -149,8 +149,7 @@ class EISDataSource( DataSource ):
     def _export_partitions( self, local_path: str, dset: xa.Dataset, merge_dim: str, ipart0: int, nparts: int ):
         print(f"Exporting {nparts} partitions at p0={ipart0}")
         t0 = time.time()
-        ddset = dask.delayed( dset )
-        ops = [ self._export_partition( local_path, ddset, merge_dim, ip, False ) for ip in range(ipart0,ipart0+nparts) ]
+        ops = [ self._export_partition( local_path, dset, merge_dim, ip, False ) for ip in range(ipart0,ipart0+nparts) ]
         dask.compute( ops )
         dt = time.time() - t0
         print(f"Completed Export in {dt} sec ( {dt/nparts} per partition )")
