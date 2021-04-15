@@ -1,5 +1,5 @@
 from intake.source.base import DataSource, Schema
-import collections, json
+import collections, json, shutil
 import traitlets.config as tlc, random, string
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable, MutableMapping
 from functools import partial
@@ -168,7 +168,7 @@ class EISDataSource( DataSource ):
         # group = kwargs.get( 'group', None )
         # location = os.path.dirname(path)
         local_path = self.get_cache_path(path)
-        if os.path.exists(local_path): os.rmdir(local_path)
+        if os.path.exists(local_path): shutil.rmtree(local_path)
         mds = xa.open_mfdataset(self.get_file_list(), concat_dim=self.merge_dim, coords="minimal", data_vars="all")
         print(f" merged_dset[{self.merge_dim}] -> zarr: {local_path}\n   mds = {mds}")
         store = zarr.DirectoryStore(local_path)
