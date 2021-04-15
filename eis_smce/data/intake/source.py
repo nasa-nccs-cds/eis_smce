@@ -80,6 +80,7 @@ class EISDataSource( DataSource ):
                 merge_coord_val = xds.attrs.get( self.merge_dim, ipart )
                 merge_coord = { self.merge_dim: np.array(merge_coord_val) }
                 xds.expand_dims(merge_coord, 0)
+                xds.to_netcdf( "/tmp/xds.nc", "w" )
             self._parts[ipart] = xds
         else:
             xds = self._parts[ipart]
