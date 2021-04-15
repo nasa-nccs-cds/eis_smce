@@ -83,7 +83,7 @@ class EISDataSource( DataSource ):
                 merge_coord = { self.merge_dim: np.array(merge_coord_val) }
                 self._parts[ipart] = xds.expand_dims(merge_coord, 0)
         xds = self._parts[ipart]
-        xds.to_netcdf("/tmp/xds.nc", "w")
+        print( f"_get_partition[{self.merge_dim}]: xds: {xds}")
         return xds
 
     def get_local_file_path(self, data_url: str):
