@@ -144,15 +144,17 @@ class EISDataSource( DataSource ):
         local_path = self.get_cache_path(path)
         mds = xa.open_mfdataset( self.get_file_list(), concat_dim=self.merge_dim, coords= "minimal", data_vars="all" )
         print(f" merged_dset[{self.merge_dim}] -> zarr: {local_path}\n   mds = {mds}")
-        mds.to_zarr( local_path, compute=False )
+        store = zarr.DirectoryStore(local_path)
+        mds.to_zarr( store, compute=False )
 
         for ip in range( self.nparts ):
-#            xds: xa.Dataset= self._get_partition( ip )
+            xds: xa.Dataset= self._get_partition( ip )
             region = { self.merge_dim: slice( ip, ip+1 ) }
             print(f" Exporting P{ip}" )
+
 #            print(f" P{ip}: export_to_zarr[{self.merge_dim}]: xds: {xds}")
-            mds.to_zarr( local_path, mode='a', region=region )
-        mds.close()
+            xds.to_zarr( store, mode='a', region=region )
+            xds.close()
 
         print(f"Uploading zarr file to: {path}")
         s3m().upload_files( local_path, path )
