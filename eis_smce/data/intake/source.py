@@ -161,16 +161,13 @@ class EISDataSource( DataSource ):
         return zsrc
 
     def _export_partitions( self, local_path: str, dset: xa.Dataset, merge_dim: str, ipart0: int, nparts: int ):
-        ops = [ dask.delayed(self._export_partition)( local_path, dset, merge_dim, ip ) for ip in range(ipart0,ipart0+nparts) ]
+        ops = [ self._export_partition( local_path, dset, merge_dim, ip, False ) for ip in range(ipart0,ipart0+nparts) ]
         dask.compute( ops )
 
     @staticmethod
-    def _export_partition(  local_path: str, dset: xa.Dataset, merge_dim: str, ipart: int ):
+    def _export_partition(  local_path: str, dset: xa.Dataset, merge_dim: str, ipart: int, compute=True ):
         region = { merge_dim: slice(ipart, ipart + 1) }
-        xds: xa.Dataset = dset[region]
-        print(f" Exporting P{ipart}" )
-        xds.to_zarr(local_path, mode='a', region=region)
-        xds.close()
+        return dset[region].to_zarr(local_path, mode='a', region=region, compute= compute )
 
     def get_zarr_source(self, zpath: str ):
         zsrc = EISZarrSource(zpath)
