@@ -101,7 +101,8 @@ class EISDataSource( DataSource ):
     def read( self, **kwargs ) -> xa.Dataset:
         self._load_metadata()
         self.merge_dim = kwargs.get('merge_dim', self.merge_dim)
-        return xa.open_mfdataset(self.get_file_list(), concat_dim=self.merge_dim, coords="minimal", data_vars="all")
+        return xa.open_mfdataset(self.get_file_list(), concat_dim=self.merge_dim, coords="minimal",
+                                 data_vars="all", parallel=kwargs.get( 'parallel', True ) )
 
     def test_for_equality(self, attvals: List[Any]):
         if ( len(attvals) != self.nparts ): return False
