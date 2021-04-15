@@ -32,9 +32,9 @@ class EISDataSource( DataSource ):
         self.setup_logging()
 
     def setup_logging(self):
-        if self.logger is None:
-            self.logger = logging.getLogger('eis_smce')
-            self.logger.setLevel(logging.DEBUG)
+        if EISDataSource.logger is None:
+            EISDataSource.logger = logging.getLogger('eis_smce.intake')
+            EISDataSource.logger.setLevel(logging.DEBUG)
             log_file = f'{self._cache_dir}/logging/eis_smce.log'
             os.makedirs( os.path.dirname(log_file), exist_ok=True )
             fh = logging.FileHandler( log_file )
@@ -44,8 +44,8 @@ class EISDataSource( DataSource ):
             formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
             fh.setFormatter(formatter)
             ch.setFormatter(formatter)
-            self.logger.addHandler(fh)
-            self.logger.addHandler(ch)
+            EISDataSource.logger.addHandler(fh)
+            EISDataSource.logger.addHandler(ch)
 
     @property
     def cache_dir(self):
