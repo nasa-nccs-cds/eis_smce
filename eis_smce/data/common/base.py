@@ -14,7 +14,7 @@ class EISSingleton(tlc.Configurable):
         super(EISSingleton, self).__init__()
         self.update_config( **kwargs )
         self._config_instances.append( self )
-        os.makedirs( self.cache_dir, exist_ok=True )
+        os.makedirs( eisc(**kwargs).cache_dir, exist_ok=True )
         self.setup_logging()
 
     @classmethod
@@ -70,10 +70,6 @@ class EISSingleton(tlc.Configurable):
         return socket.gethostname()
 
     @property
-    def cache_dir(self):
-        return eisc().cache_dir
-
-    @property
     def pid(self):
         return os.getpid()
 
@@ -81,7 +77,7 @@ class EISSingleton(tlc.Configurable):
         if EISSingleton.logger is None:
             EISSingleton.logger = logging.getLogger('eis_smce.intake')
             EISSingleton.logger.setLevel(logging.DEBUG)
-            log_file = f'{self.cache_dir}/logging/eis_smce.{self.hostname}.{self.pid}.log'
+            log_file = f'{eisc().cache_dir}/logging/eis_smce.{self.hostname}.{self.pid}.log'
             os.makedirs( os.path.dirname(log_file), exist_ok=True )
             fh = logging.FileHandler( log_file )
             fh.setLevel(logging.DEBUG)
@@ -97,12 +93,12 @@ class EISConfiguration( EISSingleton ):
     default_cache_dir = tlc.Unicode(os.path.expanduser("~/.eis_smce/cache")).tag(config=True)
 
     def __init__( self, **kwargs ):
+        self.cache_dir = kwargs.pop('cache', self.default_cache_dir)
+        self.name = kwargs.pop( "name", "eis.smce" )
+        self.mode =  kwargs.pop( "mode", "default" )
         super(EISConfiguration, self).__init__( **kwargs )
         self._config_files = None
         self._config: Config = None
-        self.cache_dir = kwargs.pop('cache', self.default_cache_dir)
-        self.name = kwargs.get( "name", "eis.smce" )
-        self.mode =  kwargs.get( "mode", "default" )
         self._lock = threading.Lock()
         self._configure_()
 
