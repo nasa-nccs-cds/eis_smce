@@ -37,12 +37,12 @@ class CatalogManager(EISSingleton):
     def gui( self, bucket: str ):
         bucket = self.s3.Bucket(bucket)
         catalogs = [ f"s3://{obj.bucket_name}/{obj.key}" for obj in bucket.objects.filter(Prefix="catalog") ]
-        print( f"Opening gui with catalogs: {catalogs}")
+        self.logger.info( f"Opening gui with catalogs: {catalogs}")
         return GUI( catalogs )
 
     def cat( self, bucket: str ) -> intake.Catalog:
         cat_path = self.cat_path(bucket)
-        print( f"Open catalog from url: {cat_path}")
+        self.logger.info( f"Open catalog from url: {cat_path}")
         return intake.open_catalog(  cat_path )
 
     def addEntry( self, source: EISZarrSource, **kwargs ):

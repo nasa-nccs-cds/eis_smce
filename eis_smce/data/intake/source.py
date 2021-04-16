@@ -111,10 +111,11 @@ class EISDataSource( DataSource ):
         store = self.get_cache_path(path) if use_cache else s3m().get_store(path)
         npart_blocks = kwargs.get( 'nparallel', 1 )
         mds: xa.Dataset = self.to_dask( **kwargs )
-        self.logger.info(f" merged_dset[{self.merge_dim}] -> zarr: {store}\n   mds = {mds}")
+        self.logger.info(f" merged_dset[{self.merge_dim}] -> zarr: {store}\n   -------------------- Merged dataset: -------------------- \n{mds}\n")
         mds.to_zarr( store, mode="w", compute=False, consolidated=True )
         dask.config.set(scheduler='threading')
 
+        self.logger.info( f"Exporting paritions to: {path}" )
         if npart_blocks == 1:
             for ip in range(0,self.nparts):
                 t0 = time.time()

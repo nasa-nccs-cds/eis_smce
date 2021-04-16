@@ -1,7 +1,10 @@
 from intake_xarray.xzarr import ZarrSource
 import xarray as xa
 
-urlpath = '/discover/nobackup/projects/eis_freshwater/swang9/OL_1km/OUTPUT.RST.2013/SURFACEMODEL/201302/LIS_HIST_201302010000.d01.nc'
+bucket = "eis-dh-hydro"
+s3_prefix = f"projects/eis_freshwater/swang9/OL_1km/OUTPUT.RST.2013"
+urlpath=f"s3://{bucket}/{s3_prefix}/SURFACEMODEL/LIS_HIST.d01.zarr"
+
 xzSource: ZarrSource = ZarrSource( urlpath )
 data: xa.Dataset = xzSource.to_dask()
 

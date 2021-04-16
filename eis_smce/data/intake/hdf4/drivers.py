@@ -82,8 +82,8 @@ class HDF4Source( EISDataSource ):
     #                    self.logger.info(f"Creating DataArray {dsid}, DIMS = {attrs['DIMS']}, file = {file_path}")
                         data_vars[nc_vid] = xa.DataArray(data, xcoords, xdims, nc_vid, attrs)
                     except Exception as err:
-                        self.logger.info(  f"Error extracting data for sds {dsid}, xdims={xdims}, xcoords={xcoords}, shape={shape}: {err}")
-                        self.logger.info(f"sd_dims.items() = {sd_dims.items()}, coords={coords}, dims={dims}")
+                        self.logger.error(  f"Error extracting data for sds {dsid}, xdims={xdims}, xcoords={xcoords}, shape={shape}: {err}")
+                        self.logger.error(f"sd_dims.items() = {sd_dims.items()}, coords={coords}, dims={dims}")
 
                 xds = xa.Dataset(data_vars, coords, dsattr)
                 sd.end()

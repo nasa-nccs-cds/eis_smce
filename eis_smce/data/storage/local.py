@@ -22,7 +22,7 @@ class LocalFileManager(EISSingleton ):
         input_files = glob.glob(filepath_glob)
         is_glob = has_char( filepath_pattern, "*?[" )
         files_list = []
-        print(f" Processing {len(input_files)} input files from glob '{filepath_glob}'")
+        self.logger.info(f" Processing {len(input_files)} input files from glob '{filepath_glob}'")
         for file_path in input_files:
             try:
                 (file_name, file_pattern) = (os.path.basename(file_path) , os.path.basename(filepath_pattern)) if is_glob else (file_path,filepath_pattern)
@@ -30,5 +30,5 @@ class LocalFileManager(EISSingleton ):
                 metadata['resolved'] = file_path
                 files_list.append(metadata)
             except ValueError as err:
-                print( f" Metadata processing error: {err}, Did you mix glob and pattern in file name?")
+                self.logger.error( f" Metadata processing error: {err}, Did you mix glob and pattern in file name?")
         return files_list

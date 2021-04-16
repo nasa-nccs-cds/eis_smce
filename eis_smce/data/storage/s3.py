@@ -70,14 +70,14 @@ class S3Manager(EISSingleton):
                     full_path = os.path.join(subdir, file)
                     with open(full_path, 'rb') as data:
                         key = f"{item}/{full_path[len(src_path) + 1:]}"
-                        print(f"Uploading item: {bucket}:{key}")
+                        self.logger.info(f"Uploading item: {bucket}:{key}")
                         bucket.put_object( Key=key, Body=data, ACL="bucket-owner-full-control" )
 
     def get_file_list(self, urlpath: str ) -> List[Dict]:
         from intake.source.utils import reverse_format
         s3 = boto3.resource('s3')
         (bucketname, pattern) = self.parse(urlpath)
-        print( f"get_file_list: urlpath={urlpath}, bucketname={bucketname}, pattern={pattern}")
+        self.logger.info( f"get_file_list: urlpath={urlpath}, bucketname={bucketname}, pattern={pattern}")
         is_glob = has_char(pattern, "*?[")
         gpattern = path_to_glob( pattern )
         files_list = []
@@ -91,5 +91,5 @@ class S3Manager(EISSingleton):
                             metadata['resolved'] = f"s3://{bucketname}/{obj.key}"
                             files_list.append(metadata)
                         except ValueError as err:
-                            print( f" Metadata processing error: {err}, Did you mix glob and pattern in file name?")
+                            self.logger.error( f" Metadata processing error: {err}, Did you mix glob and pattern in file name?")
         return files_list
