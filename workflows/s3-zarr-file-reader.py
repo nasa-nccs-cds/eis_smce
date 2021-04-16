@@ -18,4 +18,4 @@ GPP_tavg = data['GPP_tavg'][10]
 
 print( f"  GPP_tavg[100].shape = {GPP_tavg.shape}" )
 
-print( f"  GPP_tavg sample = {GPP_tavg[0:100:10,0:100:10]}" )
+print( f"  GPP_tavg sample = {GPP_tavg[0:100:10,0:100:10].data}" )
