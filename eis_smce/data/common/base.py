@@ -136,21 +136,20 @@ class EISConfiguration( tlc.Configurable ):
     def _configure_(self):
         if self._config is None:
             cfg_file = self.config_file( self.name, self.mode )
-            if os.path.isfile(cfg_file):
-                (self.config_dir, fname) = os.path.split(cfg_file)
-                self._config_files = [fname]
-                print(f"Loading config files: {self._config_files} from dir {self.config_dir}")
-                self._config = load_pyconfig_files(self._config_files, self.config_dir)
-                self.update_config(self._config)
-            else:
-                print(f"Configuration error: '{cfg_file}' is not a file.")
-
+            (self.config_dir, fname) = os.path.split(cfg_file)
+            self._config_files = [fname]
+            print(f"Loading config files: {self._config_files} from dir {self.config_dir}")
+            self._config = load_pyconfig_files(self._config_files, self.config_dir)
+            self.update_config(self._config)
 
     @classmethod
     def config_file(cls, name: str, mode: str) -> str:
         config_dir = os.path.join(os.path.expanduser("~"), ".eis_smce", "config", mode)
         if not os.path.isdir(config_dir): os.makedirs(config_dir, mode=0o777)
-        return os.path.join(config_dir, name + ".py")
+        cfg_file = os.path.join(config_dir, name + ".py")
+        if not os.path.isfile(cfg_file):
+            with open(cfg_file, 'w') as fp: pass
+        return cfg_file
 
     def save_config( self ):
 
