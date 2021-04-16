@@ -6,12 +6,12 @@ from intake.catalog.local import YAMLFilesCatalog
 from intake.interface.gui import GUI
 from eis_smce.data.intake.zarr.source import EISZarrSource
 
-class CatalogManager(tlc.SingletonConfigurable):
+class CatalogManager(EISSingleton):
 
     bucket = tlc.Unicode( "eis-dh-fire" ).tag(config=True)
 
     def __init__( self, **kwargs ):
-        tlc.SingletonConfigurable.__init__( self, **kwargs )
+        EISSingleton.__init__( self, **kwargs )
         self._s3 = None
         self._sources = [ "sources:" ]
 

@@ -1,4 +1,4 @@
-import traitlets.config as tlc
+from eis_smce.data.common.base import EISSingleton
 import fnmatch
 from intake.source.utils import path_to_glob
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
@@ -7,10 +7,10 @@ import glob, os
 def lfm(): return LocalFileManager.instance()
 def has_char(string: str, chars: str): return 1 in [c in string for c in chars]
 
-class LocalFileManager(tlc.SingletonConfigurable ):
+class LocalFileManager(EISSingleton ):
 
     def __init__( self, **kwargs ):
-        tlc.SingletonConfigurable.__init__( self, **kwargs )
+        EISSingleton.__init__( self, **kwargs )
 
     def _parse_urlpath( self, urlpath: str ) -> str:
         return urlpath.split(":")[-1].replace("//","/").replace("//","/")

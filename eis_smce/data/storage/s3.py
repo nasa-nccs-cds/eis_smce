@@ -1,4 +1,4 @@
-import traitlets.config as tlc
+from eis_smce.data.common.base import EISSingleton
 import fnmatch, s3fs
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 import glob, os
@@ -9,10 +9,10 @@ from intake.source.utils import path_to_glob
 def s3m(): return S3Manager.instance()
 def has_char(string: str, chars: str): return 1 in [c in string for c in chars]
 
-class S3Manager(tlc.SingletonConfigurable):
+class S3Manager(EISSingleton):
 
     def __init__( self, **kwargs ):
-        tlc.SingletonConfigurable.__init__( self, **kwargs )
+        EISSingleton.__init__( self, **kwargs )
         self._client = None
         self._resource = None
         self._fs: s3fs.S3FileSystem = None
