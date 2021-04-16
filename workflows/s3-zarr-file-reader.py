@@ -14,7 +14,7 @@ for id, var in data.data_vars.items():
     print( f"   {id}{var.dims}: shape={var.shape}" )
 
 
-GPP_tavg: np.ndarray = data['GPP_tavg'][10].data
+GPP_tavg: np.ndarray = data['GPP_tavg'][10].values
 # GPPs = GPP_tavg[50:100:10,50:100:10].values
 
 print( f"  GPP_tavg range = {GPP_tavg.min()} {GPP_tavg.max()} ")
