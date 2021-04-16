@@ -1,9 +1,9 @@
 import traitlets.config as tlc
-import fnmatch
+import fnmatch, s3fs
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 import glob, os
 import boto3, intake
-from fsspec.mapping import FSMap
+from collections.abc import MutableMapping
 from intake.source.utils import path_to_glob
 
 def s3m(): return S3Manager.instance()
@@ -15,6 +15,13 @@ class S3Manager(tlc.SingletonConfigurable):
         tlc.SingletonConfigurable.__init__( self, **kwargs )
         self._client = None
         self._resource = None
+        self._fs: s3fs.S3FileSystem = None
+
+    @property
+    def fs(self) -> s3fs.S3FileSystem:
+        if self._fs is None:
+            self._fs = s3fs.S3FileSystem( anon=False, s3_additional_kwargs=dict( ACL="bucket-owner-full-control" ) )
+        return self._fs
 
     @property
     def client(self):
@@ -50,6 +57,9 @@ class S3Manager(tlc.SingletonConfigurable):
             client = boto3.client('s3')
             client.download_file( bucketname, s3_item, file_path )
         return file_path
+
+    def get_store(self, path: str ) -> MutableMapping:
+        return s3fs.S3Map( root=path, s3=self.fs, check=False, create=True )
 
     def upload_files(self, src_path: str, dest_path: str ):
         if src_path != dest_path:
