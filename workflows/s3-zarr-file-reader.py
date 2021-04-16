@@ -9,3 +9,8 @@ print( f"attrs: {data.attrs}" )
 
 for id, var in data.data_vars.items():
     print( f"   {id}{var.dims}: shape={var.shape}" )
+
+
+SurfElev_tavg = data['SurfElev_tavg'][100]
+
+print( f"  SurfElev_tavg[100].shape = {SurfElev_tavg.shape}" )
