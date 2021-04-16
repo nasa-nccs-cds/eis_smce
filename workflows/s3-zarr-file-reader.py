@@ -1,5 +1,5 @@
 from intake_xarray.xzarr import ZarrSource
-import xarray as xa, numpy as np
+import xarray as xa
 
 bucket = "eis-dh-hydro"
 s3_prefix = f"projects/eis_freshwater/swang9/OL_1km/OUTPUT.RST.2013"
@@ -14,10 +14,10 @@ for id, var in data.data_vars.items():
     print( f"   {id}{var.dims}: shape={var.shape}" )
 
 
-GPP_tavg: np.ndarray = data['GPP_tavg'][10].values
+GPP_tavg: xa.DataArray = data['GPP_tavg'][10]
 # GPPs = GPP_tavg[50:100:10,50:100:10].values
 
-print( f"  GPP_tavg range = {GPP_tavg.min()} {GPP_tavg.max()} ")
+print( f"  GPP_tavg range = {GPP_tavg.min().values} {GPP_tavg.max().values} ")
 
 #print( f"  GPP_tavg[100].shape = {GPP_tavg.shape}" )
 #print( f"  GPP_tavg sample = {GPP_tavg[50:100:10,50:100:10].values.tolist()}" )
