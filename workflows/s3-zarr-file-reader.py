@@ -14,6 +14,8 @@ for id, var in data.data_vars.items():
     print( f"   {id}{var.dims}: shape={var.shape}" )
 
 
-# SurfElev_tavg = data['SurfElev_tavg'][100]
+GPP_tavg = data['GPP_tavg'][100]
 
-# print( f"  SurfElev_tavg[100].shape = {SurfElev_tavg.shape}" )
+print( f"  GPP_tavg[100].shape = {GPP_tavg.shape}" )
+
+print( f"  GPP_tavg sample = {GPP_tavg[0:100:10,0:100:10]}" )
