@@ -9,12 +9,11 @@ from eis_smce.data.intake.zarr.source import EISZarrSource
 import intake, zarr, numpy as np
 import dask.bag as db
 import time, logging,  xarray as xa
-from eis_smce.data.common.base import EISBase
 import intake_xarray as ixa   # Need this import to register 'xarray' container.
 
 def dsort( d: Dict ) -> Dict: return { k:d[k] for k in sorted(d.keys()) }
 
-class EISDataSource( DataSource, EISBase ):
+class EISDataSource( DataSource ):
     """Common behaviours for plugins in this repo"""
     version = 0.1
     container = 'xarray'
