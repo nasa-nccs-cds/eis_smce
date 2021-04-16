@@ -12,9 +12,8 @@ class EISSingleton(tlc.Configurable):
 
     def __init__(self, *args, **kwargs ):
         super(EISSingleton, self).__init__()
-        self.update_config( **kwargs )
+        self.update_config( eisc().config )
         self._config_instances.append( self )
-        os.makedirs( eisc(**kwargs).cache_dir, exist_ok=True )
         self.setup_logging()
 
     @classmethod
@@ -94,6 +93,7 @@ class EISConfiguration( EISSingleton ):
 
     def __init__( self, **kwargs ):
         self.cache_dir = kwargs.pop('cache', self.default_cache_dir)
+        os.makedirs( self.cache_dir, exist_ok=True )
         self.name = kwargs.pop( "name", "eis.smce" )
         self.mode =  kwargs.pop( "mode", "default" )
         super(EISConfiguration, self).__init__( **kwargs )
@@ -101,6 +101,10 @@ class EISConfiguration( EISSingleton ):
         self._config: Config = None
         self._lock = threading.Lock()
         self._configure_()
+
+    @property
+    def config(self):
+        return self._config
 
     def getCurrentConfig(self):
         config_dict = {}
