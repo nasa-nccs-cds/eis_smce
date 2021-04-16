@@ -1,6 +1,6 @@
 import os, logging
 import traitlets.config as tlc
-
+import socket
 
 class EISBase(tlc.Configurable):
     """Common behaviours for plugins in this repo"""
@@ -13,11 +13,19 @@ class EISBase(tlc.Configurable):
         os.makedirs( self.cache_dir, exist_ok=True )
         self.setup_logging()
 
+    @property
+    def hostname(self):
+        return socket.gethostname()
+
+    @property
+    def pid(self):
+        return os.getpid()
+
     def setup_logging(self):
         if EISBase.logger is None:
             EISBase.logger = logging.getLogger('eis_smce.intake')
             EISBase.logger.setLevel(logging.DEBUG)
-            log_file = f'{self.cache_dir}/logging/eis_smce.log'
+            log_file = f'{self.cache_dir}/logging/eis_smce.{self.hostname}.{self.pid}.log'
             os.makedirs( os.path.dirname(log_file), exist_ok=True )
             fh = logging.FileHandler( log_file )
             fh.setLevel(logging.DEBUG)
