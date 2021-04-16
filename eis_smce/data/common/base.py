@@ -83,7 +83,6 @@ class EISConfiguration( tlc.Configurable ):
     default_cache_dir = tlc.Unicode(os.path.expanduser("~/.eis_smce/cache")).tag(config=True)
 
     def __init__( self, **kwargs ):
-        super(EISConfiguration, self).__init__( **kwargs )
         self.cache_dir = kwargs.pop('cache', self.default_cache_dir)
         os.makedirs( self.cache_dir, exist_ok=True )
         self.name = kwargs.pop( "name", "eis.smce" )
@@ -92,6 +91,7 @@ class EISConfiguration( tlc.Configurable ):
         self._config: Config = None
         self._lock = threading.Lock()
         self._configure_()
+        super(EISConfiguration, self).__init__( **kwargs )
 
     @classmethod
     def instance(cls,  **kwargs):
