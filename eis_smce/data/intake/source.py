@@ -10,6 +10,7 @@ import intake, zarr, numpy as np
 import dask.bag as db
 import time, logging,  xarray as xa
 import intake_xarray as ixa   # Need this import to register 'xarray' container.
+from eis_smce.data.common.base import eisc
 
 def dsort( d: Dict ) -> Dict: return { k:d[k] for k in sorted(d.keys()) }
 
@@ -21,6 +22,7 @@ class EISDataSource( DataSource ):
 
     def __init__(self, **kwargs ):
         super(EISDataSource, self).__init__( **kwargs )
+        self.logger = eisc().logger
         self._file_list: List[ Dict[str,str] ] = None
         self._parts: Dict[int,xa.Dataset] = {}
         self.merge_dim = "sample"

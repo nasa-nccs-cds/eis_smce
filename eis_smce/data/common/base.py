@@ -8,13 +8,12 @@ import socket, threading
 class EISSingleton(tlc.Configurable):
     _instance = None
     _config_instances: List["EISSingleton"] = []
-    logger = None
 
     def __init__(self, *args, **kwargs ):
         super(EISSingleton, self).__init__()
         self.update_config( eisc().config )
         self._config_instances.append( self )
-        self.setup_logging()
+        self.logger = eisc().logger
 
     @classmethod
     def _walk_mro(cls):
@@ -54,44 +53,20 @@ class EISSingleton(tlc.Configurable):
         """Has an instance been created?"""
         return hasattr(cls, "_instance") and cls._instance is not None
 
-    @property
-    def hostname(self):
-        return socket.gethostname()
-
-    @property
-    def pid(self):
-        return os.getpid()
-
-    def setup_logging(self):
-        if EISSingleton.logger is None:
-            EISSingleton.logger = logging.getLogger('eis_smce.intake')
-            EISSingleton.logger.setLevel(logging.DEBUG)
-            log_file = f'{eisc().cache_dir}/logging/eis_smce.{self.hostname}.{self.pid}.log'
-            os.makedirs( os.path.dirname(log_file), exist_ok=True )
-            fh = logging.FileHandler( log_file )
-            fh.setLevel(logging.DEBUG)
-            ch = logging.StreamHandler()
-            ch.setLevel(logging.ERROR)
-            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-            fh.setFormatter(formatter)
-            ch.setFormatter(formatter)
-            EISSingleton.logger.addHandler(fh)
-            EISSingleton.logger.addHandler(ch)
-
 class EISConfiguration( tlc.Configurable ):
     _instance = None
     default_cache_dir = tlc.Unicode(os.path.expanduser("~/.eis_smce/cache")).tag(config=True)
+    logger = None
 
     def __init__( self, **kwargs ):
         self.cache_dir = kwargs.pop('cache', self.default_cache_dir)
         os.makedirs( self.cache_dir, exist_ok=True )
         self.name = kwargs.pop( "name", "eis.smce" )
         self.mode =  kwargs.pop( "mode", "default" )
-        self._config_files = None
         self._config: Config = None
-        self._lock = threading.Lock()
         self._configure_()
         super(EISConfiguration, self).__init__( **kwargs )
+        self.setup_logging()
 
     @classmethod
     def instance(cls,  **kwargs):
@@ -100,6 +75,14 @@ class EISConfiguration( tlc.Configurable ):
             cls._instance = inst
             cls._instantiated = cls
         return cls._instance
+
+    @property
+    def hostname(self):
+        return socket.gethostname()
+
+    @property
+    def pid(self):
+        return os.getpid()
 
     def getCurrentConfig(self):
         config_dict = {}
@@ -131,6 +114,7 @@ class EISConfiguration( tlc.Configurable ):
 
     def _configure_(self):
         if self._config is None:
+            self._lock = threading.Lock()
             cfg_file = self.config_file( self.name, self.mode )
             (self.config_dir, fname) = os.path.split(cfg_file)
             self._config_files = [fname]
@@ -170,6 +154,22 @@ class EISConfiguration( tlc.Configurable ):
 
     def __del__(self):
         self.save_config()
+
+    def setup_logging(self):
+        if EISSingleton.logger is None:
+            EISSingleton.logger = logging.getLogger('eis_smce.intake')
+            EISSingleton.logger.setLevel(logging.DEBUG)
+            log_file = f'{eisc().cache_dir}/logging/eis_smce.{self.hostname}.{self.pid}.log'
+            os.makedirs( os.path.dirname(log_file), exist_ok=True )
+            fh = logging.FileHandler( log_file )
+            fh.setLevel(logging.DEBUG)
+            ch = logging.StreamHandler()
+            ch.setLevel(logging.ERROR)
+            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            fh.setFormatter(formatter)
+            ch.setFormatter(formatter)
+            EISSingleton.logger.addHandler(fh)
+            EISSingleton.logger.addHandler(ch)
 
 def eisc(**kwargs) -> EISConfiguration:
     return EISConfiguration.instance(**kwargs)
