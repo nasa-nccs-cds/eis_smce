@@ -14,7 +14,7 @@ for id, var in data.data_vars.items():
     print( f"   {id}{var.dims}: shape={var.shape}" )
 
 
-GPP_tavg = data['GPP_tavg'][100]
+GPP_tavg = data['GPP_tavg'][10]
 
 print( f"  GPP_tavg[100].shape = {GPP_tavg.shape}" )
 
