@@ -101,10 +101,6 @@ class EISConfiguration( tlc.Configurable ):
             cls._instantiated = cls
         return cls._instance
 
-    @property
-    def config(self):
-        return self._config
-
     def getCurrentConfig(self):
         config_dict = {}
         for cfg_file in self._config_files:
