@@ -109,26 +109,21 @@ class EISDataSource( DataSource ):
         from eis_smce.data.storage.s3 import s3m
         use_cache = kwargs.get('cache', False)
         store = self.get_cache_path(path) if use_cache else s3m().get_store(path)
-        npart_blocks = kwargs.get( 'nparallel', 1 )
         mds: xa.Dataset = self.to_dask( **kwargs )
         self.logger.info(f" merged_dset[{self.merge_dim}] -> zarr: {store}\n   -------------------- Merged dataset: -------------------- \n{mds}\n")
         mds.to_zarr( store, mode="w", compute=False, consolidated=True )
         dask.config.set(scheduler='threading')
 
         self.logger.info( f"Exporting paritions to: {path}" )
-        if npart_blocks == 1:
-            for ip in range(0,self.nparts):
-                t0 = time.time()
-                self.logger.info( f"Exporting partition {ip}")
-                self._export_partition( store, mds, self.merge_dim, ip )
-                self.logger.info(f"Completed partition export in {time.time()-t0} sec")
-        else:
-            for ip in range(0,self.nparts,npart_blocks):
-                npart_block = min( npart_blocks, self.nparts-ip )
-                self._export_partitions( store, mds, self.merge_dim, ip, npart_block )
+        for ip in range(0,self.nparts):
+            t0 = time.time()
+            self.logger.info( f"Exporting partition {ip}")
+            self._export_partition( store, mds, self.merge_dim, ip )
+            self.logger.info(f"Completed partition export in {time.time()-t0} sec")
+
         mds.close()
 
-        if( use_cache ):
+        if( use_cache and path.startswith("s3:") ):
             self.logger.info(f"Uploading zarr file to: {path}")
             s3m().upload_files( store, path )
 
