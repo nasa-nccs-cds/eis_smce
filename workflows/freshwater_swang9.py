@@ -1,7 +1,8 @@
-import intake
+import intake, time
+from eis_smce.data.intake.zarr.source import EISZarrSource
 from eis_smce.data.intake.catalog import cm
 
-test_run = True
+test_run = False
 input_dir = "/discover/nobackup/projects/eis_freshwater/swang9/OL_1km/OUTPUT.RST.2013"
 cache_dir = "/discover/nobackup/tpmaxwel/cache"
 name = "freshwater.swang9.OL_1km.2013"
@@ -26,10 +27,12 @@ dsets = [
 if __name__ == '__main__':
 
     for dset in dsets:
+        t0 = time.time()
         [input, output] = [dset.pop(key) for key in [ 'input', 'output' ] ]
         h4s = intake.open_hdf4( input, cache_dir=cache_dir )
-        zs = h4s.export( output, bucket=bucket, merge_dim = "time", **dset )
+        zs: EISZarrSource = h4s.export( output, bucket=bucket, merge_dim = "time", **dset )
         cm().addEntry( zs  )
+        print( f"Completed {zs.cat_name} conversion & upload to {output} in {(time.time()-t0)/60} minutes" )
 
     cm().write_s3( bucket, name )
 
