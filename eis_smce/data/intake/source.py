@@ -9,19 +9,18 @@ from eis_smce.data.intake.zarr.source import EISZarrSource
 import intake, zarr, numpy as np
 import dask.bag as db
 import time, logging,  xarray as xa
+from eis_smce.data.common.base import EISBase
 import intake_xarray as ixa   # Need this import to register 'xarray' container.
 
 def dsort( d: Dict ) -> Dict: return { k:d[k] for k in sorted(d.keys()) }
 
-class EISDataSource( DataSource ):
+class EISDataSource( DataSource, EISBase ):
     """Common behaviours for plugins in this repo"""
     version = 0.1
     container = 'xarray'
     partition_access = True
-    logger = None
 
     def __init__(self, **kwargs ):
-        self._cache_dir = kwargs.pop('cache_dir', os.path.expanduser("~/.eis_smce/cache"))
         super(EISDataSource, self).__init__( **kwargs )
         self._file_list: List[ Dict[str,str] ] = None
         self._parts: Dict[int,xa.Dataset] = {}
@@ -29,27 +28,6 @@ class EISDataSource( DataSource ):
         self._schema: Schema = None
         self._ds: xa.Dataset = None
         self.nparts = -1
-        self.setup_logging()
-
-    def setup_logging(self):
-        if EISDataSource.logger is None:
-            EISDataSource.logger = logging.getLogger('eis_smce.intake')
-            EISDataSource.logger.setLevel(logging.DEBUG)
-            log_file = f'{self._cache_dir}/logging/eis_smce.log'
-            os.makedirs( os.path.dirname(log_file), exist_ok=True )
-            fh = logging.FileHandler( log_file )
-            fh.setLevel(logging.DEBUG)
-            ch = logging.StreamHandler()
-            ch.setLevel(logging.ERROR)
-            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-            fh.setFormatter(formatter)
-            ch.setFormatter(formatter)
-            EISDataSource.logger.addHandler(fh)
-            EISDataSource.logger.addHandler(ch)
-
-    @property
-    def cache_dir(self):
-        return self._cache_dir
 
     def _open_partition(self, ipart: int) -> xa.Dataset:
         raise NotImplementedError()

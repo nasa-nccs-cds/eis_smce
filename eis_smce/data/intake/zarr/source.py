@@ -1,8 +1,9 @@
 from intake_xarray.xzarr import ZarrSource
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
+from eis_smce.data.common.base import EISBase
 import yaml, xarray as xr
 
-class EISZarrSource( ZarrSource ):
+class EISZarrSource( ZarrSource, EISBase ):
 
     def __init__(self, urlpath, storage_options=None, metadata=None, **kwargs):
         ZarrSource.__init__( self, urlpath, storage_options, metadata, **kwargs )
