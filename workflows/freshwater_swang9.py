@@ -1,12 +1,12 @@
 import intake
 from eis_smce.data.intake.catalog import cm
 
-reduced_run = True
+test_run = True
 input_dir = "/discover/nobackup/projects/eis_freshwater/swang9/OL_1km/OUTPUT.RST.2013"
 cache_dir = "/discover/nobackup/tpmaxwel/cache"
 name = "freshwater.swang9.OL_1km.2013"
 bucket = "eis-dh-hydro"
-month = "201302" if reduced_run else  "*"
+month = "201302" if test_run else  "*"
 s3_prefix = f"projects/eis_freshwater/swang9/OL_1km/OUTPUT.RST.2013"
 
 dsets = [
