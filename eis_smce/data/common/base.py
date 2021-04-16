@@ -156,9 +156,9 @@ class EISConfiguration( tlc.Configurable ):
         self.save_config()
 
     def setup_logging(self):
-        if EISSingleton.logger is None:
-            EISSingleton.logger = logging.getLogger('eis_smce.intake')
-            EISSingleton.logger.setLevel(logging.DEBUG)
+        if self.logger is None:
+            self.logger = logging.getLogger('eis_smce.intake')
+            self.logger.setLevel(logging.DEBUG)
             log_file = f'{eisc().cache_dir}/logging/eis_smce.{self.hostname}.{self.pid}.log'
             os.makedirs( os.path.dirname(log_file), exist_ok=True )
             fh = logging.FileHandler( log_file )
@@ -168,8 +168,8 @@ class EISConfiguration( tlc.Configurable ):
             formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
             fh.setFormatter(formatter)
             ch.setFormatter(formatter)
-            EISSingleton.logger.addHandler(fh)
-            EISSingleton.logger.addHandler(ch)
+            self.logger.addHandler(fh)
+            self.logger.addHandler(ch)
 
 def eisc(**kwargs) -> EISConfiguration:
     return EISConfiguration.instance(**kwargs)
