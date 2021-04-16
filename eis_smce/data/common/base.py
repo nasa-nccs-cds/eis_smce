@@ -42,16 +42,6 @@ class EISSingleton(tlc.Configurable):
                 subclass._instance = None
 
     @classmethod
-    def add_trait_values(cls, trait_map: Dict, scope: str, instance: "EISSingleton"):
-        class_traits = instance.class_traits(config=True)
-        for tid, trait in class_traits.items():
-            tval = getattr(instance, tid)
-            trait_scope = scope
-            trait_instance_values = trait_map.setdefault(trait_scope, {})
-            trait_values = trait_instance_values.setdefault(instance.__class__.__name__, {})
-            trait_values[tid] = tval
-
-    @classmethod
     def instance(cls, *args, **kwargs):
         if cls._instance is None:
             inst = cls(*args, **kwargs)
@@ -88,19 +78,28 @@ class EISSingleton(tlc.Configurable):
             EISSingleton.logger.addHandler(fh)
             EISSingleton.logger.addHandler(ch)
 
-class EISConfiguration( EISSingleton ):
+class EISConfiguration( tlc.Configurable ):
+    _instance = None
     default_cache_dir = tlc.Unicode(os.path.expanduser("~/.eis_smce/cache")).tag(config=True)
 
     def __init__( self, **kwargs ):
+        super(EISConfiguration, self).__init__( **kwargs )
         self.cache_dir = kwargs.pop('cache', self.default_cache_dir)
         os.makedirs( self.cache_dir, exist_ok=True )
         self.name = kwargs.pop( "name", "eis.smce" )
         self.mode =  kwargs.pop( "mode", "default" )
-        super(EISConfiguration, self).__init__( **kwargs )
         self._config_files = None
         self._config: Config = None
         self._lock = threading.Lock()
         self._configure_()
+
+    @classmethod
+    def instance(cls,  **kwargs):
+        if cls._instance is None:
+            inst = cls(**kwargs )
+            cls._instance = inst
+            cls._instantiated = cls
+        return cls._instance
 
     @property
     def config(self):
@@ -120,9 +119,19 @@ class EISConfiguration( EISSingleton ):
     def generate_config_file(self) -> Dict:
         #        print( f"Generate config file, classes = {[inst.__class__ for inst in cls._config_instances]}")
         trait_map = self.getCurrentConfig()
-        for inst in self._config_instances:
+        for inst in EISSingleton._config_instances:
             self.add_trait_values(trait_map, self.config_scope, inst)
         return trait_map
+
+    @classmethod
+    def add_trait_values(cls, trait_map: Dict, scope: str, instance: "EISSingleton"):
+        class_traits = instance.class_traits(config=True)
+        for tid, trait in class_traits.items():
+            tval = getattr(instance, tid)
+            trait_scope = scope
+            trait_instance_values = trait_map.setdefault(trait_scope, {})
+            trait_values = trait_instance_values.setdefault(instance.__class__.__name__, {})
+            trait_values[tid] = tval
 
     def _configure_(self):
         if self._config is None:
