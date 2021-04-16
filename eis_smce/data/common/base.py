@@ -1,52 +1,21 @@
 import os, logging
 import traitlets.config as tlc
-import socket
+from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
+from traitlets.config.loader import load_pyconfig_files
+from traitlets.config.loader import Config
+import socket, threading
 
-class EISBase(tlc.Configurable):
-    """Common behaviours for plugins in this repo"""
+class EISSingleton(tlc.Configurable):
+    _instance = None
+    _config_instances: List["EISSingleton"] = []
     logger = None
-    _default_cache_dir = tlc.Unicode(os.path.expanduser("~/.eis_smce/cache")).tag(config=True)
 
-    def __init__(self, **kwargs ):
-        super(EISBase, self).__init__(**kwargs)
-        self.cache_dir = kwargs.pop('cache_dir', self._default_cache_dir )
+    def __init__(self, *args, **kwargs ):
+        super(EISSingleton, self).__init__()
+        self.update_config( **kwargs )
+        self._config_instances.append( self )
         os.makedirs( self.cache_dir, exist_ok=True )
         self.setup_logging()
-
-    @property
-    def hostname(self):
-        return socket.gethostname()
-
-    @property
-    def pid(self):
-        return os.getpid()
-
-    def setup_logging(self):
-        if EISBase.logger is None:
-            EISBase.logger = logging.getLogger('eis_smce.intake')
-            EISBase.logger.setLevel(logging.DEBUG)
-            log_file = f'{self.cache_dir}/logging/eis_smce.{self.hostname}.{self.pid}.log'
-            os.makedirs( os.path.dirname(log_file), exist_ok=True )
-            fh = logging.FileHandler( log_file )
-            fh.setLevel(logging.DEBUG)
-            ch = logging.StreamHandler()
-            ch.setLevel(logging.ERROR)
-            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-            fh.setFormatter(formatter)
-            ch.setFormatter(formatter)
-            EISBase.logger.addHandler(fh)
-            EISBase.logger.addHandler(ch)
-
-
-class EISSingleton(EISBase):
-    """A configurable that only allows one instance.
-
-    This class is for classes that should only have one instance of itself
-    or *any* subclass. To create and retrieve such a class use the
-    :meth:`SingletonConfigurable.instance` method.
-    """
-
-    _instance = None
 
     @classmethod
     def _walk_mro(cls):
@@ -74,50 +43,129 @@ class EISSingleton(EISBase):
                 subclass._instance = None
 
     @classmethod
+    def add_trait_values(cls, trait_map: Dict, scope: str, instance: "EISSingleton"):
+        class_traits = instance.class_traits(config=True)
+        for tid, trait in class_traits.items():
+            tval = getattr(instance, tid)
+            trait_scope = scope
+            trait_instance_values = trait_map.setdefault(trait_scope, {})
+            trait_values = trait_instance_values.setdefault(instance.__class__.__name__, {})
+            trait_values[tid] = tval
+
+    @classmethod
     def instance(cls, *args, **kwargs):
-        """Returns a global instance of this class.
-
-        This method create a new instance if none have previously been created
-        and returns a previously created instance is one already exists.
-
-        The arguments and keyword arguments passed to this method are passed
-        on to the :meth:`__init__` method of the class upon instantiation.
-
-        Examples
-        --------
-        Create a singleton class using instance, and retrieve it::
-
-            >>> from traitlets.config.configurable import SingletonConfigurable
-            >>> class Foo(SingletonConfigurable): pass
-            >>> foo = Foo.instance()
-            >>> foo == Foo.instance()
-            True
-
-        Create a subclass that is retrived using the base class instance::
-
-            >>> class Bar(SingletonConfigurable): pass
-            >>> class Bam(Bar): pass
-            >>> bam = Bam.instance()
-            >>> bam == Bar.instance()
-            True
-        """
-        # Create and save the instance
         if cls._instance is None:
             inst = cls(*args, **kwargs)
-            # Now make sure that the instance will also be returned by
-            # parent classes' _instance attribute.
-            for subclass in cls._walk_mro():
-                subclass._instance = inst
-
-        if isinstance(cls._instance, cls):
-            return cls._instance
-        else:
-            raise Exception(
-                "An incompatible sibling of '%s' is already instanciated"
-                " as singleton: %s" % (cls.__name__, type(cls._instance).__name__)
-            )
+            cls._instance = inst
+            cls._instantiated = cls
+        return cls._instance
 
     @classmethod
     def initialized(cls):
         """Has an instance been created?"""
         return hasattr(cls, "_instance") and cls._instance is not None
+
+    @property
+    def hostname(self):
+        return socket.gethostname()
+
+    @property
+    def cache_dir(self):
+        return eisc().cache_dir
+
+    @property
+    def pid(self):
+        return os.getpid()
+
+    def setup_logging(self):
+        if EISSingleton.logger is None:
+            EISSingleton.logger = logging.getLogger('eis_smce.intake')
+            EISSingleton.logger.setLevel(logging.DEBUG)
+            log_file = f'{self.cache_dir}/logging/eis_smce.{self.hostname}.{self.pid}.log'
+            os.makedirs( os.path.dirname(log_file), exist_ok=True )
+            fh = logging.FileHandler( log_file )
+            fh.setLevel(logging.DEBUG)
+            ch = logging.StreamHandler()
+            ch.setLevel(logging.ERROR)
+            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            fh.setFormatter(formatter)
+            ch.setFormatter(formatter)
+            EISSingleton.logger.addHandler(fh)
+            EISSingleton.logger.addHandler(ch)
+
+class EISConfiguration( EISSingleton ):
+    default_cache_dir = tlc.Unicode(os.path.expanduser("~/.eis_smce/cache")).tag(config=True)
+
+    def __init__( self, **kwargs ):
+        super(EISConfiguration, self).__init__( **kwargs )
+        self._config_files = None
+        self._config: Config = None
+        self.cache_dir = kwargs.pop('cache', self.default_cache_dir)
+        self.name = kwargs.get( "name", "eis.smce" )
+        self.mode =  kwargs.get( "mode", "default" )
+        self._lock = threading.Lock()
+        self._configure_()
+
+    def getCurrentConfig(self):
+        config_dict = {}
+        for cfg_file in self._config_files:
+            scope = self.config_scope
+            config_dict[scope] = load_pyconfig_files([cfg_file], self.config_dir)
+        return config_dict
+
+    @property
+    def config_scope(self):
+        return f"{self.name}.{self.mode}"
+
+    def generate_config_file(self) -> Dict:
+        #        print( f"Generate config file, classes = {[inst.__class__ for inst in cls._config_instances]}")
+        trait_map = self.getCurrentConfig()
+        for inst in self._config_instances:
+            self.add_trait_values(trait_map, self.config_scope, inst)
+        return trait_map
+
+    def _configure_(self):
+        if self._config is None:
+            cfg_file = self.config_file( self.name, self.mode )
+            if os.path.isfile(cfg_file):
+                (self.config_dir, fname) = os.path.split(cfg_file)
+                self._config_files = [fname]
+                print(f"Loading config files: {self._config_files} from dir {self.config_dir}")
+                self._config = load_pyconfig_files(self._config_files, self.config_dir)
+                self.update_config(self._config)
+            else:
+                print(f"Configuration error: '{cfg_file}' is not a file.")
+
+
+    @classmethod
+    def config_file(cls, name: str, mode: str) -> str:
+        config_dir = os.path.join(os.path.expanduser("~"), ".eis_smce", "config", mode)
+        if not os.path.isdir(config_dir): os.makedirs(config_dir, mode=0o777)
+        return os.path.join(config_dir, name + ".py")
+
+    def save_config( self ):
+
+        conf_dict = self.generate_config_file()
+        for scope, trait_classes in conf_dict.items():
+            cfg_file = os.path.realpath( self.config_file( scope, self.mode ) )
+            os.makedirs(os.path.dirname(cfg_file), 0o777, exist_ok=True)
+            lines = []
+
+            for class_name, trait_map in trait_classes.items():
+                for trait_name, trait_value in trait_map.items():
+                    tval_str = f'"{trait_value}"' if isinstance(trait_value, str) else f"{trait_value}"
+                    cfg_str = f"c.{class_name}.{trait_name} = {tval_str}\n"
+                    lines.append( cfg_str )
+
+            self.logger.info(f"Writing config file: {cfg_file}")
+            with self._lock:
+                cfile_handle = open(cfg_file, "w")
+                cfile_handle.writelines(lines)
+                cfile_handle.close()
+            self.logger.info(f"Config file written")
+
+    def __del__(self):
+        self.save_config()
+
+def eisc(**kwargs) -> EISConfiguration:
+    return EISConfiguration.instance(**kwargs)
