@@ -54,8 +54,7 @@ class S3Manager(EISSingleton):
             ibuket = 2 if len(toks[1]) == 0 else 1
             bucketname = toks[ibuket]
             s3_item = '/'.join( toks[ibuket + 1:] )
-            client = boto3.client('s3')
-            client.download_file( bucketname, s3_item, file_path )
+            self.client.download_file( bucketname, s3_item, file_path )
         return file_path
 
     def delete(self, path: str ):
