@@ -58,10 +58,15 @@ class S3Manager(EISSingleton):
             client.download_file( bucketname, s3_item, file_path )
         return file_path
 
+    def delete(self, path: str ):
+        (bucketname, prefix) = self.parse(path)
+        bucket = self.resource.Bucket(bucketname)
+        for obj in bucket.objects.filter(Prefix=prefix):
+            self.client.delete_object( Bucket=bucketname, Key=obj.key )
+
     def get_store(self, path: str ) -> MutableMapping:
-        try: self.fs.delete( path, recursive=True )
-        except FileNotFoundError: pass
-        return s3fs.S3Map( root=path, s3=self.fs, check=False, create=True )
+        self.delete( path )
+        return self.fs.get_mapper( path, create=True )
 
     def upload_files(self, src_path: str, dest_path: str ):
         if src_path != dest_path:
