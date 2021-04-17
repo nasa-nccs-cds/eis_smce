@@ -6,6 +6,7 @@ bucket = "eis-dh-hydro"
 s3_prefix = f"projects/eis_freshwater/swang9.OL_1km.2013.1"
 urlpath=f"s3://{bucket}/{s3_prefix}/SURFACEMODEL/LIS_HIST.d01.zarr"
 
+print( f"Reading zarr File: {urlpath} ")
 xzSource: ZarrSource = ZarrSource( urlpath )
 data: xa.Dataset = xzSource.to_dask()
 
