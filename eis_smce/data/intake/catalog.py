@@ -14,25 +14,14 @@ class CatalogManager(EISSingleton):
     def __init__( self, **kwargs ):
         EISSingleton.__init__( self, **kwargs )
         self._s3 = None
-        self._sources = [ "sources:" ]
 
     @property
     def s3(self):
         if self._s3 is None:  self._s3 = boto3.resource('s3')
         return self._s3
 
-
-    # def download( self, bucketName, cache_dir: str ) -> str:
-    #     s3_resource = boto3.resource('s3')
-    #     bucket = s3_resource.Bucket(bucketName)
-    #     for obj in bucket.objects.filter(Prefix="catalog"):
-    #         obj_dir = f"{cache_dir}/catalog/{os.path.dirname(obj.key)}"
-    #         if not os.path.exists(obj_dir): os.makedirs(obj_dir)
-    #         bucket.download_file( obj.key, f"{obj_dir}/{os.path.basename(obj.key)}" )
-    #     return
-
-    def cat_path( self, bucket: str ) -> str:
-        return f"s3://{bucket}/catalog/*.yml"
+    def cat_path( self, bucket: str, cat_name = "*" ) -> str:
+        return f"s3://{bucket}/catalog/{cat_name}.yml"
 
     def gui( self, bucket: str ):
         bucket = self.s3.Bucket(bucket)
@@ -40,37 +29,26 @@ class CatalogManager(EISSingleton):
         self.logger.info( f"Opening gui with catalogs: {catalogs}")
         return GUI( catalogs )
 
-    def cat( self, bucket: str ) -> intake.Catalog:
+    def cat( self, bucket: str ) -> YAMLFilesCatalog:
         cat_path = self.cat_path(bucket)
         self.logger.info( f"Open catalog from url: {cat_path}")
-        return intake.open_catalog(  cat_path )
+        return YAMLFilesCatalog(  cat_path )
 
-    def addEntry( self, source: EISZarrSource, **kwargs ):
-        if source is not None:
-            source_yml = source.yaml( **kwargs )
-            self._sources.append( source_yml )
-        else:
-            self.logger.warn("Attempt to add null catalog source ignored")
-
-    def get_cat_yml( self ):
-        return "\n".join( self._sources )
-
-    def write_s3( self, bucket: str, cat_name: str ):
+    def add_entries( self, bucket: str, sources: List[EISZarrSource], **kwargs ):
         from eis_smce.data.common.base import eisc
-        if len( self._sources ) > 0:
-            catalog = f"catalog/{cat_name}.yml"
-            self.s3.Object( bucket, catalog ).put( Body=self.get_cat_yml() , ACL="bucket-owner-full-control" )
+        for source in sources:
+            catalog = f"catalog/{source.cat_name}.yml"
+            self.s3.Object( bucket, catalog ).put( Body=source.yaml(**kwargs) , ACL="bucket-owner-full-control" )
             eisc().save_config()
         else:
             self.logger.warn( "Attempt to write empty catalog ignored")
 
-    def write_local(self, path: str, cat_name: str):
-        catalog = f"{path}/{cat_name}.yml"
-        with open(catalog, "w") as fp:
-            fp.write( self.get_cat_yml() )
+    def delete_entry( self, bucket: str, cat_name: str ):
+        from eis_smce.data.storage.s3 import s3m
+        catpath = self.cat_path( bucket, cat_name )
+        s3m().delete( catpath )
 
     def clear(self):
         self._s3 = None
-        self._sources = [ "sources:" ]
 
 def cm() -> CatalogManager: return CatalogManager.instance()

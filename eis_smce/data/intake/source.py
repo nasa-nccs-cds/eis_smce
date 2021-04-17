@@ -47,12 +47,12 @@ class EISDataSource( DataSource ):
         if data_url.startswith("s3"):
             toks = data_url.split("/")
             file_name = toks[-1]
-            data_url = os.path.join( self.cache_dir, file_name)
+            data_url = os.path.join( eisc().cache_dir, file_name)
         return data_url
 
     def get_downloaded_filepath(self, file_path: str ):
         from eis_smce.data.storage.s3 import s3m
-        if file_path.startswith("s3"): file_path = s3m().download( file_path, self.cache_dir )
+        if file_path.startswith("s3"): file_path = s3m().download( file_path, eisc().cache_dir )
         return file_path
 
     def to_dask( self, **kwargs ) -> xa.Dataset:
@@ -81,7 +81,7 @@ class EISDataSource( DataSource ):
         from eis_smce.data.storage.s3 import s3m
         if path.startswith("s3:"):
             (bucket, item) = s3m().parse(path)
-            path = f"{self._cache_dir}/{item}"
+            path = f"{eisc().cache_dir}/{item}"
         return path
 
     def export(self, path: str, **kwargs ) -> EISZarrSource:
