@@ -1,4 +1,5 @@
 import intake, time
+from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 from eis_smce.data.intake.zarr.source import EISZarrSource
 from eis_smce.data.intake.catalog import cm
 from eis_smce.data.common.base import eisc
@@ -30,12 +31,8 @@ dsets = [
 
 if __name__ == '__main__':
 
-    sources = []
-    for dset in dsets:
-        [input, output] = [dset.pop(key) for key in [ 'input', 'output' ] ]
-        zsc: EISZarrSource = zc().standard_conversion( input, output, merge_dim="time", **dset )
-        sources.append( zsc )
-
+    zc().init_cluster( processes = False )
+    sources: List[EISZarrSource] = zc().standard_conversions( dsets, merge_dim="time" )
     cm().add_entries( bucket, sources, name )
 
 
