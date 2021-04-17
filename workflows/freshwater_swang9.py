@@ -3,7 +3,7 @@ from eis_smce.data.intake.zarr.source import EISZarrSource
 from eis_smce.data.intake.catalog import cm
 from eis_smce.data.common.base import eisc
 
-test_run = False
+test_run = True
 input_dir = "/discover/nobackup/projects/eis_freshwater/swang9/OL_1km/OUTPUT.RST.2013"
 name = "freshwater.swang9.OL_1km.2013"
 bucket = "eis-dh-hydro"
