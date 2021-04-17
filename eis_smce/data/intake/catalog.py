@@ -3,7 +3,7 @@ from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapp
 import intake, os, boto3
 from eis_smce.data.common.base import EISSingleton
 import yaml, xarray as xr
-from intake.catalog.local import YAMLFilesCatalog
+from intake.catalog.local import YAMLFilesCatalog, YAMLFileCatalog
 from intake.interface.gui import GUI
 from eis_smce.data.intake.zarr.source import EISZarrSource
 
@@ -29,19 +29,31 @@ class CatalogManager(EISSingleton):
         self.logger.info( f"Opening gui with catalogs: {catalogs}")
         return GUI( catalogs )
 
-    def cat( self, bucket: str ) -> YAMLFilesCatalog:
-        cat_path = self.cat_path(bucket)
-        self.logger.info( f"Open catalog from url: {cat_path}")
-        return YAMLFilesCatalog(  cat_path )
+    def cat( self, bucket: str, name: str = None ) -> YAMLFileCatalog:
+        cat_path = self.cat_path(bucket,name)
+        self.logger.debug(f"Open YAMLFileCatalog from url: {cat_path}")
+        return YAMLFileCatalog( cat_path )
 
-    def add_entries( self, bucket: str, sources: List[EISZarrSource], **kwargs ):
+    def mcat( self, bucket: str ) -> YAMLFilesCatalog:
+        cat_path = self.cat_path(bucket)
+        self.logger.debug(f"Open YAMLFilesCatalog from url: {cat_path}")
+        return YAMLFilesCatalog( cat_path )
+
+    def add_entries( self, bucket: str, sources: List[EISZarrSource], name = None, **kwargs ):
         from eis_smce.data.common.base import eisc
-        for source in sources:
-            catalog = f"catalog/{source.cat_name}.yml"
-            self.s3.Object( bucket, catalog ).put( Body=source.yaml(**kwargs) , ACL="bucket-owner-full-control" )
-            eisc().save_config()
+        if name is None:
+            for source in sources:
+                prefix = f"catalog/{source.cat_name}.yml"
+                self.s3.Object( bucket, prefix ).put( Body=source.yaml(**kwargs) , ACL="bucket-owner-full-control" )
         else:
-            self.logger.warn( "Attempt to write empty catalog ignored")
+            catalog: YAMLFileCatalog = self.cat( bucket, name )
+            for source in sources:
+                catalog.add( source, source.cat_name )
+            prefix = f"catalog/{name}.yml"
+            self.s3.Object( bucket, prefix ).put( Body=catalog.yaml(), ACL="bucket-owner-full-control" )
+
+        eisc().save_config()
+
 
     def delete_entry( self, bucket: str, cat_name: str ):
         from eis_smce.data.storage.s3 import s3m

@@ -1,8 +1,9 @@
 from intake_xarray.xzarr import ZarrSource
+from eis_smce.data.storage.s3 import s3m
 import xarray as xa
 
 bucket = "eis-dh-hydro"
-s3_prefix = f"projects/eis_freshwater/swang9/OL_1km/OUTPUT.RST.2013"
+s3_prefix = f"projects/eis_freshwater/swang9.OL_1km.2013.1"
 urlpath=f"s3://{bucket}/{s3_prefix}/SURFACEMODEL/LIS_HIST.d01.zarr"
 
 xzSource: ZarrSource = ZarrSource( urlpath )
@@ -18,6 +19,8 @@ GPP_tavg: xa.DataArray = data['GPP_tavg'][10]
 # GPPs = GPP_tavg[50:100:10,50:100:10].values
 
 print( f"  GPP_tavg range = {GPP_tavg.min().values} {GPP_tavg.max().values} ")
+
+s3m().delete( urlpath )
 
 #print( f"  GPP_tavg[100].shape = {GPP_tavg.shape}" )
 #print( f"  GPP_tavg sample = {GPP_tavg[50:100:10,50:100:10].values.tolist()}" )

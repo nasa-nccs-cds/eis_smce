@@ -36,6 +36,6 @@ if __name__ == '__main__':
         zsc: EISZarrSource = zc().standard_conversion( input, output, merge_dim="time", **dset )
         sources.append( zsc )
 
-    cm().add_entries( bucket, sources )
+    cm().add_entries( bucket, sources, name )
 
 
