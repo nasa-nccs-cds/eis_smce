@@ -53,8 +53,10 @@ class CatalogManager(EISSingleton):
         return "\n".join( self._sources )
 
     def write_s3( self, bucket: str, cat_name: str ):
+        from eis_smce.data.common.base import eisc
         catalog = f"catalog/{cat_name}.yml"
         self.s3.Object( bucket, catalog ).put( Body=self.get_cat_yml() , ACL="bucket-owner-full-control" )
+        eisc().save_config()
 
     def write_local(self, path: str, cat_name: str):
         catalog = f"{path}/{cat_name}.yml"

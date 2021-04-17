@@ -3,11 +3,11 @@ from eis_smce.data.intake.zarr.source import EISZarrSource
 from eis_smce.data.intake.catalog import cm
 from eis_smce.data.common.base import eisc
 
-test_run = True
+test_run = False
 input_dir = "/discover/nobackup/projects/eis_freshwater/swang9/OL_1km/OUTPUT.RST.2013"
 name = "freshwater.swang9.OL_1km.2013"
 bucket = "eis-dh-hydro"
-month = "201302" if test_run else  "*"
+month = "201303" if test_run else  "*"
 s3_prefix = f"projects/eis_freshwater/swang9/OL_1km/OUTPUT.RST.2013"
 eisc( cache = "/discover/nobackup/tpmaxwel/cache", mode = "freshwater.swang9" )
 

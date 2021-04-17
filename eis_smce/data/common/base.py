@@ -152,14 +152,12 @@ class EISConfiguration( tlc.Configurable ):
                 cfile_handle.close()
             self.logger.info(f"Config file written")
 
-    def __del__(self):
-        self.save_config()
-
     def setup_logging(self):
         if self.logger is None:
             self.logger = logging.getLogger('eis_smce.intake')
             self.logger.setLevel(logging.DEBUG)
             log_file = f'{self.cache_dir}/logging/eis_smce.{self.hostname}.{self.pid}.log'
+            print( f"Opening Log file: {log_file}")
             os.makedirs( os.path.dirname(log_file), exist_ok=True )
             fh = logging.FileHandler( log_file )
             fh.setLevel(logging.DEBUG)
