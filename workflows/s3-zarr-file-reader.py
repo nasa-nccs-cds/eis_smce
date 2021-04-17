@@ -10,17 +10,12 @@ xzSource: ZarrSource = ZarrSource( urlpath )
 data: xa.Dataset = xzSource.to_dask()
 
 print( f"attrs: {data.attrs}" )
-
 for id, var in data.data_vars.items():
     print( f"   {id}{var.dims}: shape={var.shape}" )
 
-
 GPP_tavg: xa.DataArray = data['GPP_tavg'][10]
-# GPPs = GPP_tavg[50:100:10,50:100:10].values
-
 print( f"  GPP_tavg range = {GPP_tavg.min().values} {GPP_tavg.max().values} ")
 
+print( f"Deleting: {urlpath}")
 s3m().delete( urlpath )
 
-#print( f"  GPP_tavg[100].shape = {GPP_tavg.shape}" )
-#print( f"  GPP_tavg sample = {GPP_tavg[50:100:10,50:100:10].values.tolist()}" )
