@@ -46,17 +46,23 @@ class CatalogManager(EISSingleton):
         return intake.open_catalog(  cat_path )
 
     def addEntry( self, source: EISZarrSource, **kwargs ):
-        source_yml = source.yaml( **kwargs )
-        self._sources.append( source_yml )
+        if source is not None:
+            source_yml = source.yaml( **kwargs )
+            self._sources.append( source_yml )
+        else:
+            self.logger.warn("Attempt to add null catalog source ignored")
 
     def get_cat_yml( self ):
         return "\n".join( self._sources )
 
     def write_s3( self, bucket: str, cat_name: str ):
         from eis_smce.data.common.base import eisc
-        catalog = f"catalog/{cat_name}.yml"
-        self.s3.Object( bucket, catalog ).put( Body=self.get_cat_yml() , ACL="bucket-owner-full-control" )
-        eisc().save_config()
+        if len( self._sources ) > 0:
+            catalog = f"catalog/{cat_name}.yml"
+            self.s3.Object( bucket, catalog ).put( Body=self.get_cat_yml() , ACL="bucket-owner-full-control" )
+            eisc().save_config()
+        else:
+            self.logger.warn( "Attempt to write empty catalog ignored")
 
     def write_local(self, path: str, cat_name: str):
         catalog = f"{path}/{cat_name}.yml"

@@ -85,28 +85,32 @@ class EISDataSource( DataSource ):
         return path
 
     def export(self, path: str, **kwargs ) -> EISZarrSource:
-        from eis_smce.data.storage.s3 import s3m
-        use_cache = kwargs.get('cache', False)
-        store = self.get_cache_path(path) if use_cache else s3m().get_store(path)
-        mds: xa.Dataset = self.to_dask( **kwargs )
-        self.logger.info(f" merged_dset[{self.merge_dim}] -> zarr: {store}\n   -------------------- Merged dataset: -------------------- \n{mds}\n")
-        mds.to_zarr( store, mode="w", compute=False, consolidated=True )
-        dask.config.set(scheduler='threading')
+        try:
+            from eis_smce.data.storage.s3 import s3m
+            use_cache = kwargs.get('cache', False)
+            store = self.get_cache_path(path) if use_cache else s3m().get_store(path)
+            mds: xa.Dataset = self.to_dask( **kwargs )
+            self.logger.info(f" merged_dset[{self.merge_dim}] -> zarr: {store}\n   -------------------- Merged dataset: -------------------- \n{mds}\n")
+            mds.to_zarr( store, mode="w", compute=False, consolidated=True )
+            dask.config.set(scheduler='threading')
 
-        self.logger.info( f"Exporting paritions to: {path}" )
-        for ip in range(0,self.nparts):
-            t0 = time.time()
-            self.logger.info( f"Exporting partition {ip}")
-            self._export_partition( store, mds, self.merge_dim, ip )
-            self.logger.info(f"Completed partition export in {time.time()-t0} sec")
+            self.logger.info( f"Exporting paritions to: {path}" )
+            for ip in range(0,self.nparts):
+                t0 = time.time()
+                self.logger.info( f"Exporting partition {ip}")
+                self._export_partition( store, mds, self.merge_dim, ip )
+                self.logger.info(f"Completed partition export in {time.time()-t0} sec")
 
-        mds.close()
+            mds.close()
 
-        if( use_cache and path.startswith("s3:") ):
-            self.logger.info(f"Uploading zarr file to: {path}")
-            s3m().upload_files( store, path )
+            if( use_cache and path.startswith("s3:") ):
+                self.logger.info(f"Uploading zarr file to: {path}")
+                s3m().upload_files( store, path )
 
-        return EISZarrSource(path)
+            return EISZarrSource(path)
+        except Exception  as err:
+            self.logger.error(f"Exception in export: {err}")
+            self.logger.error(traceback.format_exc())
 
     def _export_partitions( self, store: str, dset: xa.Dataset, merge_dim: str, ipart0: int, nparts: int ):
         self.logger.info(f"Exporting {nparts} partitions at p0={ipart0}")

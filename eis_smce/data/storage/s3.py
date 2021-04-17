@@ -59,6 +59,7 @@ class S3Manager(EISSingleton):
         return file_path
 
     def get_store(self, path: str ) -> MutableMapping:
+        self.fs.delete( path, recursive=True )
         return s3fs.S3Map( root=path, s3=self.fs, check=False, create=True )
 
     def upload_files(self, src_path: str, dest_path: str ):
