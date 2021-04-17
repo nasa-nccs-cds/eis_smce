@@ -62,6 +62,7 @@ class S3Manager(EISSingleton):
         (bucketname, prefix) = self.parse(path)
         bucket = self.resource.Bucket(bucketname)
         for obj in bucket.objects.filter(Prefix=prefix):
+            print( f"Deleting object {bucketname}:{obj.key}")
             self.client.delete_object( Bucket=bucketname, Key=obj.key )
 
     def get_store(self, path: str ) -> MutableMapping:
