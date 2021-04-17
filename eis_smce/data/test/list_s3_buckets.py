@@ -9,6 +9,5 @@ s3r = boto3.resource('s3')
 print( "Catalog objects:")
 bucket = s3r.Bucket(bucketname)
 for obj in bucket.objects.filter( Prefix=prefix ):
-     bucket.
      print( f"s3://{obj.bucket_name}/{obj.key}" )
 
