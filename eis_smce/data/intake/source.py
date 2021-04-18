@@ -95,17 +95,18 @@ class EISDataSource( DataSource ):
             dask.config.set(scheduler='threading')
 
             client: Client = dcm().client
-            export = self._export_partition if (client is None) else dask.delayed(self._export_partition)
+            compute = (client is None)
             zsources = []
-            self.logger.info( f"Exporting paritions to: {path}" )
+            self.logger.info( f"Exporting paritions to: {path} ({store}), compute = {compute}" )
             for ip in range(0,self.nparts):
                 t0 = time.time()
                 self.logger.info( f"Exporting partition {ip}")
-                zsources.append( export( store, mds, self.merge_dim, ip ) )
+                zsources.append( self._export_partition( store, mds, self.merge_dim, ip, compute=compute ) )
                 self.logger.info(f"Completed partition export in {time.time()-t0} sec")
                 os.system('ps -m -o %cpu,%mem,command')
 
-            if client is not None: client.compute( zsources, sync=True )
+            if not compute:
+                zsources = client.compute( zsources, sync=True )
             mds.close()
             if( use_cache and path.startswith("s3:") ):
                 self.logger.info(f"Uploading zarr file to: {path}")
@@ -116,18 +117,18 @@ class EISDataSource( DataSource ):
             self.logger.error(f"Exception in export: {err}")
             self.logger.error(traceback.format_exc())
 
-    def _export_partitions( self, store: str, dset: xa.Dataset, merge_dim: str, ipart0: int, nparts: int ):
+    def _export_partitions( self, store: str, dset: xa.Dataset, merge_dim: str, ipart0: int, nparts: int, **kwargs ):
         self.logger.info(f"Exporting {nparts} partitions at p0={ipart0}")
         t0 = time.time()
         for ip in range(ipart0, ipart0 + nparts):
-            self._export_partition( store, dset, merge_dim, ip, False )
+            self._export_partition( store, dset, merge_dim, ip, **kwargs )
         dt = time.time() - t0
         self.logger.info(f"Completed Export in {dt} sec ( {dt/nparts} per partition )")
 
     @staticmethod
-    def _export_partition(  store: str, dset: xa.Dataset, merge_dim: str, ipart: int, compute=True ):
+    def _export_partition(  store: str, dset: xa.Dataset, merge_dim: str, ipart: int, **kwargs ):
         region = { merge_dim: slice(ipart, ipart + 1) }
-        dset[region].to_zarr(store, mode='a', region=region, compute= compute )
+        dset[region].to_zarr(store, mode='a', region=region, **kwargs )
 
     def get_zarr_source(self, zpath: str ):
         zsrc = EISZarrSource(zpath)
