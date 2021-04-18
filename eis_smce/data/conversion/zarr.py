@@ -16,7 +16,6 @@ class ZarrConverter(EISSingleton):
             h4s = intake.open_hdf4( input )
             zs: EISZarrSource = h4s.export( output, **kwargs )
             if zs: print( f"Completed {zs.cat_name} conversion & upload to {output} in {(time.time()-t0)/60} minutes" )
-            os.system( 'ps -m -o %cpu,%mem,command' )
             return zs
         except Exception as err:
             self.logger.error( f"Error in ZarrConverter.standard_conversion: {err}")

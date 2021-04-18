@@ -103,6 +103,7 @@ class EISDataSource( DataSource ):
                 self.logger.info( f"Exporting partition {ip}")
                 zsources.append( export( store, mds, self.merge_dim, ip ) )
                 self.logger.info(f"Completed partition export in {time.time()-t0} sec")
+                os.system('ps -m -o %cpu,%mem,command')
 
             if client is not None: client.compute( zsources, sync=True )
             mds.close()
