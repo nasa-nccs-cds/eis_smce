@@ -1,67 +1,66 @@
 import traitlets.config as tlc
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 import intake, os, boto3
+from eis_smce.data.common.base import EISSingleton
 import yaml, xarray as xr
-from intake.catalog.local import YAMLFilesCatalog
+from intake.catalog.local import YAMLFilesCatalog, YAMLFileCatalog
 from intake.interface.gui import GUI
 from eis_smce.data.intake.zarr.source import EISZarrSource
 
-class CatalogManager(tlc.SingletonConfigurable):
+class CatalogManager(EISSingleton):
 
     bucket = tlc.Unicode( "eis-dh-fire" ).tag(config=True)
 
     def __init__( self, **kwargs ):
-        tlc.SingletonConfigurable.__init__( self, **kwargs )
+        EISSingleton.__init__( self, **kwargs )
         self._s3 = None
-        self._sources = [ "sources:" ]
 
     @property
     def s3(self):
         if self._s3 is None:  self._s3 = boto3.resource('s3')
         return self._s3
 
-
-    # def download( self, bucketName, cache_dir: str ) -> str:
-    #     s3_resource = boto3.resource('s3')
-    #     bucket = s3_resource.Bucket(bucketName)
-    #     for obj in bucket.objects.filter(Prefix="catalog"):
-    #         obj_dir = f"{cache_dir}/catalog/{os.path.dirname(obj.key)}"
-    #         if not os.path.exists(obj_dir): os.makedirs(obj_dir)
-    #         bucket.download_file( obj.key, f"{obj_dir}/{os.path.basename(obj.key)}" )
-    #     return
-
-    def cat_path( self, bucket: str ) -> str:
-        return f"s3://{bucket}/catalog/*.yml"
+    def cat_path( self, bucket: str, cat_name = "*" ) -> str:
+        return f"s3://{bucket}/catalog/{cat_name}.yml"
 
     def gui( self, bucket: str ):
         bucket = self.s3.Bucket(bucket)
         catalogs = [ f"s3://{obj.bucket_name}/{obj.key}" for obj in bucket.objects.filter(Prefix="catalog") ]
-        print( f"Opening gui with catalogs: {catalogs}")
+        self.logger.info( f"Opening gui with catalogs: {catalogs}")
         return GUI( catalogs )
 
-    def cat( self, bucket: str ) -> intake.Catalog:
+    def cat( self, bucket: str, name: str = None ) -> YAMLFileCatalog:
+        cat_path = self.cat_path(bucket,name)
+        self.logger.debug(f"Open YAMLFileCatalog from url: {cat_path}")
+        return YAMLFileCatalog( cat_path )
+
+    def mcat( self, bucket: str ) -> YAMLFilesCatalog:
         cat_path = self.cat_path(bucket)
-        print( f"Open catalog from url: {cat_path}")
-        return intake.open_catalog(  cat_path )
+        self.logger.debug(f"Open YAMLFilesCatalog from url: {cat_path}")
+        return YAMLFilesCatalog( cat_path )
 
-    def addEntry( self, source: EISZarrSource, **kwargs ):
-        source_yml = source.yaml( **kwargs )
-        self._sources.append( source_yml )
+    def add_entries( self, bucket: str, sources: List[EISZarrSource], name = None, **kwargs ):
+        from eis_smce.data.common.base import eisc
+        if name is None:
+            for source in sources:
+                prefix = f"catalog/{source.cat_name}.yml"
+                self.s3.Object( bucket, prefix ).put( Body=source.yaml(**kwargs) , ACL="bucket-owner-full-control" )
+        else:
+            catalog: YAMLFileCatalog = self.cat( bucket, name )
+            for source in sources:
+                catalog.add( source, source.cat_name )
+            prefix = f"catalog/{name}.yml"
+            self.s3.Object( bucket, prefix ).put( Body=catalog.yaml(), ACL="bucket-owner-full-control" )
 
-    def get_cat_yml( self ):
-        return "\n".join( self._sources )
+        eisc().save_config()
 
-    def write_s3( self, bucket: str, cat_name: str ):
-        catalog = f"catalog/{cat_name}.yml"
-        self.s3.Object( bucket, catalog ).put( Body=self.get_cat_yml() , ACL="bucket-owner-full-control" )
 
-    def write_local(self, path: str, cat_name: str):
-        catalog = f"{path}/{cat_name}.yml"
-        with open(catalog, "w") as fp:
-            fp.write( self.get_cat_yml() )
+    def delete_entry( self, bucket: str, cat_name: str ):
+        from eis_smce.data.storage.s3 import s3m
+        catpath = self.cat_path( bucket, cat_name )
+        s3m().delete( catpath )
 
     def clear(self):
         self._s3 = None
-        self._sources = [ "sources:" ]
 
 def cm() -> CatalogManager: return CatalogManager.instance()

@@ -1,4 +1,4 @@
-import traitlets.config as tlc
+from eis_smce.data.common.base import EISSingleton
 import fnmatch
 from intake.source.utils import path_to_glob
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
@@ -7,10 +7,10 @@ import glob, os
 def lfm(): return LocalFileManager.instance()
 def has_char(string: str, chars: str): return 1 in [c in string for c in chars]
 
-class LocalFileManager(tlc.SingletonConfigurable ):
+class LocalFileManager(EISSingleton ):
 
     def __init__( self, **kwargs ):
-        tlc.SingletonConfigurable.__init__( self, **kwargs )
+        EISSingleton.__init__( self, **kwargs )
 
     def _parse_urlpath( self, urlpath: str ) -> str:
         return urlpath.split(":")[-1].replace("//","/").replace("//","/")
@@ -22,7 +22,7 @@ class LocalFileManager(tlc.SingletonConfigurable ):
         input_files = glob.glob(filepath_glob)
         is_glob = has_char( filepath_pattern, "*?[" )
         files_list = []
-        print(f" Processing {len(input_files)} input files from glob '{filepath_glob}'")
+        self.logger.info(f" Processing {len(input_files)} input files from glob '{filepath_glob}'")
         for file_path in input_files:
             try:
                 (file_name, file_pattern) = (os.path.basename(file_path) , os.path.basename(filepath_pattern)) if is_glob else (file_path,filepath_pattern)
@@ -30,5 +30,5 @@ class LocalFileManager(tlc.SingletonConfigurable ):
                 metadata['resolved'] = file_path
                 files_list.append(metadata)
             except ValueError as err:
-                print( f" Metadata processing error: {err}, Did you mix glob and pattern in file name?")
+                self.logger.error( f" Metadata processing error: {err}, Did you mix glob and pattern in file name?")
         return files_list

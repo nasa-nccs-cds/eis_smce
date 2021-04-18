@@ -1,20 +1,27 @@
-import traitlets.config as tlc
-import fnmatch
+from eis_smce.data.common.base import EISSingleton
+import fnmatch, s3fs
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 import glob, os
 import boto3, intake
-from fsspec.mapping import FSMap
+from collections.abc import MutableMapping
 from intake.source.utils import path_to_glob
 
 def s3m(): return S3Manager.instance()
 def has_char(string: str, chars: str): return 1 in [c in string for c in chars]
 
-class S3Manager(tlc.SingletonConfigurable):
+class S3Manager(EISSingleton):
 
     def __init__( self, **kwargs ):
-        tlc.SingletonConfigurable.__init__( self, **kwargs )
+        EISSingleton.__init__( self, **kwargs )
         self._client = None
         self._resource = None
+        self._fs: s3fs.S3FileSystem = None
+
+    @property
+    def fs(self) -> s3fs.S3FileSystem:
+        if self._fs is None:
+            self._fs = s3fs.S3FileSystem( anon=False, s3_additional_kwargs=dict( ACL="bucket-owner-full-control" ) )
+        return self._fs
 
     @property
     def client(self):
@@ -47,9 +54,19 @@ class S3Manager(tlc.SingletonConfigurable):
             ibuket = 2 if len(toks[1]) == 0 else 1
             bucketname = toks[ibuket]
             s3_item = '/'.join( toks[ibuket + 1:] )
-            client = boto3.client('s3')
-            client.download_file( bucketname, s3_item, file_path )
+            self.client.download_file( bucketname, s3_item, file_path )
         return file_path
+
+    def delete(self, path: str ):
+        (bucketname, prefix) = self.parse(path)
+        bucket = self.resource.Bucket(bucketname)
+        for obj in bucket.objects.filter(Prefix=prefix):
+            print( f"Deleting object {bucketname}:{obj.key}")
+            self.client.delete_object( Bucket=bucketname, Key=obj.key )
+
+    def get_store(self, path: str ) -> MutableMapping:
+        self.delete( path )
+        return self.fs.get_mapper( path, create=True )
 
     def upload_files(self, src_path: str, dest_path: str ):
         if src_path != dest_path:
@@ -60,14 +77,14 @@ class S3Manager(tlc.SingletonConfigurable):
                     full_path = os.path.join(subdir, file)
                     with open(full_path, 'rb') as data:
                         key = f"{item}/{full_path[len(src_path) + 1:]}"
-                        print(f"Uploading item: {bucket}:{key}")
+                        self.logger.info(f"Uploading item: {bucket}:{key}")
                         bucket.put_object( Key=key, Body=data, ACL="bucket-owner-full-control" )
 
     def get_file_list(self, urlpath: str ) -> List[Dict]:
         from intake.source.utils import reverse_format
         s3 = boto3.resource('s3')
         (bucketname, pattern) = self.parse(urlpath)
-        print( f"get_file_list: urlpath={urlpath}, bucketname={bucketname}, pattern={pattern}")
+        self.logger.info( f"get_file_list: urlpath={urlpath}, bucketname={bucketname}, pattern={pattern}")
         is_glob = has_char(pattern, "*?[")
         gpattern = path_to_glob( pattern )
         files_list = []
@@ -81,5 +98,5 @@ class S3Manager(tlc.SingletonConfigurable):
                             metadata['resolved'] = f"s3://{bucketname}/{obj.key}"
                             files_list.append(metadata)
                         except ValueError as err:
-                            print( f" Metadata processing error: {err}, Did you mix glob and pattern in file name?")
+                            self.logger.error( f" Metadata processing error: {err}, Did you mix glob and pattern in file name?")
         return files_list
