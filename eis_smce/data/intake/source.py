@@ -62,7 +62,7 @@ class EISDataSource( DataSource ):
         self._load_metadata()
         self.merge_dim = kwargs.get('merge_dim', self.merge_dim)
         file_list = self.get_file_list()
-        parallel = kwargs.get( 'parallel_merge', True )
+        parallel = kwargs.get( 'parallel_merge', False )
         t0 = time.time()
         self.logger.info( f"Reading merged dataset from {len(file_list)} files, merge_dim = {self.merge_dim}, parallel = {parallel}" )
         rv = xa.open_mfdataset( file_list, concat_dim=self.merge_dim, coords="minimal", data_vars="all", parallel=parallel )
@@ -103,7 +103,7 @@ class EISDataSource( DataSource ):
                 self.logger.info( f"Exporting partition {ip}")
                 zsources.append( self._export_partition( store, mds, self.merge_dim, ip, compute=compute ) )
                 self.logger.info(f"Completed partition export in {time.time()-t0} sec")
-                os.system('ps -m -o %cpu,%mem,command')
+                self.logger.info( f" MEMORY STATE: {os.popen('ps -m -o %cpu,%mem,command').read()}" )
 
             if not compute:
                 zsources = client.compute( zsources, sync=True )
