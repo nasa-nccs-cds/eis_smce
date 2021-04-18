@@ -32,7 +32,7 @@ dsets = [
 if __name__ == '__main__':
 
 #    zc().init_cluster( processes = False )
-    sources: List[EISZarrSource] = zc().standard_conversions( dsets, merge_dim="time" )
+    sources: List[EISZarrSource] = zc().standard_conversions( dsets, merge_dim="time", parallel_merge=True )
     cm().add_entries( bucket, sources, name )
 
 
