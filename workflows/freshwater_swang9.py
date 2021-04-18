@@ -10,9 +10,7 @@ input_dir = "/discover/nobackup/projects/eis_freshwater/swang9/OL_1km/OUTPUT.RST
 name = "freshwater.swang9.OL_1km.2013"
 bucket = "eis-dh-hydro"
 month = "201303" if test_run else  "*"
-s3_prefix = f"projects/eis_freshwater/swang9.OL_1km.2013.2"
-s3_prefix1 = f"projects/eis_freshwater/swang9/OL_1km/OUTPUT.RST.2013"
-s3_prefix2 =  f"projects/eis_freshwater/swang9.OL_1km.2013"
+s3_prefix = f"projects/eis_freshwater/swang9.OL_1km.2013.1"
 eisc( cache = "/discover/nobackup/tpmaxwel/cache", mode = "freshwater.swang9" )
 
 dsets = [
