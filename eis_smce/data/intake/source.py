@@ -95,7 +95,7 @@ class EISDataSource( DataSource ):
             dask.config.set(scheduler='threading')
 
             client: Client = dcm().client
-            export = self._export_partition if client is None else dask.delayed(self._export_partition)
+            export = self._export_partition if (client is None) else dask.delayed(self._export_partition)
             zsources = []
             self.logger.info( f"Exporting paritions to: {path}" )
             for ip in range(0,self.nparts):
