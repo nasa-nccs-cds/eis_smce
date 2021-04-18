@@ -47,15 +47,23 @@
           else
 
             echo Your MFA device is: $device >&2
+
             echo -n "Enter your MFA code now: " >&2
+
             read code
+
             tokens=$(aws sts get-session-token --serial-number "$device" --token-code $code --output json)
+
             secret=$(echo -- "$tokens" | sed -n 's!.*"SecretAccessKey": "\(.*\)".*!\1!p')
+
             session=$(echo -- "$tokens" | sed -n 's!.*"SessionToken": "\(.*\)".*!\1!p')
+
             access=$(echo -- "$tokens" | sed -n 's!.*"AccessKeyId": "\(.*\)".*!\1!p')
+
             expire=$(echo -- "$tokens" | sed -n 's!.*"Expiration": "\(.*\)".*!\1!p')
 
             if [ -z "$secret" -o -z "$session" -o -z "$access" ]
+
             then
 
               echo "Unable to get temporary credentials.  Could not find secret/access/session entries $tokens" >&2
@@ -63,13 +71,23 @@
             else:
 
               #export AWS_PROFILE=$AWS_PROFILE
+
               export AWS_SESSION_TOKEN=$session
+
               export AWS_SECRET_ACCESS_KEY=$secret
+
               export AWS_ACCESS_KEY_ID=$access
 
-#              echo export AWS_SESSION_TOKEN=$session
-#              echo export AWS_SECRET_ACCESS_KEY=$secret
-#              echo export AWS_ACCESS_KEY_ID=$access
+
+
+              echo export AWS_SESSION_TOKEN=$session
+
+              echo export AWS_SECRET_ACCESS_KEY=$secret
+
+              echo export AWS_ACCESS_KEY_ID=$access
+
+              echo \n
+
               echo Keys valid until $expire >&2
 
             fi
