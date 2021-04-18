@@ -64,9 +64,11 @@ class S3Manager(EISSingleton):
             print( f"Deleting object {bucketname}:{obj.key}")
             self.client.delete_object( Bucket=bucketname, Key=obj.key )
 
-    def get_store(self, path: str ) -> MutableMapping:
-        self.delete( path )
-        return self.fs.get_mapper( path, create=True )
+    def get_store(self, path: str ) -> Union[str,MutableMapping]:
+        if path.startswith("s3:"):
+            self.delete( path )
+            return self.fs.get_mapper( path, create=True )
+        else: return path
 
     def upload_files(self, src_path: str, dest_path: str ):
         if src_path != dest_path:
