@@ -27,7 +27,7 @@ if __name__ == '__main__':
 
     for dset in dsets:
         [input, output] = [dset.pop(key) for key in [ 'input', 'output' ] ]
-        h4s = intake.open_hdf4( input, cache_dir=cache_dir )
+        h4s = intake.open_hdf4( input )
         zs = h4s.export( output, bucket=bucket, merge_dim = "time", **dset )
 #        cm().addEntry( zs  )
 
