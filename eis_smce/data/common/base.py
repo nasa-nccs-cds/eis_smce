@@ -157,7 +157,7 @@ class EISConfiguration( tlc.Configurable ):
             self.logger = logging.getLogger('eis_smce.intake')
             self.logger.setLevel(logging.DEBUG)
             log_file = f'{self.cache_dir}/logging/eis_smce.{self.hostname}.{self.pid}.log'
-            print( f"Opening Log file: {log_file}")
+            print( f"\n   ***   Opening Log file: {log_file}  ***  \n ")
             os.makedirs( os.path.dirname(log_file), exist_ok=True )
             fh = logging.FileHandler( log_file )
             fh.setLevel(logging.DEBUG)

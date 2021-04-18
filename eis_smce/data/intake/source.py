@@ -121,7 +121,7 @@ class EISDataSource( DataSource ):
     def _export_partition(  store: str, mds: xa.Dataset, merge_dim: str, ipart: int, **kwargs ):
         region = { merge_dim: slice(ipart, ipart + 1) }
         dset = mds[region]
-        print( f" _export_partition[{merge_dim}] -> mds: {list(mds.key())} , dset: {list(dset.key())}, kwargs={kwargs} ")
+        print( f" _export_partition[{merge_dim}] -> mds: {list(mds.keys())} , dset: {list(dset.keys())}, kwargs={kwargs} ")
         return dset.to_zarr(store, mode='a', region=region, **kwargs )
 
     def get_zarr_source(self, zpath: str ):
