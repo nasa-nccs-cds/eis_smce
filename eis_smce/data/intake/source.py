@@ -99,6 +99,7 @@ class EISDataSource( DataSource ):
                 self.logger.info( f"Exporting partition {ip}")
                 self._export_partition( store, mds, self.merge_dim, ip )
                 self.logger.info(f"Completed partition export in {time.time()-t0} sec")
+                self.logger.info( f" MEMORY STATE: {os.popen('ps -m -o %cpu,%mem,command').read()}" )
 
             mds.close()
 
