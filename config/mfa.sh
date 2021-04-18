@@ -72,3 +72,8 @@
 #              echo export AWS_ACCESS_KEY_ID=$access
               echo Keys valid until $expire >&2
 
+            fi
+          fi
+        fi
+      fi
+    fi
