@@ -92,12 +92,12 @@ class EISDataSource( DataSource ):
             mds: xa.Dataset = self.to_dask( **kwargs )
             self.logger.info(f" merged_dset[{self.merge_dim}] -> zarr: {store}\n   -------------------- Merged dataset: -------------------- \n{mds}\n")
             mds.to_zarr( store, mode="w", compute=False, consolidated=True )
-            dask.config.set(scheduler='threading')
+#            dask.config.set(scheduler='threading')
 
             client: Client = dcm().client
             compute = (client is None)
             zsources = []
-            self.logger.info( f"Exporting paritions to: {path} ({store}), compute = {compute}" )
+            self.logger.info( f"Exporting paritions to: {path} ({store}), compute = {compute}, vars = {mds.variables.keys()}" )
             for ip in range(0,self.nparts):
                 t0 = time.time()
                 self.logger.info( f"Exporting partition {ip}")
