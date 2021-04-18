@@ -62,7 +62,7 @@ class EISDataSource( DataSource ):
         self._load_metadata()
         self.merge_dim = kwargs.get('merge_dim', self.merge_dim)
         file_list = self.get_file_list()
-        parallel = kwargs.get( 'parallel_merge', True )
+        parallel = kwargs.get( 'parallel_merge', False )
         t0 = time.time()
         self.logger.info( f"Reading merged dataset from {len(file_list)} files, merge_dim = {self.merge_dim}, parallel = {parallel}" )
         rv = xa.open_mfdataset( file_list, concat_dim=self.merge_dim, coords="minimal", data_vars="all", parallel=parallel )
