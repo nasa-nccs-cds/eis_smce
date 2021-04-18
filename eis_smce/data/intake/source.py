@@ -86,7 +86,7 @@ class EISDataSource( DataSource ):
     def export(self, path: str, **kwargs ) -> EISZarrSource:
         try:
             from eis_smce.data.storage.s3 import s3m
-            from data.common.cluster import dcm
+            from eis_smce.data.common.cluster import dcm
             use_cache = kwargs.get('cache', False)
             store = self.get_cache_path(path) if use_cache else s3m().get_store(path)
             mds: xa.Dataset = self.to_dask( **kwargs )

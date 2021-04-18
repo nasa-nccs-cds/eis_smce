@@ -14,10 +14,12 @@ class DaskClusterManager(EISSingleton):
         self._cluster = None
 
     def init_cluster( self, **kwargs ) -> Client:
-        self._cluster = LocalCluster( **kwargs )
-        self._client = Client( self._cluster )
+        if self._cluster is None or kwargs.get('refresh',False):
+            self._cluster = LocalCluster( **kwargs )
+            self._client = Client( self._cluster )
         return self._client
 
+    @property
     def client(self) -> Client:
         return self._client
 
