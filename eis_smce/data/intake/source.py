@@ -4,7 +4,7 @@ import traitlets.config as tlc, random, string
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable, MutableMapping
 from functools import partial
 import dask.delayed, boto3, os, traceback
-from intake_xarray.netcdf import NetCDFSource
+from dask.distributed import Client, LocalCluster
 from eis_smce.data.intake.zarr.source import EISZarrSource
 import intake, zarr, numpy as np
 import dask.bag as db
@@ -86,6 +86,7 @@ class EISDataSource( DataSource ):
     def export(self, path: str, **kwargs ) -> EISZarrSource:
         try:
             from eis_smce.data.storage.s3 import s3m
+            from data.common.cluster import dcm
             use_cache = kwargs.get('cache', False)
             store = self.get_cache_path(path) if use_cache else s3m().get_store(path)
             mds: xa.Dataset = self.to_dask( **kwargs )
@@ -93,15 +94,18 @@ class EISDataSource( DataSource ):
             mds.to_zarr( store, mode="w", compute=False, consolidated=True )
             dask.config.set(scheduler='threading')
 
+            client: Client = dcm().client
+            export = self._export_partition if client is None else dask.delayed(self._export_partition)
+            zsources = []
             self.logger.info( f"Exporting paritions to: {path}" )
             for ip in range(0,self.nparts):
                 t0 = time.time()
                 self.logger.info( f"Exporting partition {ip}")
-                self._export_partition( store, mds, self.merge_dim, ip )
+                zsources.append( export( store, mds, self.merge_dim, ip ) )
                 self.logger.info(f"Completed partition export in {time.time()-t0} sec")
 
+            if client is not None: client.compute( zsources, sync=True )
             mds.close()
-
             if( use_cache and path.startswith("s3:") ):
                 self.logger.info(f"Uploading zarr file to: {path}")
                 s3m().upload_files( store, path )

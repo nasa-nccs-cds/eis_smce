@@ -3,32 +3,17 @@ import traitlets.config as tlc
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 from traitlets.config.loader import load_pyconfig_files
 from traitlets.config.loader import Config
-from dask.distributed import Client
-from dask.distributed import Client, LocalCluster
 import socket, threading
 
 class EISSingleton(tlc.Configurable):
     _instance = None
     _config_instances: List["EISSingleton"] = []
-    _client = None
-    _cluster = None
 
     def __init__(self, *args, **kwargs ):
         super(EISSingleton, self).__init__()
         self.update_config( eisc().config )
         self._config_instances.append( self )
         self.logger = eisc().logger
-
-
-    @classmethod
-    def init_cluster( cls, **kwargs ) -> Client:
-        cls._cluster = LocalCluster( **kwargs )
-        cls._client = Client( cls._cluster )
-        return cls._client
-
-    @property
-    def client(self):
-        return self._client
 
     @classmethod
     def _walk_mro(cls):

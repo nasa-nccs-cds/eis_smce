@@ -22,7 +22,7 @@ class ZarrConverter(EISSingleton):
             self.logger.error(f"{traceback.format_exc()}")
 
     def standard_conversions( self, dsets: List[Dict[str,str]], **kwargs ) -> List[EISZarrSource]:
-        parallel = self._cluster is not None
+        parallel = False
         sources = []
         for dset in dsets:
             [input, output] = [ dset.pop(key) for key in ['input', 'output'] ]
