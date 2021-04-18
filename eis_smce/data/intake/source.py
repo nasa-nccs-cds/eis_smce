@@ -97,7 +97,7 @@ class EISDataSource( DataSource ):
             client: Client = dcm().client
             compute = (client is None)
             zsources = []
-            self.logger.info( f"Exporting paritions to: {path} ({store}), compute = {compute}, vars = {mds.variables.keys()}" )
+            self.logger.info( f"Exporting paritions to: {path} ({store}), compute = {compute}, vars = {list(mds.keys())}" )
             for ip in range(0,self.nparts):
                 t0 = time.time()
                 self.logger.info( f"Exporting partition {ip}")
@@ -117,18 +117,12 @@ class EISDataSource( DataSource ):
             self.logger.error(f"Exception in export: {err}")
             self.logger.error(traceback.format_exc())
 
-    def _export_partitions( self, store: str, dset: xa.Dataset, merge_dim: str, ipart0: int, nparts: int, **kwargs ):
-        self.logger.info(f"Exporting {nparts} partitions at p0={ipart0}")
-        t0 = time.time()
-        for ip in range(ipart0, ipart0 + nparts):
-            self._export_partition( store, dset, merge_dim, ip, **kwargs )
-        dt = time.time() - t0
-        self.logger.info(f"Completed Export in {dt} sec ( {dt/nparts} per partition )")
-
     @staticmethod
-    def _export_partition(  store: str, dset: xa.Dataset, merge_dim: str, ipart: int, **kwargs ):
+    def _export_partition(  store: str, mds: xa.Dataset, merge_dim: str, ipart: int, **kwargs ):
         region = { merge_dim: slice(ipart, ipart + 1) }
-        dset[region].to_zarr(store, mode='a', region=region, **kwargs )
+        dset = mds[region]
+        print( f" _export_partition[{merge_dim}] -> mds: {list(mds.key())} , dset: {list(dset.key())}, kwargs={kwargs} ")
+        return dset.to_zarr(store, mode='a', region=region, **kwargs )
 
     def get_zarr_source(self, zpath: str ):
         zsrc = EISZarrSource(zpath)
