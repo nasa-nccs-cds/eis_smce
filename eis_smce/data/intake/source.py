@@ -103,15 +103,16 @@ class EISDataSource( DataSource ):
             from eis_smce.data.storage.s3 import s3m
             from eis_smce.data.common.cluster import dcm
             mds: xa.Dataset = self.create_storage_item( path, **kwargs )
+            chunks_per_block = 10
 
             client: Client = dcm().client
             compute = (client is None)
             zsources = []
             self.logger.info( f"Exporting paritions to: {path}, compute = {compute}, vars = {list(mds.keys())}" )
-            for ip in range(0,self.nparts):
+            for ip in range(0,self.nparts, chunks_per_block):
                 t0 = time.time()
                 self.logger.info( f"Exporting partition {ip}")
-                zsources.append( EISDataSource._export_partition( path, mds, ip, compute=compute, **kwargs ) )
+                zsources.append( EISDataSource._export_partition( path, mds, ip, chunks_per_block, compute=compute, **kwargs ) )
                 self.logger.info(f"Completed partition export in {time.time()-t0} sec")
 
             if not compute:
@@ -128,10 +129,10 @@ class EISDataSource( DataSource ):
             self.logger.error(traceback.format_exc())
 
     @staticmethod
-    def _export_partition(  path: str, mds: xa.Dataset, ipart: int, **kwargs ):
+    def _export_partition(  path: str, mds: xa.Dataset, ipart: int, nparts: int, **kwargs ):
         merge_dim = kwargs.get( 'merge_dim', EISDataSource.default_merge_dim )
         store = EISDataSource.get_store( path )
-        region = { merge_dim: slice(ipart, ipart + 1) }
+        region = { merge_dim: slice(ipart, ipart + nparts) }
         dset = mds[region]
         return dset.to_zarr( store, mode='a', region=region )
 
