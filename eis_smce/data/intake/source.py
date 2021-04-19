@@ -99,7 +99,6 @@ class EISDataSource( DataSource ):
                 self.logger.info( f"Exporting partition {ip}")
                 self._export_partition( store, mds, self.merge_dim, ip )
                 self.logger.info(f"Completed partition export in {time.time()-t0} sec")
-                self.log_proc_status()
 
             mds.close()
 
@@ -112,10 +111,10 @@ class EISDataSource( DataSource ):
             self.logger.error(f"Exception in export: {err}")
             self.logger.error(traceback.format_exc())
 
-    def log_proc_status(self):
-        self.logger.info( "PROC STATS (%cpu, %mem, command ):")
-        stats = os.popen('ps -m -o %cpu,%mem,command').read().split("\n")
-        self.logger.info( '\n'.join( filter(lambda x: ('python' in x), stats) ) )
+    # def log_proc_status(self):
+    #     self.logger.info( "PROC STATS (%cpu, %mem, command ):")
+    #     stats = os.popen('ps -m -o %cpu,%mem,command').read().split("\n")
+    #     self.logger.info( '\n'.join( filter(lambda x: ('python' in x), stats) ) )
 
     # def _export_partitions( self, store: str, dset: xa.Dataset, merge_dim: str, ipart0: int, nparts: int ):
     #     self.logger.info(f"Exporting {nparts} partitions at p0={ipart0}")
