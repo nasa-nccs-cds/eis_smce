@@ -28,7 +28,7 @@ class EISDataSource( DataSource ):
         self._parts: Dict[int,xa.Dataset] = {}
         self._schema: Schema = None
         self._ds: xa.Dataset = None
-        self.nparts = -1
+        self.nchunks = -1
 
     def _open_partition(self, ipart: int) -> xa.Dataset:
         raise NotImplementedError()
@@ -41,7 +41,7 @@ class EISDataSource( DataSource ):
         return self.get_downloaded_filepath( rfile_path )
 
     def get_file_list(self) -> List[str]:
-        return [ self.get_file_path(ip) for ip in range(self.nparts) ]
+        return [self.get_file_path(ip) for ip in range(self.nchunks)]
 
     def get_local_file_path(self, data_url: str):
         if data_url.startswith("s3"):
@@ -70,7 +70,7 @@ class EISDataSource( DataSource ):
         return rv
 
     def test_for_equality(self, attvals: List[Any]):
-        if ( len(attvals) != self.nparts ): return False
+        if ( len(attvals) != self.nchunks): return False
         if isinstance( attvals[0], np.ndarray ):
             return all( (x == attvals[0]).all() for x in attvals)
         else:
@@ -103,25 +103,26 @@ class EISDataSource( DataSource ):
             from eis_smce.data.storage.s3 import s3m
             from eis_smce.data.common.cluster import dcm
             mds: xa.Dataset = self.create_storage_item( path, **kwargs )
-            chunks_per_block = 10
+            use_cache = kwargs.get( "use_cache", True )
+            chunks_per_part = 10
 
             client: Client = dcm().client
             compute = (client is None)
             zsources = []
             self.logger.info( f"Exporting paritions to: {path}, compute = {compute}, vars = {list(mds.keys())}" )
-            for ip in range(0,self.nparts, chunks_per_block):
+            for ic in range(0, self.nchunks, chunks_per_part):
                 t0 = time.time()
-                self.logger.info( f"Exporting partition {ip}")
-                zsources.append( EISDataSource._export_partition( path, mds, ip, chunks_per_block, compute=compute, **kwargs ) )
+                self.logger.info( f"Exporting partition {ic}")
+                zsources.append( EISDataSource._export_partition( path, mds, ic, chunks_per_part, compute=compute, **kwargs ) )
                 self.logger.info(f"Completed partition export in {time.time()-t0} sec")
 
             if not compute:
                 zsources = client.compute( zsources, sync=True )
             mds.close()
 
-            # if( use_cache and path.startswith("s3:") ):
-            #     self.logger.info(f"Uploading zarr file to: {path}")
-            #     s3m().upload_files( path )
+            if( use_cache and path.startswith("s3:") ):
+                self.logger.info(f"Uploading zarr file to: {path}")
+                s3m().upload_files( path )
 
             return EISZarrSource(path)
         except Exception  as err:
@@ -129,10 +130,10 @@ class EISDataSource( DataSource ):
             self.logger.error(traceback.format_exc())
 
     @staticmethod
-    def _export_partition(  path: str, mds: xa.Dataset, ipart: int, nparts: int, **kwargs ):
+    def _export_partition(  path: str, mds: xa.Dataset, chunk_offset: int, nchunks: int, **kwargs ):
         merge_dim = kwargs.get( 'merge_dim', EISDataSource.default_merge_dim )
-        store = EISDataSource.get_store( path )
-        region = { merge_dim: slice(ipart, ipart + nparts) }
+        store = EISDataSource.get_store( path, **kwargs )
+        region = { merge_dim: slice(chunk_offset, chunk_offset + nchunks) }
         dset = mds[region]
         return dset.to_zarr( store, mode='a', region=region )
 
@@ -162,8 +163,8 @@ class EISDataSource( DataSource ):
             else:
                 from eis_smce.data.storage.local import lfm
                 self._file_list = lfm().get_file_list( self.urlpath )
-            self.nparts = len(self._file_list)
-            self.logger.info( f"Created file list from {self.urlpath} with {self.nparts} parts")
+            self.nchunks = len(self._file_list)
+            self.logger.info( f"Created file list from {self.urlpath} with {self.nchunks} parts")
             ds0 =  self._get_partition( 0 )
             metadata = {
                 'dims': dict(ds0.dims),
@@ -171,7 +172,7 @@ class EISDataSource( DataSource ):
                 'coords': tuple(ds0.coords.keys()),
             }
             metadata.update( ds0.attrs )
-            self._schema = Schema( datashape=None, dtype=None, shape=None, npartitions=self.nparts, extra_metadata=metadata)
+            self._schema = Schema(datashape=None, dtype=None, shape=None, npartitions=self.nchunks, extra_metadata=metadata)
         return self._schema
 
 
