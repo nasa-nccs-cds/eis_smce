@@ -87,7 +87,7 @@ class EISDataSource( DataSource ):
     @staticmethod
     def get_store( path: str, clear: bool = False, **kwargs ):
         from eis_smce.data.storage.s3 import s3m
-        use_cache = kwargs.get('cache', False)
+        use_cache = kwargs.get( 'cache', True )
         store = EISDataSource.get_cache_path(path) if use_cache else s3m().get_store(path,clear)
         return store
 
@@ -103,7 +103,7 @@ class EISDataSource( DataSource ):
             from eis_smce.data.storage.s3 import s3m
             from eis_smce.data.common.cluster import dcm
             mds: xa.Dataset = self.create_storage_item( path, **kwargs )
-            use_cache = kwargs.get( "use_cache", True )
+            use_cache = kwargs.get( "cache", True )
             chunks_per_part = 10
 
             client: Client = dcm().client
