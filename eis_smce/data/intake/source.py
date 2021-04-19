@@ -19,13 +19,13 @@ class EISDataSource( DataSource ):
     version = 0.1
     container = 'xarray'
     partition_access = True
+    default_merge_dim = "sample"
 
     def __init__(self, **kwargs ):
         super(EISDataSource, self).__init__( **kwargs )
         self.logger = eisc().logger
         self._file_list: List[ Dict[str,str] ] = None
         self._parts: Dict[int,xa.Dataset] = {}
-        self.merge_dim = "sample"
         self._schema: Schema = None
         self._ds: xa.Dataset = None
         self.nparts = -1
@@ -60,12 +60,12 @@ class EISDataSource( DataSource ):
 
     def read( self, **kwargs ) -> xa.Dataset:
         self._load_metadata()
-        self.merge_dim = kwargs.get('merge_dim', self.merge_dim)
+        merge_dim = kwargs.get('merge_dim', self.default_merge_dim)
         file_list = self.get_file_list()
         parallel = kwargs.get( 'parallel_merge', False )
         t0 = time.time()
-        self.logger.info( f"Reading merged dataset from {len(file_list)} files, merge_dim = {self.merge_dim}, parallel = {parallel}" )
-        rv = xa.open_mfdataset( file_list, concat_dim=self.merge_dim, coords="minimal", data_vars="all", parallel=parallel )
+        self.logger.info( f"Reading merged dataset from {len(file_list)} files, merge_dim = {merge_dim}, parallel = {parallel}")
+        rv = xa.open_mfdataset(file_list, concat_dim=merge_dim, coords="minimal", data_vars="all", parallel=parallel)
         self.logger.info( f"Completed merge in {time.time()-t0} secs" )
         return rv
 
@@ -94,7 +94,7 @@ class EISDataSource( DataSource ):
     def create_storage_item(self, path: str, **kwargs ) -> xa.Dataset:
         mds: xa.Dataset = self.to_dask(**kwargs)
         store = self.get_store(path, True)
-        self.logger.info( f" merged_dset[{self.merge_dim}] -> zarr: {store}\n   -------------------- Merged dataset: -------------------- \n{mds}\n")
+        self.logger.info( f" merged_dset -> zarr: {store}\n   -------------------- Merged dataset: -------------------- \n{mds}\n")
         mds.to_zarr(store, mode="w", compute=False, consolidated=True)
         return mds
 
@@ -102,7 +102,7 @@ class EISDataSource( DataSource ):
         try:
             from eis_smce.data.storage.s3 import s3m
             from eis_smce.data.common.cluster import dcm
-            mds: xa.Dataset = self.create_storage_item( path )
+            mds: xa.Dataset = self.create_storage_item( path, **kwargs )
 
             client: Client = dcm().client
             compute = (client is None)
@@ -111,7 +111,7 @@ class EISDataSource( DataSource ):
             for ip in range(0,self.nparts):
                 t0 = time.time()
                 self.logger.info( f"Exporting partition {ip}")
-                zsources.append( EISDataSource._export_partition( path, mds, self.merge_dim, ip, compute=compute ) )
+                zsources.append( EISDataSource._export_partition( path, mds, ip, compute=compute, **kwargs ) )
                 self.logger.info(f"Completed partition export in {time.time()-t0} sec")
 
             if not compute:
@@ -128,7 +128,8 @@ class EISDataSource( DataSource ):
             self.logger.error(traceback.format_exc())
 
     @staticmethod
-    def _export_partition(  path: str, mds: xa.Dataset, merge_dim: str, ipart: int, **kwargs ):
+    def _export_partition(  path: str, mds: xa.Dataset, ipart: int, **kwargs ):
+        merge_dim = kwargs.get( 'merge_dim', EISDataSource.default_merge_dim )
         store = EISDataSource.get_store( path )
         region = { merge_dim: slice(ipart, ipart + 1) }
         dset = mds[region]
