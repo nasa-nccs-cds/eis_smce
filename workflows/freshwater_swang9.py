@@ -4,7 +4,7 @@ from eis_smce.data.intake.zarr.source import EISZarrSource
 from eis_smce.data.intake.catalog import cm
 from eis_smce.data.common.base import eisc
 from eis_smce.data.conversion.zarr import zc
-from eis_smce.data.common.cluster import dcm
+# from eis_smce.data.common.cluster import dcm
 
 test_run = False
 input_dir = "/discover/nobackup/projects/eis_freshwater/swang9/OL_1km/OUTPUT.RST.2013"
