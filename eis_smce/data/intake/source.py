@@ -117,13 +117,13 @@ class EISDataSource( DataSource ):
         stats = os.popen('ps -m -o %cpu,%mem,command').read().split("\n")
         self.logger.info( '\n'.join( filter(lambda x: ('python' in x), stats) ) )
 
-    def _export_partitions( self, store: str, dset: xa.Dataset, merge_dim: str, ipart0: int, nparts: int ):
-        self.logger.info(f"Exporting {nparts} partitions at p0={ipart0}")
-        t0 = time.time()
-        for ip in range(ipart0, ipart0 + nparts):
-            self._export_partition( store, dset, merge_dim, ip, False )
-        dt = time.time() - t0
-        self.logger.info(f"Completed Export in {dt} sec ( {dt/nparts} per partition )")
+    # def _export_partitions( self, store: str, dset: xa.Dataset, merge_dim: str, ipart0: int, nparts: int ):
+    #     self.logger.info(f"Exporting {nparts} partitions at p0={ipart0}")
+    #     t0 = time.time()
+    #     for ip in range(ipart0, ipart0 + nparts):
+    #         self._export_partition( store, dset, merge_dim, ip, False )
+    #     dt = time.time() - t0
+    #     self.logger.info(f"Completed Export in {dt} sec ( {dt/nparts} per partition )")
 
     @staticmethod
     def _export_partition(  store: str, dset: xa.Dataset, merge_dim: str, ipart: int, compute=True ):
