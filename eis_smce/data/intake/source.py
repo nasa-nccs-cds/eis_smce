@@ -92,7 +92,7 @@ class EISDataSource( DataSource ):
             mds: xa.Dataset = self.to_dask( **kwargs )
             self.logger.info(f" merged_dset[{self.merge_dim}] -> zarr: {store}\n   -------------------- Merged dataset: -------------------- \n{mds}\n")
             mds.to_zarr( store, mode="w", compute=False, consolidated=True )
-#            dask.config.set(scheduler='threading')
+            dask.config.set(scheduler='threading')
 
             client: Client = dcm().client
             compute = (client is None)
@@ -103,7 +103,6 @@ class EISDataSource( DataSource ):
                 self.logger.info( f"Exporting partition {ip}")
                 zsources.append( self._export_partition( store, mds, self.merge_dim, ip, compute=compute ) )
                 self.logger.info(f"Completed partition export in {time.time()-t0} sec")
-                self.logger.info( f" MEMORY STATE: {os.popen('ps -m -o %cpu,%mem,command').read()}" )
 
             if not compute:
                 zsources = client.compute( zsources, sync=True )
@@ -121,7 +120,6 @@ class EISDataSource( DataSource ):
     def _export_partition(  store: str, mds: xa.Dataset, merge_dim: str, ipart: int, **kwargs ):
         region = { merge_dim: slice(ipart, ipart + 1) }
         dset = mds[region]
-        print( f" _export_partition[{merge_dim}] -> mds: {list(mds.keys())} , dset: {list(dset.keys())}, kwargs={kwargs} ")
         return dset.to_zarr(store, mode='a', region=region, **kwargs )
 
     def get_zarr_source(self, zpath: str ):
