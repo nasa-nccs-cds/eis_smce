@@ -112,7 +112,6 @@ class EISDataSource( DataSource ):
             self.logger.info( f"Exporting paritions to: {path}, compute = {compute}, vars = {list(mds.keys())}" )
             for ic in range(0, self.nchunks, chunks_per_part):
                 t0 = time.time()
-                self.logger.info( f"Exporting partition {ic}")
                 zsources.append( EISDataSource._export_partition( path, mds, ic, chunks_per_part, compute=compute, **kwargs ) )
                 self.logger.info(f"Completed partition export in {time.time()-t0} sec")
 
@@ -134,6 +133,7 @@ class EISDataSource( DataSource ):
         merge_dim = kwargs.get( 'merge_dim', EISDataSource.default_merge_dim )
         store = EISDataSource.get_store( path, **kwargs )
         region = { merge_dim: slice(chunk_offset, chunk_offset + nchunks) }
+        eisc().logger.info( f"Exporting {nchunks} chunks at offset {chunk_offset} to store {store} (from path {path})" )
         dset = mds[region]
         return dset.to_zarr( store, mode='a', region=region )
 
