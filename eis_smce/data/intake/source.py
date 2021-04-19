@@ -76,40 +76,51 @@ class EISDataSource( DataSource ):
         else:
             return all( (x == attvals[0]) for x in attvals)
 
-    def get_cache_path(self, path: str ) -> str:
+    @staticmethod
+    def get_cache_path( path: str ) -> str:
         from eis_smce.data.storage.s3 import s3m
         if path.startswith("s3:"):
             (bucket, item) = s3m().parse(path)
             path = f"{eisc().cache_dir}/{item}"
         return path
 
+    @staticmethod
+    def get_store( path: str, clear: bool = False, **kwargs ):
+        from eis_smce.data.storage.s3 import s3m
+        use_cache = kwargs.get('cache', False)
+        store = EISDataSource.get_cache_path(path) if use_cache else s3m().get_store(path,clear)
+        return store
+
+    def create_storage_item(self, path: str, **kwargs ) -> xa.Dataset:
+        mds: xa.Dataset = self.to_dask(**kwargs)
+        store = self.get_store(path, True)
+        self.logger.info( f" merged_dset[{self.merge_dim}] -> zarr: {store}\n   -------------------- Merged dataset: -------------------- \n{mds}\n")
+        mds.to_zarr(store, mode="w", compute=False, consolidated=True)
+        return mds
+
     def export(self, path: str, **kwargs ) -> EISZarrSource:
         try:
             from eis_smce.data.storage.s3 import s3m
             from eis_smce.data.common.cluster import dcm
-            use_cache = kwargs.get('cache', False)
-            store = self.get_cache_path(path) if use_cache else s3m().get_store(path)
-            mds: xa.Dataset = self.to_dask( **kwargs )
-            self.logger.info(f" merged_dset[{self.merge_dim}] -> zarr: {store}\n   -------------------- Merged dataset: -------------------- \n{mds}\n")
-            mds.to_zarr( store, mode="w", compute=False, consolidated=True )
-            dask.config.set(scheduler='threading')
+            mds: xa.Dataset = self.create_storage_item( path )
 
             client: Client = dcm().client
             compute = (client is None)
             zsources = []
-            self.logger.info( f"Exporting paritions to: {path} ({store}), compute = {compute}, vars = {list(mds.keys())}" )
+            self.logger.info( f"Exporting paritions to: {path}, compute = {compute}, vars = {list(mds.keys())}" )
             for ip in range(0,self.nparts):
                 t0 = time.time()
                 self.logger.info( f"Exporting partition {ip}")
-                zsources.append( self._export_partition( store, mds, self.merge_dim, ip, compute=compute ) )
+                zsources.append( EISDataSource._export_partition( path, mds, self.merge_dim, ip, compute=compute ) )
                 self.logger.info(f"Completed partition export in {time.time()-t0} sec")
 
             if not compute:
                 zsources = client.compute( zsources, sync=True )
             mds.close()
-            if( use_cache and path.startswith("s3:") ):
-                self.logger.info(f"Uploading zarr file to: {path}")
-                s3m().upload_files( store, path )
+
+            # if( use_cache and path.startswith("s3:") ):
+            #     self.logger.info(f"Uploading zarr file to: {path}")
+            #     s3m().upload_files( path )
 
             return EISZarrSource(path)
         except Exception  as err:
@@ -117,7 +128,8 @@ class EISDataSource( DataSource ):
             self.logger.error(traceback.format_exc())
 
     @staticmethod
-    def _export_partition(  store: str, mds: xa.Dataset, merge_dim: str, ipart: int, **kwargs ):
+    def _export_partition(  path: str, mds: xa.Dataset, merge_dim: str, ipart: int, **kwargs ):
+        store = EISDataSource.get_store( path )
         region = { merge_dim: slice(ipart, ipart + 1) }
         dset = mds[region]
         return dset.to_zarr(store, mode='a', region=region, **kwargs )
