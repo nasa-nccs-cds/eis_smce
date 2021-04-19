@@ -133,7 +133,7 @@ class EISDataSource( DataSource ):
         store = EISDataSource.get_store( path )
         region = { merge_dim: slice(ipart, ipart + 1) }
         dset = mds[region]
-        return dset.to_zarr(store, mode='a', region=region, **kwargs )
+        return dset.to_zarr( store, mode='a', region=region )
 
     def get_zarr_source(self, zpath: str ):
         zsrc = EISZarrSource(zpath)
