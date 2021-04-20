@@ -105,7 +105,7 @@ class EISDataSource( DataSource ):
             path = f"{self._cache_dir}/{item}"
         return path
 
-    def export(self, path: str, **kwargs ) -> EISZarrSource:
+    def export( self, path: str, **kwargs ) -> EISZarrSource:
         from eis_smce.data.storage.s3 import s3m
         local_path = self.get_cache_path(path)
         npart_blocks = kwargs.get( 'nparallel', 1 )
