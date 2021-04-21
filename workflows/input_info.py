@@ -16,10 +16,12 @@ if __name__ == '__main__':
     dcm().init_cluster()
     dset :xa.Dataset = zc().get_input( input, merge_dim="time" )
 
+    print( dset )
     print( f"dset.attrs = {dset.attrs}\n" )
 
     vid, first_var = list(dset.items())[0]
 
+    print(first_var)
     print(f"\n{vid}.attrs = {first_var.attrs}\n")
 
 
