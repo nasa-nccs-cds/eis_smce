@@ -15,6 +15,6 @@ if __name__ == '__main__':
 
     dcm().init_cluster()
     dset :xa.Dataset = zc().get_input( input, merge_dim="time" )
-    print( dset )
+    print( dset.attrs )
 
 
