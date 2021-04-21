@@ -18,11 +18,12 @@ if __name__ == '__main__':
 
     print( dset )
     print( f"dset.attrs = {dset.attrs}\n" )
-    print( f"dset.encoding = {dset.encoding}\n" )
+    print( f"dset.vars = {vars(dset)}\n" )
 
     vid, first_var = list(dset.items())[0]
 
     print(first_var)
     print(f"\n{vid}.attrs = {first_var.attrs}\n")
+    print(f"\n{vid}.vars = {vars(first_var)}\n")
 
 
