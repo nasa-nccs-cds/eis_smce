@@ -2,6 +2,7 @@ import os, traitlets.config as tlc
 from eis_smce.data.common.base import EISSingleton
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 import intake, time, traceback, dask
+import xarray as xa
 from eis_smce.data.intake.zarr.source import EISZarrSource
 
 class ZarrConverter(EISSingleton):
@@ -20,6 +21,10 @@ class ZarrConverter(EISSingleton):
         except Exception as err:
             self.logger.error( f"Error in ZarrConverter.standard_conversion: {err}")
             self.logger.error(f"{traceback.format_exc()}")
+
+    def get_input(self, input: str, **kwargs ) -> xa.Dataset:
+        h4s = intake.open_hdf4(input)
+        return h4s.to_dask(**kwargs)
 
     def standard_conversions( self, dsets: List[Dict[str,str]], **kwargs ) -> List[EISZarrSource]:
         parallel = False

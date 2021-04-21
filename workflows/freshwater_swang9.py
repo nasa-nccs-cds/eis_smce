@@ -4,7 +4,7 @@ from eis_smce.data.intake.zarr.source import EISZarrSource
 from eis_smce.data.intake.catalog import cm
 from eis_smce.data.common.base import eisc
 from eis_smce.data.conversion.zarr import zc
-# from eis_smce.data.common.cluster import dcm
+from eis_smce.data.common.cluster import dcm
 
 test_run = False
 input_dir = "/discover/nobackup/projects/eis_freshwater/swang9/OL_1km/OUTPUT.RST.2013"
@@ -21,18 +21,16 @@ dsets = [
     # dict(   input=f"file://{input_dir}/ROUTING/{month}/LIS_HIST" + "_{time}.d01.nc",
     #        output=f"s3://{bucket}/{s3_prefix}/ROUTING/LIS_HIST.d01.zarr"  ),
 
-    dict(   input=f"file://{input_dir}/SURFACEMODEL/{month}/LIS_HIST" + "_{time}.d01.nc",
-            output=f"/gpfsm/dnb43/projects/p151/zarr/freshwater.swang.2013/output/SURFACEMODEL/LIS_HIST.d01.zarr" ),
-
- #   dict(   input=f"file://{input_dir}/SURFACEMODEL/{month}/LIS_RST_NOAHMP401" + "_{time}.d01.nc",
- #           output=f"s3://{bucket}/{s3_prefix}/SURFACEMODEL/LIS_RST_NOAHMP401.d01.zarr"  ),
- #           output=f"file:///discover/nobackup/tpmaxwel/cache/eis_freshwater.2"  ),
+#    dict(   input=f"file://{input_dir}/SURFACEMODEL/{month}/LIS_HIST" + "_{time}.d01.nc",
+#            output=f"/gpfsm/dnb43/projects/p151/zarr/freshwater.swang.2013/output/SURFACEMODEL/LIS_HIST.d01.zarr" ),
+#
+    dict(   input=f"file://{input_dir}/SURFACEMODEL/{month}/LIS_RST_NOAHMP401" + "_{time}.d01.nc",
+            output=f"/gpfsm/dnb43/projects/p151/zarr/freshwater.swang.2013/output/SURFACEMODEL/LIS_RST_NOAHMP401.d01.nc"  ),
 ]
 
 if __name__ == '__main__':
 
-#    dcm().init_cluster( processes=False )
+    dcm().init_cluster()
     sources: List[EISZarrSource] = zc().standard_conversions( dsets, merge_dim="time" )
-#    cm().add_entries( bucket, sources, name )
 
 
