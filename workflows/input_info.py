@@ -18,6 +18,7 @@ if __name__ == '__main__':
 
     print( dset )
     print( f"dset.attrs = {dset.attrs}\n" )
+    print( f"dset.encoding = {dset.encoding}\n" )
 
     vid, first_var = list(dset.items())[0]
 
