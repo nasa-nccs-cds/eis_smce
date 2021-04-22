@@ -61,8 +61,7 @@ class EISDataSource( DataSource ):
     @staticmethod
     def preprocess( merge_dim: str, dset: xa.Dataset )-> xa.Dataset:
         ds: xa.Dataset = dset.assign( eis_source_path = dset.encoding["source"] )
-        merge_var: xa.DataArray = ds[merge_dim]
-        print( f"preprocess:  merge_var = {merge_var}" )
+        eisc().logger.info( f"preprocess: merge_dim = {merge_dim},  dset items = {list(ds.keys())}" )
         return ds
 
     def read( self, **kwargs ) -> xa.Dataset:
