@@ -59,8 +59,11 @@ class EISDataSource( DataSource ):
         return self.read( **kwargs )
 
     @staticmethod
-    def preprocess( dset: xa.Dataset )-> xa.Dataset:
-        return dset.assign( eis_source_path = dset.encoding["source"] )
+    def preprocess( merge_dim: str, dset: xa.Dataset )-> xa.Dataset:
+        ds: xa.Dataset = dset.assign( eis_source_path = dset.encoding["source"] )
+        merge_var: xa.DataArray = ds[merge_dim]
+        print( f"preprocess:  merge_var = {merge_var}" )
+        return ds
 
     def read( self, **kwargs ) -> xa.Dataset:
         self._load_metadata()
@@ -68,7 +71,7 @@ class EISDataSource( DataSource ):
         file_list = self.get_file_list()
         t0 = time.time()
         self.logger.info( f"Reading merged dataset from {len(file_list)} files, merge_dim = {merge_dim}")
-        rv = xa.open_mfdataset( file_list, concat_dim=merge_dim, coords="minimal", data_vars="all", preprocess=self.preprocess, parallel = True )
+        rv = xa.open_mfdataset( file_list, concat_dim=merge_dim, coords="minimal", data_vars="all", preprocess=partial(self.preprocess,merge_dim), parallel = True )
         self.logger.info( f"Completed merge in {time.time()-t0} secs" )
         return rv
 
