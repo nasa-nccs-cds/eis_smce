@@ -35,9 +35,6 @@ class S3Manager(EISSingleton):
             self._resource = boto3.resource('s3')
         return self._resource
 
-    def item_path(self, path: str) -> str:
-        return path.split(":")[-1].replace("//", "/").replace("//", "/")
-
     def item_key(self, path: str) -> str:
         return path.split(":")[-1].strip("/")
 

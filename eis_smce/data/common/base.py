@@ -40,6 +40,10 @@ class EISSingleton(tlc.Configurable):
                 # of the calling class
                 subclass._instance = None
 
+    @staticmethod
+    def item_path( path: str) -> str:
+        return path.split(":")[-1].replace("//", "/").replace("//", "/")
+
     @classmethod
     def instance(cls, *args, **kwargs):
         if cls._instance is None:

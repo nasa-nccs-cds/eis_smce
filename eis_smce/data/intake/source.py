@@ -11,8 +11,7 @@ import intake, zarr, numpy as np
 import dask.bag as db
 import time, logging,  xarray as xa
 import intake_xarray as ixa   # Need this import to register 'xarray' container.
-from eis_smce.data.common.base import eisc
-
+from eis_smce.data.common.base import eisc, EISSingleton as eiss
 def dsort( d: Dict ) -> Dict: return { k:d[k] for k in sorted(d.keys()) }
 
 class EISDataSource( DataSource ):
@@ -67,8 +66,10 @@ class EISDataSource( DataSource ):
         source_file_path = dset.encoding["source"]
         ds: xa.Dataset = dset.assign( eis_source_path = source_file_path )
         if merge_dim not in list( ds.coords.keys() ):
-            eisc().logger.info( f" *** preprocess: source_pattern = '{source_pattern}', source_file_path = '{source_file_path}")
-            metadata = reverse_format( source_pattern, source_file_path )
+            pattern = eiss.item_path(source_pattern)
+            file_path = eiss.item_path(source_file_path)
+            eisc().logger.info( f" *** preprocess:\n  ->  source_pattern = '{pattern}'\n  ->  source_file_path = '{file_path}")
+            metadata = reverse_format( pattern, file_path )
             if merge_dim in metadata.keys():
                 merge_coord_val = metadata[ merge_dim ]
                 try:                merge_coord = np.array([merge_coord_val], dtype='datetime64')
