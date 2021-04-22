@@ -44,6 +44,9 @@ class EISDataSource( DataSource ):
     def get_file_list(self) -> List[str]:
         return [self.get_file_path(ip) for ip in range(self.nchunks)]
 
+    def get_file_index_map(self) -> Dict[str, int ]:
+        return { self.get_file_path(ip): ip for ip in range(self.nchunks) }
+
     def get_local_file_path(self, data_url: str):
         if data_url.startswith("s3"):
             toks = data_url.split("/")
@@ -60,24 +63,28 @@ class EISDataSource( DataSource ):
         return self.read( **kwargs )
 
     @staticmethod
-    def preprocess( source_pattern: str, merge_dim: str, dset: xa.Dataset )-> xa.Dataset:
+    def preprocess( file_list: List[str], source_pattern: str, merge_dim: str, dset: xa.Dataset )-> xa.Dataset:
         source_file_path = dset.encoding["source"]
-        eisc().logger.info(f"preprocess: encoding = {dset.encoding}" )
- #       eisc().logger.info( f"preprocess: merge_dim = {merge_dim}\n    dset dims = {list(dset.dims)}\n    dset items = {list(dset.keys())}\n    dset coords = {list(dset.coords.keys())}\n    dset path = {dset.encoding['source']}" )
         ds: xa.Dataset = dset.assign( eis_source_path = source_file_path )
         if merge_dim not in list( ds.coords.keys() ):
             metadata = reverse_format( source_pattern, source_file_path )
-            merge_coord_val = metadata.get( merge_dim, 0 )
-            ds = ds.assign_coords( { merge_dim: np.array( merge_coord_val ) } )
-        return ds
+            if merge_dim in metadata.keys():
+                merge_coord_val = metadata[ merge_dim ]
+                try:                merge_coord = np.array([merge_coord_val], dtype='datetime64')
+                except ValueError:  merge_coord = np.array( [merge_coord_val] )
+            else:
+                merge_coord = np.array( file_list.index( source_file_path ) )
+            return ds.expand_dims( dim={ merge_dim: merge_coord }, axis=0 )
+        else:
+            return ds
 
     def read( self, **kwargs ) -> xa.Dataset:
         self._load_metadata()
-        merge_dim = kwargs.get('merge_dim', self.default_merge_dim)
+        merge_dim = kwargs.get( 'merge_dim', self.default_merge_dim )
         file_list = self.get_file_list()
         t0 = time.time()
         self.logger.info( f"Reading merged dataset from {len(file_list)} files, merge_dim = {merge_dim}")
-        rv = xa.open_mfdataset( file_list, concat_dim=merge_dim, coords="minimal", data_vars="all", preprocess=partial(self.preprocess, self.urlpath, merge_dim), parallel = True )
+        rv = xa.open_mfdataset( file_list, concat_dim=merge_dim, coords="minimal", data_vars="all", preprocess=partial( self.preprocess, file_list, self.urlpath, merge_dim ), parallel = True )
         self.logger.info( f"Completed merge in {time.time()-t0} secs" )
         return rv
 
