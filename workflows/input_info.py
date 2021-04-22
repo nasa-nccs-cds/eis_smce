@@ -16,9 +16,11 @@ if __name__ == '__main__':
     dcm().init_cluster()
     dset: xa.Dataset = zc().get_input( input, merge_dim="time" )
 
-    eis_source_path = dset['eis_source_path']
-    print( '\neis_source_path:\n' )
-    print( eis_source_path )
+    time = dset['time'].values.tolist()
+    eis_source_path = dset['eis_source_path'].values.tolist()
+    for t, p in zip( time, eis_source_path ):
+       print( f"{t}: {p}")
+
 
 
 
