@@ -16,7 +16,7 @@ if __name__ == '__main__':
     dcm().init_cluster()
     dset: xa.Dataset = zc().get_input( input, merge_dim="time" )
 
-    for vid, var in dset.entries():
+    for vid, var in dset.items():
         print( f"{vid}: {var}")
 
 
