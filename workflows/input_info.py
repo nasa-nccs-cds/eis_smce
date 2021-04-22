@@ -17,6 +17,6 @@ if __name__ == '__main__':
     dset: xa.Dataset = zc().get_input( input, merge_dim="time" )
 
     for vid, var in dset.items():
-        print( f"{vid}: {var}")
+        print( f"{vid}{var.dims}: {var.shape}")
 
 
