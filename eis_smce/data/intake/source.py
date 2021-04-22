@@ -94,7 +94,8 @@ class EISDataSource( DataSource ):
         store = EISDataSource.get_cache_path(path) if use_cache else s3m().get_store(path,clear)
         return store
 
-    def create_storage_item(self, store: Union[str,MutableMapping], **kwargs ) -> xa.Dataset:
+    def create_storage_item(self, path: str, **kwargs ) -> xa.Dataset:
+        store = self.get_store(path, True)
         mds: xa.Dataset = self.to_dask(**kwargs)
         self.logger.info( f" merged_dset -> zarr: {store}\n   -------------------- Merged dataset: -------------------- \n{mds}\n")
         mds.to_zarr(store, mode="w", compute=False, consolidated=True)
@@ -131,12 +132,46 @@ class EISDataSource( DataSource ):
             self.logger.error(f"Exception in export: {err}")
             self.logger.error(traceback.format_exc())
 
+    def export_parallel(self, path: str, **kwargs ) -> EISZarrSource:
+        try:
+            from eis_smce.data.storage.s3 import s3m
+            from eis_smce.data.common.cluster import dcm
+            mds: xa.Dataset = self.create_storage_item( path, **kwargs )
+            input_files = mds['eis_source_path'].values
+            mds.close()
+            use_cache = kwargs.get( "cache", True )
+            client: Client = dcm().client
+
+            zsources = []
+            self.logger.info( f"Exporting paritions to: {path}, vars = {list(mds.keys())}" )
+            for ic in range(0, self.nchunks):
+                zsources.append( dask.delayed( EISDataSource._export_partition_parallel )( input_files[ic], path, ic, **kwargs ) )
+
+            zsc = client.compute( zsources, sync=True )
+
+            if( use_cache and path.startswith("s3:") ):
+                self.logger.info(f"Uploading zarr file to: {path}")
+                s3m().upload_files( path )
+
+            return EISZarrSource(path)
+        except Exception  as err:
+            self.logger.error(f"Exception in export: {err}")
+            self.logger.error(traceback.format_exc())
+
     @staticmethod
     def _export_partition(  store: Union[str,MutableMapping], mds: xa.Dataset, chunk_offset: int, nchunks: int, **kwargs ):
         merge_dim = kwargs.get( 'merge_dim', EISDataSource.default_merge_dim )
         region = { merge_dim: slice(chunk_offset, chunk_offset + nchunks) }
         eisc().logger.info( f"Exporting {nchunks} chunks at offset {chunk_offset} to store {store}" )
         dset = mds[region]
+        return dset.to_zarr( store, mode='a', region=region )
+
+    @staticmethod
+    def _export_partition_parallel(  input_path: str, output_path:str, chunk_index: int,  **kwargs ):
+        store = EISDataSource.get_store( output_path, False )
+        merge_dim = kwargs.get( 'merge_dim', EISDataSource.default_merge_dim )
+        region = { merge_dim: slice(chunk_index, chunk_index + 1) }
+        dset = xa.open_dataset( input_path )
         return dset.to_zarr( store, mode='a', region=region )
 
     def get_zarr_source(self, zpath: str ):

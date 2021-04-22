@@ -15,7 +15,7 @@ class ZarrConverter(EISSingleton):
         try:
             t0 = time.time()
             h4s = intake.open_hdf4( input )
-            zs: EISZarrSource = h4s.export( output, **kwargs )
+            zs: EISZarrSource = h4s.export_parallel( output, **kwargs )
             if zs: print( f"Completed {zs.cat_name} conversion & upload to {output} in {(time.time()-t0)/60} minutes" )
             return zs
         except Exception as err:
@@ -27,13 +27,11 @@ class ZarrConverter(EISSingleton):
         return h4s.to_dask(**kwargs)
 
     def standard_conversions( self, dsets: List[Dict[str,str]], **kwargs ) -> List[EISZarrSource]:
-        parallel = False
         sources = []
         for dset in dsets:
             [input, output] = [ dset.pop(key) for key in ['input', 'output'] ]
-            convert = dask.delayed( zc().standard_conversion ) if parallel else zc().standard_conversion
-            sources.append( convert( input, output, **kwargs, **dset ) )
-        return dask.compute( sources ) if parallel else sources
+            sources.append( zc().standard_conversion( input, output, **kwargs, **dset ) )
+        return sources
 
 
 def zc(): return ZarrConverter.instance()
