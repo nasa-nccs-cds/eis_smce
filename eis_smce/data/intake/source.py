@@ -60,8 +60,7 @@ class EISDataSource( DataSource ):
 
     @staticmethod
     def preprocess( dset: xa.Dataset )-> xa.Dataset:
-        dset.assign( eis_source_path = dset.encoding["source"] )
-        return dset
+        return dset.assign( eis_source_path = dset.encoding["source"] )
 
     def read( self, **kwargs ) -> xa.Dataset:
         self._load_metadata()
