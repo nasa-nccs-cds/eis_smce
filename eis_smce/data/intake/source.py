@@ -68,10 +68,11 @@ class EISDataSource( DataSource ):
         if merge_dim not in list( ds.coords.keys() ):
             pattern = eiss.item_path(source_pattern)
             file_path = eiss.item_path(source_file_path)
-            eisc().logger.info( f" *** preprocess:\n  ->  source_pattern = '{pattern}'\n  ->  source_file_path = '{file_path}")
+#            eisc().logger.info( f" *** preprocess:\n  ->  source_pattern = '{pattern}'\n  ->  source_file_path = '{file_path}")
             metadata = reverse_format( pattern, file_path )
             if merge_dim in metadata.keys():
                 merge_coord_val = metadata[ merge_dim ]
+                eisc().logger.info(f" *** preprocess:  date: {merge_coord_val[:6]}, time: {merge_coord_val[6:]}")
                 try:                merge_coord = np.array([merge_coord_val], dtype='datetime64')
                 except ValueError:  merge_coord = np.array( [merge_coord_val] )
             else:
