@@ -9,7 +9,7 @@ test_run = True
 input_dir = "/discover/nobackup/projects/eis_freshwater/swang9/OL_1km/OUTPUT.RST.2013"
 month = "201303" if test_run else  "*"
 eisc( cache = "/gpfsm/dnb43/projects/p151/zarr", mode = "eis.freshwater.swang9" )
-input = f"{input_dir}/SURFACEMODEL/{month}/LIS_RST_HYMAP2_router" + "_{time}.d01.nc"
+input = f"{input_dir}/SURFACEMODEL/{month}/LIS_HIST" + "_{time}.d01.nc"
 
 if __name__ == '__main__':
 
