@@ -33,6 +33,15 @@ Setup Amazon Credentials
     From the base directory of this project, execute:
   
     > source ./config/mfa.sh
+   
+
+Discover Notes
+--------------
+
+>> salloc --nodes=1 --constraint="sky|hasw" --time=12:00:00
+>> conda activate eis_smce
+>> cd /discover/nobackup/tpmaxwel/eis_smce
+>> python ./workflows/freshwater_swang9.py
 
 
 
