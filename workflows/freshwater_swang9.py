@@ -6,7 +6,7 @@ from eis_smce.data.common.base import eisc
 from eis_smce.data.conversion.zarr import zc
 from eis_smce.data.common.cluster import dcm
 
-test_run = True
+test_run = False
 input_dir = "/discover/nobackup/projects/eis_freshwater/swang9/OL_1km/OUTPUT.RST.2013"
 name = "freshwater.swang9.OL_1km.2013"
 bucket = "eis-dh-hydro"
