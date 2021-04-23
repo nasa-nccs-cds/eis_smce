@@ -26,10 +26,12 @@ test_data: np.ndarray = test_array.max( axis = 1 ).values
 print( f"{vname} max (axis=1):"  )
 print( test_data )
 
+print( f"\nids:"  )
+print( ids )
 input_array: xa.DataArray = ids[vname]
 print( f"\n{vname} input_array shape: {input_array.shape}"  )
 print( f"{vname} input_array attrs: {input_array.attrs}"  )
-input_data: np.ndarray = input_array.max( axis = 1 ).values
+input_data: np.ndarray = input_array.max( ).values
 print( f"{vname} max (axis=1):"  )
 print( input_data )
 
