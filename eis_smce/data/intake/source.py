@@ -71,7 +71,9 @@ class EISDataSource( DataSource ):
         source_file_path = dset.encoding["source"]
         ds: xa.Dataset = dset.assign( eis_source_path = source_file_path )
         if merge_dim not in list( ds.coords.keys() ):
-            metadata = reverse_format( eiss.item_path(pattern), source_file_path )
+            file_pattern = eiss.item_path(pattern)
+            eisc().logger.info( f" preprocess: pattern= '{file_pattern}', input= '{source_file_path}' " )
+            metadata = reverse_format( file_pattern, source_file_path )
             if merge_dim in metadata.keys():
                 merge_coord_val = metadata[ merge_dim ]
                 try:
