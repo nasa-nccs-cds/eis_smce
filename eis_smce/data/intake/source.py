@@ -88,7 +88,12 @@ class EISDataSource( DataSource ):
                 merge_coord = np.array(  pspec['files'].index( source_file_path ) )
             return ds.expand_dims( dim={ merge_dim: merge_coord }, axis=0 )
         else:
-            return ds
+            vlist = {}
+            for vid, xv in ds.items():
+                if merge_dim not in list( xv.coords.keys() ):
+                    xv = xv.expand_dims(dim=merge_dim, axis=0)
+                vlist[vid] = xv
+            return xa.Dataset( vlist, ds.coords, ds.attrs )
 
     def read( self, **kwargs ) -> xa.Dataset:
         self._load_metadata()
