@@ -122,7 +122,6 @@ class EISConfiguration( tlc.Configurable ):
             cfg_file = self.config_file( self.name, self.mode )
             (self.config_dir, fname) = os.path.split(cfg_file)
             self._config_files = [fname]
-            self.logger.info(f"Loading config files: {self._config_files} from dir {self.config_dir}")
             self._config = load_pyconfig_files(self._config_files, self.config_dir)
             self.update_config(self._config)
 
