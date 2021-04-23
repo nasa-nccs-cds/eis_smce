@@ -1,6 +1,7 @@
 from intake.source.base import DataSource, Schema
 import collections, json, shutil
 import traitlets.config as tlc, random, string
+from datetime import datetime
 from intake.source.utils import reverse_format
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable, MutableMapping
 from functools import partial
@@ -19,7 +20,7 @@ class EISDataSource( DataSource ):
     version = 0.1
     container = 'xarray'
     partition_access = True
-    default_merge_dim = "sample"
+    default_merge_dim = "time"
 
     def __init__(self, **kwargs ):
         super(EISDataSource, self).__init__( **kwargs )
@@ -62,21 +63,24 @@ class EISDataSource( DataSource ):
         return self.read( **kwargs )
 
     @staticmethod
-    def preprocess( file_list: List[str], source_pattern: str, merge_dim: str, dset: xa.Dataset )-> xa.Dataset:
+    def preprocess( pspec: Dict, dset: xa.Dataset )-> xa.Dataset:
+        merge_dim = pspec['merge_dim']
+        pattern = pspec['pattern']
+        time_format = pspec.get( 'time_format', None )
         source_file_path = dset.encoding["source"]
         ds: xa.Dataset = dset.assign( eis_source_path = source_file_path )
         if merge_dim not in list( ds.coords.keys() ):
-            pattern = eiss.item_path(source_pattern)
-            file_path = eiss.item_path(source_file_path)
-#            eisc().logger.info( f" *** preprocess:\n  ->  source_pattern = '{pattern}'\n  ->  source_file_path = '{file_path}")
-            metadata = reverse_format( pattern, file_path )
+            metadata = reverse_format( eiss.item_path(pattern), source_file_path )
             if merge_dim in metadata.keys():
                 merge_coord_val = metadata[ merge_dim ]
-                eisc().logger.info(f" *** preprocess:  date: {merge_coord_val[:6]}, time: {merge_coord_val[6:]}")
-                try:                merge_coord = np.array([merge_coord_val], dtype='datetime64')
-                except ValueError:  merge_coord = np.array( [merge_coord_val] )
+                try:
+                    if time_format is not None:
+                        merge_coord_val = datetime.strptime( merge_coord_val, time_format )
+                    merge_coord = np.array([merge_coord_val], dtype='datetime64')
+                except ValueError:
+                    merge_coord = np.array( [merge_coord_val] )
             else:
-                merge_coord = np.array( file_list.index( source_file_path ) )
+                merge_coord = np.array(  pspec['files'].index( source_file_path ) )
             return ds.expand_dims( dim={ merge_dim: merge_coord }, axis=0 )
         else:
             return ds
@@ -87,7 +91,8 @@ class EISDataSource( DataSource ):
         file_list = self.get_file_list()
         t0 = time.time()
         self.logger.info( f"Reading merged dataset from {len(file_list)} files, merge_dim = {merge_dim}")
-        rv = xa.open_mfdataset( file_list, concat_dim=merge_dim, coords="minimal", data_vars="all", preprocess=partial( self.preprocess, file_list, self.urlpath, merge_dim ), parallel = True )
+        pspec = dict( files=file_list, pattern=self.urlpath, merge_dim=merge_dim, **kwargs )
+        rv = xa.open_mfdataset( file_list, concat_dim=merge_dim, coords="minimal", data_vars="all", preprocess=partial( self.preprocess, pspec ), parallel = True )
         self.logger.info( f"Completed merge in {time.time()-t0} secs" )
         return rv
 
