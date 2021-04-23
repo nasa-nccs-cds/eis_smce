@@ -9,6 +9,8 @@ print( dset )
 
 RNFSTO: xa.DataArray = dset['RNFSTO']
 
-test_data: np.ndarray = RNFSTO[ :, 2509494 ].values
+print( f"RNFSTO shape: {RNFSTO.shape}"  )
 
+test_data: np.ndarray = RNFSTO.max( axis = 1 )
+print( f"RNFSTO max (axis=1):"  )
 print( test_data )
