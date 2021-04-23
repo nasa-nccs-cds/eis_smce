@@ -3,7 +3,7 @@ import numpy as np
 
 sample_input = "/discover/nobackup/projects/eis_freshwater/swang9/OL_1km/OUTPUT.RST.2013/ROUTING/201501/LIS_RST_HYMAP2_router_201501312345.d01.nc"
 zarr_dest = "/gpfsm/dnb43/projects/p151/zarr/freshwater.swang.2013/output/ROUTING/LIS_RST_HYMAP2_router.d01.zarr"
-vname = "FLDDPH_PRE"
+vname = "FLDSTO"
 
 ids: xa.Dataset = xa.open_dataset( sample_input )
 zds: xa.Dataset = xa.open_zarr( zarr_dest )
