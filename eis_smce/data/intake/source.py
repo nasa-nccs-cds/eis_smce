@@ -30,6 +30,7 @@ class EISDataSource( DataSource ):
         self._schema: Schema = None
         self._ds: xa.Dataset = None
         self.nchunks = -1
+        self.pspec = None
 
     def _open_partition(self, ipart: int) -> xa.Dataset:
         raise NotImplementedError()
@@ -91,8 +92,8 @@ class EISDataSource( DataSource ):
         file_list = self.get_file_list()
         t0 = time.time()
         self.logger.info( f"Reading merged dataset from {len(file_list)} files, merge_dim = {merge_dim}")
-        pspec = dict( files=file_list, pattern=self.urlpath, merge_dim=merge_dim, **kwargs )
-        rv = xa.open_mfdataset( file_list, concat_dim=merge_dim, coords="minimal", data_vars="all", preprocess=partial( self.preprocess, pspec ), parallel = True )
+        self.pspec = dict( files=file_list, pattern=self.urlpath, merge_dim=merge_dim, **kwargs )
+        rv = xa.open_mfdataset( file_list, concat_dim=merge_dim, coords="minimal", data_vars="all", preprocess=partial( self.preprocess, self.pspec ), parallel = True )
         self.logger.info( f"Completed merge in {time.time()-t0} secs" )
         return rv
 
@@ -169,7 +170,7 @@ class EISDataSource( DataSource ):
             zsources = []
             self.logger.info( f"Exporting paritions to: {path}, vars = {list(mds.keys())}" )
             for ic in range(0, self.nchunks):
-                zsources.append( dask.delayed( EISDataSource._export_partition_parallel )( input_files[ic], path, ic, **kwargs ) )
+                zsources.append( dask.delayed( EISDataSource._export_partition_parallel )( input_files[ic], path, ic, self.pspec ) )
 
             zsc = client.compute( zsources, sync=True )
 
@@ -191,11 +192,11 @@ class EISDataSource( DataSource ):
     #     return dset.to_zarr( store, mode='a', region=region )
 
     @staticmethod
-    def _export_partition_parallel(  input_path: str, output_path:str, chunk_index: int,  **kwargs ):
+    def _export_partition_parallel(  input_path: str, output_path:str, chunk_index: int,  pspec: Dict ):
         store = EISDataSource.get_store( output_path, False )
-        merge_dim = kwargs.get( 'merge_dim', EISDataSource.default_merge_dim )
+        merge_dim = pspec.get( 'merge_dim', EISDataSource.default_merge_dim )
         region = { merge_dim: slice(chunk_index, chunk_index + 1) }
-        dset = xa.open_dataset( input_path )
+        dset = EISDataSource.preprocess( pspec, xa.open_dataset( input_path ) )
         eisc().logger.info(f"_export_partition_parallel[{chunk_index}]: merge_dim = {merge_dim},  dset.dims = {dset.dims},  dset.coords = {list(dset.coords.keys())}")
         return dset.to_zarr( store, mode='a', region=region )
 
