@@ -75,9 +75,7 @@ class EISDataSource( DataSource ):
             filepath_pattern = eiss.item_path(pattern)
             is_glob = has_char(filepath_pattern, "*?[")
             (file_path, file_pattern) = ( os.path.basename(source_file_path), os.path.basename(filepath_pattern)) if is_glob else (source_file_path, filepath_pattern)
-            eisc().logger.info( f" preprocess:\n  > P= '{file_pattern}'\n  > I= '{file_path}' " )
             metadata = reverse_format( file_pattern, file_path )
-            eisc().logger.info(f" ---> metadagta: {metadata}")
             if merge_dim in metadata.keys():
                 merge_coord_val = metadata[ merge_dim ]
                 try:
@@ -192,11 +190,14 @@ class EISDataSource( DataSource ):
 
     @staticmethod
     def _export_partition_parallel(  input_path: str, output_path:str, chunk_index: int,  pspec: Dict ):
+        from eis_smce.data.conversion.zarr import zc
+        t0 = time.time()
         store = EISDataSource.get_store( output_path, False )
         merge_dim = pspec.get( 'merge_dim', EISDataSource.default_merge_dim )
         region = { merge_dim: slice(chunk_index, chunk_index + 1) }
         dset = EISDataSource.preprocess( pspec, xa.open_dataset( input_path ) )
         dset.to_zarr( store, mode='a', region=region )
+        zc().update_progress(output_path, time.time()-t0)
 
     def get_zarr_source(self, zpath: str ):
         zsrc = EISZarrSource(zpath)
