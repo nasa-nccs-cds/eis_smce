@@ -190,14 +190,14 @@ class EISDataSource( DataSource ):
 
     @staticmethod
     def _export_partition_parallel(  input_path: str, output_path:str, chunk_index: int,  pspec: Dict ):
-        from eis_smce.data.conversion.zarr import zc
+        logger = logging.getLogger('eis_smce.intake')
         t0 = time.time()
-        store = EISDataSource.get_store( output_path, False )
+        store = EISDataSource.get_cache_path( output_path )
         merge_dim = pspec.get( 'merge_dim', EISDataSource.default_merge_dim )
         region = { merge_dim: slice(chunk_index, chunk_index + 1) }
         dset = EISDataSource.preprocess( pspec, xa.open_dataset( input_path ) )
         dset.to_zarr( store, mode='a', region=region )
-        zc().update_progress(output_path, time.time()-t0)
+        logger.info( f"Finished generating zarr chunk in {time.time()-t0} secs: {output_path}")
 
     def get_zarr_source(self, zpath: str ):
         zsrc = EISZarrSource(zpath)
