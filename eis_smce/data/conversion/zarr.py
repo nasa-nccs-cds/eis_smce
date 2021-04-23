@@ -25,7 +25,7 @@ class ZarrConverter(EISSingleton):
         h4s = intake.open_hdf4(input)
         return h4s.to_dask(**kwargs)
 
-    def standard_conversions( self, dsets: List[Dict[str,str]], **kwargs )
+    def standard_conversions( self, dsets: List[Dict[str,str]], **kwargs ):
         for dset in dsets:
             [input, output] = [ dset.pop(key) for key in ['input', 'output'] ]
             zc().standard_conversion( input, output, **kwargs, **dset )
