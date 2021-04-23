@@ -196,6 +196,7 @@ class EISDataSource( DataSource ):
         merge_dim = kwargs.get( 'merge_dim', EISDataSource.default_merge_dim )
         region = { merge_dim: slice(chunk_index, chunk_index + 1) }
         dset = xa.open_dataset( input_path )
+        eisc().logger.info(f"_export_partition_parallel[{chunk_index}]: merge_dim = {merge_dim},  dset.dims = {dset.dims},  dset.coords = {list(dset.coords.keys())}")
         return dset.to_zarr( store, mode='a', region=region )
 
     def get_zarr_source(self, zpath: str ):
