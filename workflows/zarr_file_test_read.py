@@ -7,9 +7,13 @@ dset: xa.Dataset = xa.open_zarr( zarr_dest )
 
 print( dset )
 
+print( f"dset attrs: {dset.attrs}"  )
+
 RNFSTO: xa.DataArray = dset['RNFSTO']
 
 print( f"RNFSTO shape: {RNFSTO.shape}"  )
+
+print( f"RNFSTO attrs: {RNFSTO.attrs}"  )
 
 test_data: np.ndarray = RNFSTO.max( axis = 1 )
 print( f"RNFSTO max (axis=1):"  )
