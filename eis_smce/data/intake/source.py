@@ -14,6 +14,7 @@ import time, logging,  xarray as xa
 import intake_xarray as ixa   # Need this import to register 'xarray' container.
 from eis_smce.data.common.base import eisc, EISSingleton as eiss
 def dsort( d: Dict ) -> Dict: return { k:d[k] for k in sorted(d.keys()) }
+def has_char(string: str, chars: str): return 1 in [c in string for c in chars]
 
 class EISDataSource( DataSource ):
     """Common behaviours for plugins in this repo"""
@@ -71,9 +72,11 @@ class EISDataSource( DataSource ):
         source_file_path = dset.encoding["source"]
         ds: xa.Dataset = dset.assign( eis_source_path = source_file_path )
         if merge_dim not in list( ds.coords.keys() ):
-            file_pattern = eiss.item_path(pattern)
-            eisc().logger.info( f" preprocess:\n  > P= '{file_pattern}'\n  > I= '{source_file_path}' " )
-            metadata = reverse_format( file_pattern, source_file_path )
+            filepath_pattern = eiss.item_path(pattern)
+            is_glob = has_char(filepath_pattern, "*?[")
+            (file_path, file_pattern) = ( os.path.basename(source_file_path), os.path.basename(filepath_pattern)) if is_glob else (source_file_path, filepath_pattern)
+            eisc().logger.info( f" preprocess:\n  > P= '{file_pattern}'\n  > I= '{file_path}' " )
+            metadata = reverse_format( file_pattern, file_path )
             eisc().logger.info(f" ---> metadagta: {metadata}")
             if merge_dim in metadata.keys():
                 merge_coord_val = metadata[ merge_dim ]
