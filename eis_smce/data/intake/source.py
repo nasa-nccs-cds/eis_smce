@@ -163,28 +163,21 @@ class EISDataSource( DataSource ):
     #         self.logger.error(f"Exception in export: {err}")
     #         self.logger.error(traceback.format_exc())
 
-    def export_parallel(self, path: str, **kwargs ) -> EISZarrSource:
+    def export_parallel(self, path: str, **kwargs ):
         try:
             from eis_smce.data.storage.s3 import s3m
             from eis_smce.data.common.cluster import dcm
             mds: xa.Dataset = self.create_storage_item( path, **kwargs )
             input_files = mds['eis_source_path'].values
             mds.close()
-            use_cache = kwargs.get( "cache", True )
             client: Client = dcm().client
 
-            zsources = []
+            tasks = []
             self.logger.info( f"Exporting paritions to: {path}, vars = {list(mds.keys())}" )
             for ic in range(0, self.nchunks):
-                zsources.append( dask.delayed( EISDataSource._export_partition_parallel )( input_files[ic], path, ic, self.pspec ) )
+                tasks.append( dask.delayed( EISDataSource._export_partition_parallel )( input_files[ic], path, ic, self.pspec ) )
+            client.compute( tasks, sync=True )
 
-            zsc = client.compute( zsources, sync=True )
-
-            if( use_cache and path.startswith("s3:") ):
-                self.logger.info(f"Uploading zarr file to: {path}")
-                s3m().upload_files( path )
-
-            return EISZarrSource(path)
         except Exception  as err:
             self.logger.error(f"Exception in export: {err}")
             self.logger.error(traceback.format_exc())
@@ -203,7 +196,7 @@ class EISDataSource( DataSource ):
         merge_dim = pspec.get( 'merge_dim', EISDataSource.default_merge_dim )
         region = { merge_dim: slice(chunk_index, chunk_index + 1) }
         dset = EISDataSource.preprocess( pspec, xa.open_dataset( input_path ) )
-        return dset.to_zarr( store, mode='a', region=region )
+        dset.to_zarr( store, mode='a', region=region )
 
     def get_zarr_source(self, zpath: str ):
         zsrc = EISZarrSource(zpath)

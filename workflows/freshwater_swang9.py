@@ -36,6 +36,6 @@ dsets = [
 if __name__ == '__main__':
 
     dcm().init_cluster( processes=False )
-    sources: List[EISZarrSource] = zc().standard_conversions( dsets )
+    zc().standard_conversions( dsets )
 
 

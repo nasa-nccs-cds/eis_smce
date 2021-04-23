@@ -15,9 +15,8 @@ class ZarrConverter(EISSingleton):
         try:
             t0 = time.time()
             h4s = intake.open_hdf4( input )
-            zs: EISZarrSource = h4s.export_parallel( output, **kwargs )
-            if zs: print( f"Completed {zs.cat_name} conversion & upload to {output} in {(time.time()-t0)/60} minutes" )
-            return zs
+            h4s.export_parallel( output, **kwargs )
+            print( f"Completed conversion & upload to {output} in {(time.time()-t0)/60} minutes" )
         except Exception as err:
             self.logger.error( f"Error in ZarrConverter.standard_conversion: {err}")
             self.logger.error(f"{traceback.format_exc()}")
@@ -26,12 +25,9 @@ class ZarrConverter(EISSingleton):
         h4s = intake.open_hdf4(input)
         return h4s.to_dask(**kwargs)
 
-    def standard_conversions( self, dsets: List[Dict[str,str]], **kwargs ) -> List[EISZarrSource]:
-        sources = []
+    def standard_conversions( self, dsets: List[Dict[str,str]], **kwargs )
         for dset in dsets:
             [input, output] = [ dset.pop(key) for key in ['input', 'output'] ]
-            sources.append( zc().standard_conversion( input, output, **kwargs, **dset ) )
-        return sources
-
+            zc().standard_conversion( input, output, **kwargs, **dset )
 
 def zc(): return ZarrConverter.instance()
