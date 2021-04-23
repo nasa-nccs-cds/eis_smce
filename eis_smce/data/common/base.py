@@ -122,7 +122,7 @@ class EISConfiguration( tlc.Configurable ):
             cfg_file = self.config_file( self.name, self.mode )
             (self.config_dir, fname) = os.path.split(cfg_file)
             self._config_files = [fname]
-            print(f"Loading config files: {self._config_files} from dir {self.config_dir}")
+            self.logger.info(f"Loading config files: {self._config_files} from dir {self.config_dir}")
             self._config = load_pyconfig_files(self._config_files, self.config_dir)
             self.update_config(self._config)
 
@@ -161,7 +161,7 @@ class EISConfiguration( tlc.Configurable ):
             self.logger = logging.getLogger('eis_smce.intake')
             self.logger.setLevel(logging.DEBUG)
             log_file = f'{self.cache_dir}/logging/eis_smce.{self.hostname}.{self.pid}.log'
-            print( f"\n   ***   Opening Log file: {log_file}  ***  \n ")
+            print( f" ***   Opening Log file: {log_file}  *** ")
             os.makedirs( os.path.dirname(log_file), exist_ok=True )
             fh = logging.FileHandler( log_file )
             fh.setLevel(logging.DEBUG)
