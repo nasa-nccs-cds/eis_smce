@@ -1,7 +1,7 @@
 import xarray as xa
 import numpy as np
 
-sample_input = "/discover/nobackup/projects/eis_freshwater/swang9/OL_1km/OUTPUT.RST.2013/ROUTING/201501/LIS_RST_HYMAP2_router_201501312345.d01.nc"
+sample_input = "/discover/nobackup/projects/eis_freshwater/swang9/OL_1km/OUTPUT.RST.2013/ROUTING/201505/LIS_HIST_201505170000.d01.nc"
 zarr_dest = "/gpfsm/dnb43/projects/p151/zarr/freshwater.swang.2013/output/ROUTING/LIS_HIST.d01.zarr"
 vname = "FLDSTO"
 
