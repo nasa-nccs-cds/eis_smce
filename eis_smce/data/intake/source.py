@@ -32,6 +32,7 @@ class EISDataSource( DataSource ):
         self._ds: xa.Dataset = None
         self.nchunks = -1
         self.pspec = None
+        self.dynamic_metadata_ids = []
 
     def _open_partition(self, ipart: int) -> xa.Dataset:
         raise NotImplementedError()
@@ -70,7 +71,10 @@ class EISDataSource( DataSource ):
         pattern = pspec['pattern']
         time_format = pspec.get( 'time_format', None )
         source_file_path = dset.encoding["source"]
-        ds: xa.Dataset = dset.assign( eis_source_path = source_file_path )
+        dynamic_metadata_ids = np.array(  pspec['dynamic_metadata_ids'] )
+        dynamic_metadata = np.array( [ dset.get( id, "") for id in dynamic_metadata_ids ], dtype = np.dtype('U64') )
+        ds = dset.assign( eis_source_path = source_file_path  )
+        ds = ds.assign( dynamic_metadata = xa.DataArray( dynamic_metadata, coords = dict( dynamic_metadata_ids = dynamic_metadata_ids ) ) )
         if merge_dim not in list( ds.coords.keys() ):
             filepath_pattern = eiss.item_path(pattern)
             is_glob = has_char(filepath_pattern, "*?[")
@@ -101,8 +105,8 @@ class EISDataSource( DataSource ):
         file_list = self.get_file_list()
         t0 = time.time()
         self.logger.info( f"Reading merged dataset from {len(file_list)} files, merge_dim = {merge_dim}")
-        self.pspec = dict( files=file_list, pattern=self.urlpath, merge_dim=merge_dim, **kwargs )
-        rv = xa.open_mfdataset( file_list, concat_dim=merge_dim, coords="minimal", data_vars="all", preprocess=partial( self.preprocess, self.pspec ), parallel = True )
+        self.pspec = dict( files=file_list, pattern=self.urlpath, merge_dim=merge_dim, dynamic_metadata_ids = self.dynamic_metadata_ids, **kwargs )
+        rv: xa.Dataset = xa.open_mfdataset( file_list, concat_dim=merge_dim, coords="minimal", data_vars="all", preprocess=partial( self.preprocess, self.pspec ), parallel = True )
         self.logger.info( f"Completed merge in {time.time()-t0} secs" )
         return rv
 
@@ -233,13 +237,19 @@ class EISDataSource( DataSource ):
                 self._file_list = lfm().get_file_list( self.urlpath )
             self.nchunks = len(self._file_list)
             self.logger.info( f"Created file list from {self.urlpath} with {self.nchunks} parts")
+            dsmeta = {}
             ds0 =  self._get_partition( 0 )
+            ds1 =  self._get_partition( -1 )
+            for k,v in ds0.attrs.items():
+                v1 = ds1.attrs.get( k, None )
+                if (v1 is None) or ( v1 != ds0.attrs[k] ):  self.dynamic_metadata_ids.append( k )
+                else:                                       dsmeta[k] = v
             metadata = {
                 'dims': dict(ds0.dims),
                 'data_vars': {k: list(ds0[k].coords) for k in ds0.data_vars.keys()},
                 'coords': tuple(ds0.coords.keys()),
             }
-            metadata.update( ds0.attrs )
+            metadata.update( dsmeta )
             self._schema = Schema(datashape=None, dtype=None, shape=None, npartitions=self.nchunks, extra_metadata=metadata)
         return self._schema
 
