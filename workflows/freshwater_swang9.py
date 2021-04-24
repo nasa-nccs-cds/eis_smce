@@ -1,17 +1,13 @@
-import intake, time
+import time
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
-from eis_smce.data.intake.zarr.source import EISZarrSource
-from eis_smce.data.intake.catalog import cm
 from eis_smce.data.common.base import eisc
 from eis_smce.data.conversion.zarr import zc
 from eis_smce.data.common.cluster import dcm
 
 test_run = False
 input_dir = "/discover/nobackup/projects/eis_freshwater/swang9/OL_1km/OUTPUT.RST.2013"
-name = "freshwater.swang9.OL_1km.2013"
 bucket = "eis-dh-hydro"
 month = "201303" if test_run else  "*"
-s3_prefix = f"projects/eis_freshwater/swang9.OL_1km.2013.new"
 eisc( cache = "/gpfsm/dnb43/projects/p151/zarr", mode = "eis.freshwater.swang9" )
 time_format = "%Y%m%d%H%M"
 
@@ -21,7 +17,7 @@ dsets = [
 #            time_format = time_format ),
 
     dict(   input=f"file://{input_dir}/ROUTING/{month}/LIS_HIST" + "_{time}.d01.nc",
-            output=f"s3://{bucket}/{s3_prefix}/ROUTING/LIS_HIST.d01.zarr",
+            output=f"/gpfsm/dnb43/projects/p151/zarr/freshwater.swang.2013/output/ROUTING/LIS_HIST.d01.zarr",
             time_format = time_format ),
 
 #    dict(   input=f"file://{input_dir}/SURFACEMODEL/{month}/LIS_HIST" + "_{time}.d01.nc",
@@ -35,7 +31,7 @@ dsets = [
 
 if __name__ == '__main__':
 
-    dcm().init_cluster( ) # processes=False )
+    dcm().init_cluster( )
     zc().standard_conversions( dsets )
 
 
