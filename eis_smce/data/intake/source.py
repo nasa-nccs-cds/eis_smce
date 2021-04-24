@@ -72,7 +72,7 @@ class EISDataSource( DataSource ):
         time_format = pspec.get( 'time_format', None )
         source_file_path = dset.encoding["source"]
         dynamic_metadata_ids = np.array(  pspec['dynamic_metadata_ids'] )
-        dynamic_metadata = np.array( [ dset.get( id, "") for id in dynamic_metadata_ids ], dtype = np.dtype('U64') )
+        dynamic_metadata = np.array( [ str(dset.get( id, "")) for id in dynamic_metadata_ids ], dtype = np.dtype('U64') )
         ds = dset.assign( eis_source_path = source_file_path  )
         ds = ds.assign( dynamic_metadata = xa.DataArray( dynamic_metadata, coords = dict( dynamic_metadata_ids = dynamic_metadata_ids ) ) )
         if merge_dim not in list( ds.coords.keys() ):
