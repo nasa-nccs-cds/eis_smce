@@ -22,8 +22,9 @@ print( zds )
 test_array: xa.DataArray = zds[vname]
 print( f"\n{vname} shape: {test_array.shape}"  )
 print( f"{vname} attrs: {test_array.attrs}"  )
-test_data: np.ndarray = test_array.max( axis = 1 ).values
-print( f"{vname} max (axis=1):"  )
+axes = list( range( 1, test_array.ndim ) )
+test_data: np.ndarray = test_array.max( axis = axes ).values
+print( f"{vname} max (axis={axes}):"  )
 print( test_data )
 
 print( f"\nids:"  )
