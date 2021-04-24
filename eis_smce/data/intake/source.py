@@ -138,6 +138,7 @@ class EISDataSource( DataSource ):
     def create_storage_item(self, path: str, **kwargs ) -> xa.Dataset:
         store = self.get_store(path, True)
         mds: xa.Dataset = self.to_dask(**kwargs)
+        for aId in self.dynamic_metadata_ids: mds.attrs.pop(aId,"")
         self.logger.info( f" merged_dset -> zarr: {store}\n   -------------------- Merged dataset: -------------------- \n{mds}\n")
         mds.to_zarr(store, mode="w", compute=False, consolidated=True)
         return mds
