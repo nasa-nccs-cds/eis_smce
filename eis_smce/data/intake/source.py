@@ -71,8 +71,11 @@ class EISDataSource( DataSource ):
         pattern = pspec['pattern']
         time_format = pspec.get( 'time_format', None )
         source_file_path = dset.encoding["source"]
-        dynamic_metadata = { aId: dset.attrs.get(aId,"") for aId in pspec['dynamic_metadata_ids'] }
-        dynamic_metadata[ 'eis_source_path' ] = source_file_path
+        dynamic_metadata = dict( eis_source_path = source_file_path )
+        for aId in pspec['dynamic_metadata_ids']:
+            att_val = dset.attrs.get(aId,"")
+            while aId in dset.keys(): aId = f"{aId}_"
+            dynamic_metadata[aId] = att_val
         ds = dset.assign( dynamic_metadata )
         if merge_dim not in list( ds.coords.keys() ):
             filepath_pattern = eiss.item_path(pattern)
