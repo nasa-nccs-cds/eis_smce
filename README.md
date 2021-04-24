@@ -38,11 +38,20 @@ Setup Amazon Credentials
 Discover Notes
 --------------
 
+### Compute 
+
 >> salloc --nodes=1 --constraint="sky|hasw" --time=12:00:00
 >> conda activate eis_smce
 >> cd /discover/nobackup/tpmaxwel/eis_smce
 >> python ./workflows/freshwater_swang9.py
 
+### Upload
+
+>> salloc -p datamove --nodes=1 --time=02:00:00
+>> module load aws
+>> cd /discover/nobackup/tpmaxwel/eis_smce
+>> source ./config/mfa.sh
+>> aws s3 mv /discover/nobackup/tpmaxwel/cache/eis.freshwater.swang9/output/SURFACEMODEL/LIS_HIST.d01.zarr s3://freshwater.swang.2013/SURFACEMODEL/LIS_HIST.d01.zarr --acl bucket-owner-full-control --recursive
 
 
 
