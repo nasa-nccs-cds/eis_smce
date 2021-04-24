@@ -66,17 +66,17 @@ class EISDataSource( DataSource ):
         return self.read( **kwargs )
 
     @staticmethod
-    def preprocess( pspec: Dict, dset: xa.Dataset )-> xa.Dataset:
+    def preprocess( pspec: Dict, ds: xa.Dataset )-> xa.Dataset:
         merge_dim = pspec['merge_dim']
         pattern = pspec['pattern']
         time_format = pspec.get( 'time_format', None )
-        source_file_path = dset.encoding["source"]
+        source_file_path = ds.encoding["source"]
         dynamic_metadata = dict( eis_source_path = source_file_path )
         for aId in pspec['dynamic_metadata_ids']:
-            att_val = dset.attrs.get(aId,"")
-            while aId in dset.keys(): aId = f"{aId}_"
+            att_val = str( ds.attrs.get(aId,"") )
+            while aId in ds.keys(): aId = f"{aId}_"
             dynamic_metadata[aId] = att_val
-        ds = dset.assign( dynamic_metadata )
+        ds = ds.assign( dynamic_metadata )
         if merge_dim not in list( ds.coords.keys() ):
             filepath_pattern = eiss.item_path(pattern)
             is_glob = has_char(filepath_pattern, "*?[")
