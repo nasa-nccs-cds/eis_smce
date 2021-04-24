@@ -73,7 +73,7 @@ class EISDataSource( DataSource ):
         source_file_path = ds.encoding["source"]
         dynamic_metadata = dict( eis_source_path = source_file_path )
         for aId in pspec['dynamic_metadata_ids']:
-            att_val = str( ds.attrs.get(aId,"") )
+            att_val = str( ds.attrs.pop(aId,"") )
             while aId in ds.keys(): aId = f"{aId}_"
             dynamic_metadata[aId] = att_val
         ds = ds.assign( dynamic_metadata )
@@ -99,6 +99,7 @@ class EISDataSource( DataSource ):
                 if merge_dim not in list( xv.coords.keys() ):
                     xv = xv.expand_dims(dim=merge_dim, axis=0)
                 vlist[vid] = xv
+
             return xa.Dataset( vlist, ds.coords, ds.attrs )
 
     def read( self, **kwargs ) -> xa.Dataset:
