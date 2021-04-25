@@ -17,7 +17,7 @@ if __name__ == '__main__':
     dset: xa.Dataset = zc().get_input( input, merge_dim="time" )
 
     time = dset['time'].values
-    path = dset['eis_source_path'].values
+    path = dset['_eis_source_path'].values
     for idx in range(time.size):
        print( f"{time[idx]}: {path[idx]}")
 

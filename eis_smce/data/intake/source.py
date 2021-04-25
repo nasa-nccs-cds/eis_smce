@@ -178,7 +178,7 @@ class EISDataSource( DataSource ):
             from eis_smce.data.storage.s3 import s3m
             from eis_smce.data.common.cluster import dcm
             mds: xa.Dataset = self.create_storage_item( path, **kwargs )
-            input_files = mds['eis_source_path'].values
+            input_files = mds['_eis_source_path'].values
             mds.close()
             client: Client = dcm().client
 
