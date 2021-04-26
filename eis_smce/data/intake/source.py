@@ -73,8 +73,9 @@ class EISDataSource( DataSource ):
         source_file_path = ds.encoding["source"]
         dynamic_metadata = dict( _eis_source_path = source_file_path )
         for aId in pspec['dynamic_metadata_ids']:
-            att_val = ds.attrs.pop(aId,'')
-            dynamic_metadata[f"_{aId}"] = att_val
+            att_val = ds.attrs.pop(aId,None)
+            if att_val is not None:
+                dynamic_metadata[f"_{aId}"] = att_val
         ds = ds.assign( dynamic_metadata )
         if merge_dim not in list( ds.coords.keys() ):
             filepath_pattern = eiss.item_path(pattern)
