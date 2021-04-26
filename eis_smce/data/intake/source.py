@@ -245,9 +245,8 @@ class EISDataSource( DataSource ):
             ds0 =  self._get_partition( 0 )
             ds1 =  self._get_partition( -1 )
             for k,v in ds0.attrs.items():
-                v1 = ds1.attrs.get( k, None )
-                if (v1 is None) or ( v1 != ds0.attrs[k] ):  self.dynamic_metadata_ids.append( k )
-                else:                                       dsmeta[k] = v
+                if self.equal_attr( ds0.attrs[k], ds1.attrs.get( k, None ) ):    dsmeta[k] = v
+                else:                                                            self.dynamic_metadata_ids.append( k )
             metadata = {
                 'dims': dict(ds0.dims),
                 'data_vars': {k: list(ds0[k].coords) for k in ds0.data_vars.keys()},
@@ -257,6 +256,11 @@ class EISDataSource( DataSource ):
             self._schema = Schema(datashape=None, dtype=None, shape=None, npartitions=self.nchunks, extra_metadata=metadata)
         return self._schema
 
+    def equal_attr(self, v0, v1 ) -> bool:
+        if v1 is None: return False
+        if type(v0) is np.ndarray:    return np.array_equal( v0, v1 )
+        if type(v0) is xa.DataArray:  return v0.equals( v1 )
+        return v0 == v1
 
     def close(self):
         """Delete open file from memory"""
