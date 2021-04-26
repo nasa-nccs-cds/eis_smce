@@ -18,7 +18,7 @@ for k,v in zds.attrs.items():
 
 print( f"\nzds:"  )
 print( zds )
-print( f"\nzds['history'] = {zds['history'].values}" )
+print( f"\nzds['history'] = {zds['_history'].values}" )
 
 test_array: xa.DataArray = zds[vname]
 print( f"\n{vname} shape: {test_array.shape}"  )
