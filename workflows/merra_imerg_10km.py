@@ -4,7 +4,7 @@ from eis_smce.data.common.base import eisc
 from eis_smce.data.conversion.zarr import zc
 from eis_smce.data.common.cluster import dcm
 
-test_run = True
+test_run = False
 input_dir = "/discover/nobackup/projects/eis_freshwater/swang9/OL_10km/OUTPUT.1980.imerg.fixed"
 bucket = "eis-dh-hydro"
 month = "199312" if test_run else  "*"
