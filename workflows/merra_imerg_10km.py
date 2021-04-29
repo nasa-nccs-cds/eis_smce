@@ -20,5 +20,5 @@ dsets = [
 
 if __name__ == '__main__':
 
-    dcm().init_cluster( )
+    dcm().init_cluster( processes=False )
     zc().standard_conversions( dsets )
