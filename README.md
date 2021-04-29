@@ -51,7 +51,7 @@ Discover Notes
 >> module load aws
 >> cd /discover/nobackup/tpmaxwel/eis_smce
 >> source ./config/mfa.sh
->> aws s3 mv /discover/nobackup/tpmaxwel/cache/eis.freshwater.swang9/output/SURFACEMODEL/LIS_HIST.d01.zarr s3://freshwater.swang.2013/SURFACEMODEL/LIS_HIST.d01.zarr --acl bucket-owner-full-control --recursive
+>> aws s3 mv  /gpfsm/dnb43/projects/p151/zarr/LIS/OL_1km/SURFACEMODEL/LIS_HIST.d01.zarr  s3://eis-dh-hydro/LIS/OL_1km/SURFACEMODEL/LIS_HIST.d01.zarr --acl bucket-owner-full-control --recursive
 
 
 
