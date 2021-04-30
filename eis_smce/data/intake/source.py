@@ -1,5 +1,5 @@
 from intake.source.base import DataSource, Schema
-import collections, json, shutil
+import collections, json, shutil, math
 import traitlets.config as tlc, random, string
 from datetime import datetime
 from intake.source.utils import reverse_format
@@ -32,6 +32,7 @@ class EISDataSource( DataSource ):
         self._ds: xa.Dataset = None
         self.nchunks = -1
         self.pspec = None
+        self.batch_size = kwargs.get( 'batch_size', 1000 )
         self.dynamic_metadata_ids = []
 
     def _open_partition(self, ipart: int) -> xa.Dataset:
@@ -44,8 +45,10 @@ class EISDataSource( DataSource ):
         rfile_path = self._file_list[ipart].get("resolved")
         return self.get_downloaded_filepath( rfile_path )
 
-    def get_file_list(self) -> List[str]:
-        return [self.get_file_path(ip) for ip in range(self.nchunks)]
+    def get_file_list( self, **kwargs ) -> List[str]:
+        ibatch = kwargs.get( 'ibatch', -1 )
+        (istart,istop)  = (0,self.nchunks) if (ibatch < 0) else (self.batch_size*ibatch,self.batch_size*(ibatch+1))
+        return [self.get_file_path(ip) for ip in range(istart,istop)]
 
     def get_file_index_map(self) -> Dict[str, int ]:
         return { self.get_file_path(ip): ip for ip in range(self.nchunks) }
@@ -105,7 +108,7 @@ class EISDataSource( DataSource ):
     def read( self, **kwargs ) -> xa.Dataset:
         self._load_metadata()
         merge_dim = kwargs.get( 'merge_dim', self.default_merge_dim )
-        file_list = self.get_file_list()
+        file_list = self.get_file_list(**kwargs)
         t0 = time.time()
         self.logger.info( f"Reading merged dataset from {len(file_list)} files, merge_dim = {merge_dim}")
         self.pspec = dict( files=file_list, pattern=self.urlpath, merge_dim=merge_dim, dynamic_metadata_ids = self.dynamic_metadata_ids, **kwargs )
@@ -136,11 +139,15 @@ class EISDataSource( DataSource ):
         return store
 
     def create_storage_item(self, path: str, **kwargs ) -> xa.Dataset:
-        store = self.get_store(path, True)
-        mds: xa.Dataset = self.to_dask(**kwargs)
-        for aId in self.dynamic_metadata_ids: mds.attrs.pop(aId,"")
+        init = ( kwargs.get( 'ibatch', 0 ) == 0 )
+        store = self.get_store( path, True )
+        mds: xa.Dataset = self.to_dask( **kwargs )
+        for aId in self.dynamic_metadata_ids: mds.attrs.pop( aId, "" )
         self.logger.info( f" merged_dset -> zarr: {store}\n   -------------------- Merged dataset: -------------------- \n{mds}\n")
-        mds.to_zarr(store, mode="w", compute=False, consolidated=True)
+        zargs = dict( compute=False, consolidated=True )
+        if init: zargs['mode'] = 'w'
+        else:    zargs['append_dim'] = kwargs.get( 'merge_dim', EISDataSource.default_merge_dim )
+        mds.to_zarr( store, **zargs )
         return mds
 
     # def export(self, path: str, **kwargs ) -> EISZarrSource:
@@ -178,16 +185,18 @@ class EISDataSource( DataSource ):
         try:
             from eis_smce.data.storage.s3 import s3m
             from eis_smce.data.common.cluster import dcm
-            mds: xa.Dataset = self.create_storage_item( path, **kwargs )
-            input_files = mds['_eis_source_path'].values
-            mds.close()
             client: Client = dcm().client
+            num_batches = math.ceil( self.nchunks/self.batch_size )
 
-            tasks = []
-            self.logger.info( f"Exporting paritions to: {path}, vars = {list(mds.keys())}" )
-            for ic in range(0, self.nchunks):
-                tasks.append( dask.delayed( EISDataSource._export_partition_parallel )( input_files[ic], path, ic, self.pspec ) )
-            client.compute( tasks, sync=True )
+            for ib in range( 0, num_batches ):
+                mds: xa.Dataset = self.create_storage_item( path, ibatch=ib, **kwargs )
+                input_files = mds['_eis_source_path'].values
+                mds.close()
+                tasks, nfiles = [], len(input_files)
+                self.logger.info( f"Exporting batch {ib} with {nfiles} files to: {path}, vars = {list(mds.keys())}" )
+                for ic in range( nfiles ):
+                    tasks.append( dask.delayed( EISDataSource._export_partition_parallel )( input_files[ic], path, ic, self.pspec ) )
+                client.compute( tasks, sync=True )
 
         except Exception  as err:
             self.logger.error(f"Exception in export: {err}")
