@@ -33,6 +33,7 @@ class EISDataSource( DataSource ):
         self.nchunks = -1
         self.pspec = None
         self.batch_size = kwargs.get( 'batch_size', 1000 )
+        self.chunks_per_task = kwargs.get( 'chunks_per_task', 10 )
         self.dynamic_metadata_ids = []
 
     def _open_partition(self, ipart: int) -> xa.Dataset:
@@ -111,8 +112,10 @@ class EISDataSource( DataSource ):
         file_list = self.get_file_list(**kwargs)
         t0 = time.time()
         self.logger.info( f"Reading merged dataset from {len(file_list)} files, merge_dim = {merge_dim}")
-        self.pspec = dict( files=file_list, pattern=self.urlpath, merge_dim=merge_dim, dynamic_metadata_ids = self.dynamic_metadata_ids, **kwargs )
-        rv: xa.Dataset = xa.open_mfdataset( file_list, concat_dim=merge_dim, coords="minimal", data_vars="all", preprocess=partial( self.preprocess, self.pspec ), parallel = True )
+        self.pspec = dict( files=file_list, pattern=self.urlpath, merge_dim=merge_dim,  chunks_per_task = self.chunks_per_task,
+                           dynamic_metadata_ids = self.dynamic_metadata_ids, **kwargs )
+        rv: xa.Dataset = xa.open_mfdataset( file_list, concat_dim=merge_dim, coords="minimal", data_vars="all",
+                                            preprocess=partial( self.preprocess, self.pspec ), parallel = True )
         self.logger.info( f"Completed merge in {time.time()-t0} secs" )
         return rv
 
@@ -188,18 +191,19 @@ class EISDataSource( DataSource ):
             from eis_smce.data.storage.s3 import s3m
             from eis_smce.data.common.cluster import dcm
             self._load_metadata()
-            client: Client = dcm().client
             num_batches = math.ceil( self.nchunks/self.batch_size )
             print(f" ** Processing {self.nchunks} chunks in {num_batches} batches (batch_size = {self.batch_size}) ")
 
             for ib in range( 0, num_batches ):
+                t0 = time.time()
+                dcm().init_cluster( **kwargs.get( 'cluster_args', {} ) )
                 input_files =self.create_storage_item( path, ibatch=ib, **kwargs )
-                tasks, nfiles, t0 = [], len(input_files), time.time()
+                tasks, nfiles, t1 = [], len(input_files), time.time()
                 self.logger.info( f"Exporting batch {ib} with {nfiles} files to: {path}" )
-                for ic in range( nfiles ):
+                for ic in range( 0, nfiles, self.chunks_per_task ):
                     tasks.append( dask.delayed( EISDataSource._export_partition_parallel )( input_files[ic], path, ic, self.pspec ) )
-                client.compute( tasks, sync=True )
-                print( f"Completed processing batch {ib} ({nfiles} files) in {time.time()-t0} sec.")
+                dcm().client.compute( tasks, sync=True )
+                print( f"Completed processing batch {ib} ({nfiles} files) in {time.time()-t0} (init: {t1-t0}) sec.")
 
         except Exception  as err:
             self.logger.error(f"Exception in export: {err}")
@@ -219,10 +223,11 @@ class EISDataSource( DataSource ):
         t0 = time.time()
         store = EISDataSource.get_cache_path( output_path )
         merge_dim = pspec.get( 'merge_dim', EISDataSource.default_merge_dim )
-        region = { merge_dim: slice(chunk_index, chunk_index + 1) }
-        dset = EISDataSource.preprocess( pspec, xa.open_dataset( input_path ) )
+        ds0 = xa.open_dataset( input_path )
+        region = { merge_dim: slice( chunk_index, chunk_index + ds0.sizes[merge_dim] ) }
+        dset = EISDataSource.preprocess( pspec, ds0 )
         dset.to_zarr( store, mode='a', region=region )
-        dset.close(); del dset
+        ds0.close(); del ds0; dset.close(); del dset
         logger.info( f"Finished generating zarr chunk in {time.time()-t0} secs: {output_path}")
 
     def get_zarr_source(self, zpath: str ):
