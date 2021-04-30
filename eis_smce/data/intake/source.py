@@ -188,17 +188,18 @@ class EISDataSource( DataSource ):
             self._load_metadata()
             client: Client = dcm().client
             num_batches = math.ceil( self.nchunks/self.batch_size )
-            print(f" ** Processing {self.nchunks} chunks with {num_batches} batches (batch_size = {self.batch_size}) ")
+            print(f" ** Processing {self.nchunks} chunks in {num_batches} batches (batch_size = {self.batch_size}) ")
 
             for ib in range( 0, num_batches ):
                 mds: xa.Dataset = self.create_storage_item( path, ibatch=ib, **kwargs )
                 input_files = mds['_eis_source_path'].values
                 mds.close()
-                tasks, nfiles = [], len(input_files)
+                tasks, nfiles, t0 = [], len(input_files), time.time()
                 self.logger.info( f"Exporting batch {ib} with {nfiles} files to: {path}, vars = {list(mds.keys())}" )
                 for ic in range( nfiles ):
                     tasks.append( dask.delayed( EISDataSource._export_partition_parallel )( input_files[ic], path, ic, self.pspec ) )
                 client.compute( tasks, sync=True )
+                print( f"Completed processing batch {ib} ({nfiles} files) in {time.time()-t0} sec.")
 
         except Exception  as err:
             self.logger.error(f"Exception in export: {err}")
