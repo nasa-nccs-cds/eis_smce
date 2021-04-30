@@ -185,6 +185,7 @@ class EISDataSource( DataSource ):
         try:
             from eis_smce.data.storage.s3 import s3m
             from eis_smce.data.common.cluster import dcm
+            self._load_metadata()
             client: Client = dcm().client
             num_batches = math.ceil( self.nchunks/self.batch_size )
             print(f" ** Processing {self.nchunks} chunks with {num_batches} batches (batch_size = {self.batch_size}) ")
