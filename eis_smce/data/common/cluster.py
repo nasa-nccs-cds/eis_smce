@@ -15,6 +15,8 @@ class DaskClusterManager(EISSingleton):
 
     def init_cluster( self, **kwargs ) -> Client:
         if self._cluster is None or kwargs.get('refresh',False):
+            logger = logging.getLogger( "distributed.utils_perf" )
+            logger.setLevel( logging.ERROR )
             self._cluster = LocalCluster( **kwargs )
             self._client = Client( self._cluster )
         return self._client
