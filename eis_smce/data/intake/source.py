@@ -202,7 +202,7 @@ class EISDataSource( DataSource ):
                 for ic in range( nfiles ):
                     tasks.append( dask.delayed( EISDataSource._export_partition_parallel )( input_files[ic], path, ic, self.pspec ) )
                 dcm().client.compute( tasks, sync=True )
-                print( f"Completed processing batch {ib} ({nfiles} files) in {time.time()-t0:%.1} (init: {t1-t0:%.1f},{t2-t1:%.1}) sec.")
+                print( f"Completed processing batch {ib} ({nfiles} files) in {time.time()-t0:.1f} (init: {t1-t0:.1f},{t2-t1:.1f}) sec.")
 
         except Exception  as err:
             self.logger.error(f"Exception in export: {err}")
