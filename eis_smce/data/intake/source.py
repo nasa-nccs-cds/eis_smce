@@ -138,7 +138,7 @@ class EISDataSource( DataSource ):
         store = EISDataSource.get_cache_path(path) if use_cache else s3m().get_store(path,clear)
         return store
 
-    def create_storage_item(self, path: str, **kwargs ) -> xa.Dataset:
+    def create_storage_item(self, path: str, **kwargs ) -> List[str]:
         init = ( kwargs.get( 'ibatch', 0 ) == 0 )
         store = self.get_store( path, True )
         mds: xa.Dataset = self.to_dask( **kwargs )
@@ -148,7 +148,9 @@ class EISDataSource( DataSource ):
         if init: zargs['mode'] = 'w'
         else:    zargs['append_dim'] = kwargs.get( 'merge_dim', EISDataSource.default_merge_dim )
         mds.to_zarr( store, **zargs )
-        return mds
+        input_files = mds['_eis_source_path'].values.tolist()
+        mds.close(); del mds
+        return input_files
 
     # def export(self, path: str, **kwargs ) -> EISZarrSource:
     #     try:
@@ -191,11 +193,9 @@ class EISDataSource( DataSource ):
             print(f" ** Processing {self.nchunks} chunks in {num_batches} batches (batch_size = {self.batch_size}) ")
 
             for ib in range( 0, num_batches ):
-                mds: xa.Dataset = self.create_storage_item( path, ibatch=ib, **kwargs )
-                input_files = mds['_eis_source_path'].values
-                mds.close()
+                input_files =self.create_storage_item( path, ibatch=ib, **kwargs )
                 tasks, nfiles, t0 = [], len(input_files), time.time()
-                self.logger.info( f"Exporting batch {ib} with {nfiles} files to: {path}, vars = {list(mds.keys())}" )
+                self.logger.info( f"Exporting batch {ib} with {nfiles} files to: {path}" )
                 for ic in range( nfiles ):
                     tasks.append( dask.delayed( EISDataSource._export_partition_parallel )( input_files[ic], path, ic, self.pspec ) )
                 client.compute( tasks, sync=True )
@@ -222,7 +222,7 @@ class EISDataSource( DataSource ):
         region = { merge_dim: slice(chunk_index, chunk_index + 1) }
         dset = EISDataSource.preprocess( pspec, xa.open_dataset( input_path ) )
         dset.to_zarr( store, mode='a', region=region )
-        dset.close()
+        dset.close(); del dset
         logger.info( f"Finished generating zarr chunk in {time.time()-t0} secs: {output_path}")
 
     def get_zarr_source(self, zpath: str ):
