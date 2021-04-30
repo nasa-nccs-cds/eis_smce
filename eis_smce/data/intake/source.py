@@ -95,7 +95,7 @@ class EISDataSource( DataSource ):
                     merge_coord = np.array( [merge_coord_val] )
             else:
                 merge_coord = np.array(  pspec['files'].index( source_file_path ) )
-            return ds.expand_dims( dim={ merge_dim: merge_coord }, axis=0 )
+            ds.expand_dims( dim={ merge_dim: merge_coord }, axis=0 )
         else:
             vlist = {}
             for vid, xv in ds.items():
