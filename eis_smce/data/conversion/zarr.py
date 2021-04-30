@@ -20,7 +20,7 @@ class ZarrConverter(EISSingleton):
             h4s: EISDataSource = intake.open_hdf4( input )
             self.nchunks = h4s.nchunks
             h4s.export_parallel( output, **kwargs )
-            print( f"Completed conversion & upload to {output} in {(time.time()-self.start_time)/60} minutes" )
+            print( f"Completed conversion to {output} in {(time.time()-self.start_time)/60} minutes" )
         except Exception as err:
             self.logger.error( f"Error in ZarrConverter.standard_conversion: {err}")
             self.logger.error(f"{traceback.format_exc()}")

@@ -187,6 +187,7 @@ class EISDataSource( DataSource ):
             from eis_smce.data.common.cluster import dcm
             client: Client = dcm().client
             num_batches = math.ceil( self.nchunks/self.batch_size )
+            print(f" ** Processing {self.nchunks} chunks with {num_batches} batches (batch_size = {self.batch_size}) ")
 
             for ib in range( 0, num_batches ):
                 mds: xa.Dataset = self.create_storage_item( path, ibatch=ib, **kwargs )
