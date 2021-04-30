@@ -33,7 +33,6 @@ class EISDataSource( DataSource ):
         self.nchunks = -1
         self.pspec = None
         self.batch_size = kwargs.get( 'batch_size', 1000 )
-        self.chunks_per_task = kwargs.get( 'chunks_per_task', 10 )
         self.dynamic_metadata_ids = []
 
     def _open_partition(self, ipart: int) -> xa.Dataset:
@@ -112,8 +111,7 @@ class EISDataSource( DataSource ):
         file_list = self.get_file_list(**kwargs)
         t0 = time.time()
         self.logger.info( f"Reading merged dataset from {len(file_list)} files, merge_dim = {merge_dim}")
-        self.pspec = dict( files=file_list, pattern=self.urlpath, merge_dim=merge_dim,  chunks_per_task = self.chunks_per_task,
-                           dynamic_metadata_ids = self.dynamic_metadata_ids, **kwargs )
+        self.pspec = dict( files=file_list, pattern=self.urlpath, merge_dim=merge_dim, dynamic_metadata_ids = self.dynamic_metadata_ids, **kwargs )
         rv: xa.Dataset = xa.open_mfdataset( file_list, concat_dim=merge_dim, coords="minimal", data_vars="all",
                                             preprocess=partial( self.preprocess, self.pspec ), parallel = True )
         self.logger.info( f"Completed merge in {time.time()-t0} secs" )
@@ -197,13 +195,14 @@ class EISDataSource( DataSource ):
             for ib in range( 0, num_batches ):
                 t0 = time.time()
                 dcm().init_cluster( **kwargs.get( 'cluster_args', {} ) )
+                t1 = time.time()
                 input_files =self.create_storage_item( path, ibatch=ib, **kwargs )
-                tasks, nfiles, t1 = [], len(input_files), time.time()
+                tasks, nfiles, t2 = [], len(input_files), time.time()
                 self.logger.info( f"Exporting batch {ib} with {nfiles} files to: {path}" )
-                for ic in range( 0, nfiles, self.chunks_per_task ):
+                for ic in range( nfiles ):
                     tasks.append( dask.delayed( EISDataSource._export_partition_parallel )( input_files[ic], path, ic, self.pspec ) )
                 dcm().client.compute( tasks, sync=True )
-                print( f"Completed processing batch {ib} ({nfiles} files) in {time.time()-t0} (init: {t1-t0}) sec.")
+                print( f"Completed processing batch {ib} ({nfiles} files) in {time.time()-t0:%.1f} (init: {t1-t0:%.1f},{t2-t1:%.1f}) sec.")
 
         except Exception  as err:
             self.logger.error(f"Exception in export: {err}")
