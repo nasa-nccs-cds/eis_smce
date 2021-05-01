@@ -31,7 +31,6 @@ dsets = [
 
 if __name__ == '__main__':
 
-    dcm().init_cluster( )
     zc().standard_conversions( dsets )
 
 
