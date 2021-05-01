@@ -23,7 +23,7 @@ class FileSortKey(Enum):
         if self == self.filename:   return self.filename_key
         if self == self.pattern:    return self.pattern_key
         if self == self.coordinate: return self.coordinate_key
-        raise Exception( f"Unknown sort_key_method: {self.value}" )
+        raise Exception( f"Unknown sort_key_method: {self} vs {self.filename}" )
 
     @staticmethod
     def filename_key( collection_specs: Dict, file_specs: Dict ):
