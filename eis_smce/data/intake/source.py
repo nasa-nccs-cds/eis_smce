@@ -106,12 +106,13 @@ class EISDataSource( DataSource ):
             return xa.Dataset( vlist, ds.coords, ds.attrs )
 
     def read( self, **kwargs ) -> xa.Dataset:
-        self._load_metadata()
         merge_dim = kwargs.get( 'merge_dim', self.default_merge_dim )
+        self.pspec = dict(  pattern=self.urlpath, merge_dim=merge_dim, dynamic_metadata_ids = self.dynamic_metadata_ids, **kwargs )
+        self._load_metadata()
         file_list = self.get_file_list(**kwargs)
         t0 = time.time()
         self.logger.info( f"Reading merged dataset from {len(file_list)} files, merge_dim = {merge_dim}")
-        self.pspec = dict( files=file_list, pattern=self.urlpath, merge_dim=merge_dim, dynamic_metadata_ids = self.dynamic_metadata_ids, **kwargs )
+        self.pspec['files'] = file_list
         rv: xa.Dataset = xa.open_mfdataset( file_list, concat_dim=merge_dim, coords="minimal", data_vars="all",
                                             preprocess=partial( self.preprocess, self.pspec ), parallel = True )
         self.logger.info( f"Completed merge in {time.time()-t0} secs" )
@@ -254,7 +255,7 @@ class EISDataSource( DataSource ):
                 self._file_list = s3m().get_file_list( self.urlpath )
             else:
                 from eis_smce.data.storage.local import lfm
-                self._file_list = lfm().get_file_list( self.urlpath )
+                self._file_list = lfm().get_file_list( self.urlpath, self.pspec )
             self.nchunks = len(self._file_list)
             self.logger.info( f"Created file list from {self.urlpath} with {self.nchunks} parts")
             dsmeta = {}
