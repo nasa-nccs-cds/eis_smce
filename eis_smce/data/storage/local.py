@@ -20,9 +20,9 @@ class FileSortKey(Enum):
 
     @property
     def sort_key_method( self ):
-        if self.value == self.filename:   return self.filename_key
-        if self.value == self.pattern:    return self.pattern_key
-        if self.value == self.coordinate: return self.coordinate_key
+        if self == self.filename:   return self.filename_key
+        if self == self.pattern:    return self.pattern_key
+        if self == self.coordinate: return self.coordinate_key
         raise Exception( f"Unknown sort_key_method: {self.value}" )
 
     @staticmethod
