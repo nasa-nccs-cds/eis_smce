@@ -73,5 +73,5 @@ class LocalFileManager(EISSingleton ):
                 self.logger.error( f" Metadata processing error: {err}, Did you mix glob and pattern in file name?")
         files_list.sort( key=self.sort_key )
         for fi in range( 100 ):
-            print( files_list[ fi ] )
+            self.logger.info( files_list[ fi ]['resolved'] )
         return files_list
