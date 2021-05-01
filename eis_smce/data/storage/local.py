@@ -57,7 +57,7 @@ class LocalFileManager(EISSingleton ):
         filepath_pattern = self._parse_urlpath( urlpath )
         filepath_glob = path_to_glob( filepath_pattern )
         input_files = glob.glob(filepath_glob)
-        file_sort = FileSortKey[ collection_specs.get('sort', 'name') ]
+        file_sort = FileSortKey[ collection_specs.get('sort', 'filename') ]
         is_glob = has_char( filepath_pattern, "*?[" )
         files_list = []
         self.logger.info(f" Processing {len(input_files)} input files from glob '{filepath_glob}'")
@@ -71,4 +71,6 @@ class LocalFileManager(EISSingleton ):
             except ValueError as err:
                 self.logger.error( f" Metadata processing error: {err}, Did you mix glob and pattern in file name?")
         files_list.sort( key=self.sort_key )
+        for fi in range( 100 ):
+            print( files_list[ fi ] )
         return files_list
