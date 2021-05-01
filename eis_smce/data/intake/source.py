@@ -189,11 +189,8 @@ class EISDataSource( DataSource ):
         try:
             from eis_smce.data.storage.s3 import s3m
             from eis_smce.data.common.cluster import dcm
-            self._load_metadata()
-            num_batches = math.ceil( self.nchunks/self.batch_size )
-            print(f" ** Processing {self.nchunks} chunks in {num_batches} batches (batch_size = {self.batch_size}) ")
-
-            for ib in range( 0, num_batches ):
+            ib = 0
+            while True:
                 t0 = time.time()
                 dcm().init_cluster( **kwargs.get( 'cluster_args', {} ) )
                 t1 = time.time()
@@ -204,6 +201,8 @@ class EISDataSource( DataSource ):
                     tasks.append( dask.delayed( EISDataSource._export_partition_parallel )( input_files[ic], path, ic, self.pspec ) )
                 dcm().client.compute( tasks, sync=True )
                 print( f"Completed processing batch {ib} ({nfiles} files) in {time.time()-t0:.1f} (init: {t1-t0:.1f},{t2-t1:.1f}) sec.")
+                ib = ib + 1
+                if ib*self.batch_size >= self.nchunks: break
 
         except Exception  as err:
             self.logger.error(f"Exception in export: {err}")
