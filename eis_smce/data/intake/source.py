@@ -1,6 +1,7 @@
 from intake.source.base import DataSource, Schema
 import collections, json, shutil, math
 import traitlets.config as tlc, random, string
+from eis_smce.data.common.cluster import dcm, cim
 from datetime import datetime
 from intake.source.utils import reverse_format
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable, MutableMapping
@@ -220,14 +221,17 @@ class EISDataSource( DataSource ):
     #     dset = mds[region]
     #     return dset.to_zarr( store, mode='a', region=region )
 
-    @staticmethod
-    def _export_partition_parallel(  input_path: str, output_path:str, chunk_index: int,  pspec: Dict ):
+    @classmethod
+    def _export_partition_parallel( cls, input_path: str, output_path:str, chunk_index: int,  pspec: Dict ):
         logger = logging.getLogger('eis_smce.intake')
         t0 = time.time()
         store = EISDataSource.get_cache_path( output_path )
         merge_dim = pspec.get( 'merge_dim', EISDataSource.default_merge_dim )
         ds0 = xa.open_dataset( input_path )
         ds0.compute()
+        if not cim().test_equal( "_ndatavars_", len( ds0.data_vars ) ):
+            eisc().logger.info( f"File {input_path} in non-compliant: {ds0}")
+            raise Exception( f"File {input_path} has unexpected number of data variables: {len( ds0.data_vars )}")
         t1 = time.time()
         region = { merge_dim: slice( chunk_index, chunk_index + ds0.sizes[merge_dim] ) }
         dset = EISDataSource.preprocess( pspec, ds0 )
@@ -236,7 +240,8 @@ class EISDataSource( DataSource ):
         dset.to_zarr( store, mode='a', region=region )
         ds0.close(); del ds0; dset.close(); del dset
         t3 = time.time()
-        logger.info( f"Finished generating zarr chunk {output_path}: open & read: {t1-t0}, preprocess: {t2-t1}, write & close: {t3-t2}")
+        cim().set( 'tRead', t1-t0 ), cim().set( 'tPrep', t2-t1 ), cim().set( 'tWrite', t3-t2 )
+        logger.info( f"Finished generating zarr chunk {output_path}: read avet: {cim().ave('tRead')}, preprocess avet: {cim().ave('tPrep')}, write avet: {cim().ave('tWrite')}")
 
     def get_zarr_source(self, zpath: str ):
         zsrc = EISZarrSource(zpath)
