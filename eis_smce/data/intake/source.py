@@ -227,11 +227,16 @@ class EISDataSource( DataSource ):
         store = EISDataSource.get_cache_path( output_path )
         merge_dim = pspec.get( 'merge_dim', EISDataSource.default_merge_dim )
         ds0 = xa.open_dataset( input_path )
+        ds0.compute()
+        t1 = time.time()
         region = { merge_dim: slice( chunk_index, chunk_index + ds0.sizes[merge_dim] ) }
         dset = EISDataSource.preprocess( pspec, ds0 )
+        dset.compute()
+        t2 = time.time()
         dset.to_zarr( store, mode='a', region=region )
         ds0.close(); del ds0; dset.close(); del dset
-        logger.info( f"Finished generating zarr chunk in {time.time()-t0} secs: {output_path}")
+        t3 = time.time()
+        logger.info( f"Finished generating zarr chunk {output_path}: open & read: {t1-t0}, preprocess: {t2-t1}, write & close: {t3-t2}")
 
     def get_zarr_source(self, zpath: str ):
         zsrc = EISZarrSource(zpath)
