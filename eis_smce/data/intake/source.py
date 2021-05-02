@@ -1,5 +1,6 @@
 from intake.source.base import DataSource, Schema
 import collections, json, shutil, math
+from dask.diagnostics import ProgressBar, Profiler, ResourceProfiler, CacheProfiler
 import traitlets.config as tlc, random, string
 from eis_smce.data.common.cluster import dcm, cim
 from datetime import datetime
@@ -27,11 +28,10 @@ class EISDataSource( DataSource ):
     def __init__(self, **kwargs ):
         super(EISDataSource, self).__init__( **kwargs )
         self.logger = eisc().logger
-        self._file_list: List[ Dict[str,str] ] = None
+        self._file_list_map: Dict[str,List[Dict[str,str]]] = None
         self._parts: Dict[int,xa.Dataset] = {}
         self._schema: Schema = None
         self._ds: xa.Dataset = None
-        self.nchunks = -1
         self.pspec = None
         self.batch_size = kwargs.get( 'batch_size', 1000 )
         self.dynamic_metadata_ids = []
@@ -42,17 +42,13 @@ class EISDataSource( DataSource ):
     def _get_partition(self, ipart: int ) -> xa.Dataset:
         return self._open_partition(ipart)
 
-    def get_file_path(self, ipart: int ) -> str:
-        rfile_path = self._file_list[ipart].get("resolved")
-        return self.get_downloaded_filepath( rfile_path )
-
     def get_file_list( self, **kwargs ) -> List[str]:
         ibatch = kwargs.get( 'ibatch', -1 )
-        (istart,istop)  = (0,self.nchunks) if (ibatch < 0) else (self.batch_size*ibatch,self.batch_size*(ibatch+1))
-        return [self.get_file_path(ip) for ip in range(istart,istop)]
-
-    def get_file_index_map(self) -> Dict[str, int ]:
-        return { self.get_file_path(ip): ip for ip in range(self.nchunks) }
+        key = kwargs.get( 'key', None )
+        files_list = self._file_list_map[key]
+        nchunks = len( files_list )
+        (istart,istop)  = (0,nchunks) if (ibatch < 0) else (self.batch_size*ibatch,self.batch_size*(ibatch+1))
+        return [ files_list[ip].get("resolved") for ip in range(istart,istop) ]
 
     def get_local_file_path(self, data_url: str):
         if data_url.startswith("s3"):
@@ -196,20 +192,21 @@ class EISDataSource( DataSource ):
         try:
             from eis_smce.data.storage.s3 import s3m
             from eis_smce.data.common.cluster import dcm
-            ib = 0
-            while True:
-                t0 = time.time()
-                dcm().init_cluster( **kwargs.get( 'cluster_args', {} ) )
-                t1 = time.time()
-                input_files =self.create_storage_item( path, ibatch=ib, **kwargs )
-                tasks, nfiles, t2 = [], len(input_files), time.time()
-                self.logger.info( f"Exporting batch {ib} with {nfiles} files to: {path}" )
-                for ic in range( nfiles ):
-                    tasks.append( dask.delayed( EISDataSource._export_partition_parallel )( input_files[ic], path, ic, self.pspec ) )
-                dcm().client.compute( tasks, sync=True )
-                print( f"Completed processing batch {ib} ({nfiles} files) in {time.time()-t0:.1f} (init: {t1-t0:.1f},{t2-t1:.1f}) sec.")
-                ib = ib + 1
-                if ib*self.batch_size >= self.nchunks: break
+            for key in self._file_list_map.keys():
+                ib = 0
+                while True:
+                    t0 = time.time()
+                    input_files =self.create_storage_item( path, ibatch=ib, key=key, **kwargs )
+                    tasks, nfiles, t1 = [], len(input_files), time.time()
+                    self.logger.info( f"Exporting batch {ib} with {nfiles} files to: {path}" )
+                    for ic in range( nfiles ):
+                        tasks.append( dask.delayed( EISDataSource._export_partition_parallel )( input_files[ic], path, ic, self.pspec ) )
+
+                    with ProgressBar(), Profiler() as prof, ResourceProfiler() as rprof, CacheProfiler() as cprof:
+                        dcm().client.compute( tasks, sync=True )
+                    print( f"Completed processing batch {ib} ({nfiles} files) in {time.time()-t0:.1f} (init: {t1-t0:.1f}) sec.")
+                    ib = ib + 1
+                    if ib*self.batch_size >= self.nchunks: break
 
         except Exception  as err:
             self.logger.error(f"Exception in export: {err}")
@@ -240,7 +237,7 @@ class EISDataSource( DataSource ):
         ds0.close(); del ds0; dset.close(); del dset
         t3 = time.time()
         cim().add( 'tRead', t1-t0 ), cim().add( 'tPrep', t2-t1 ), cim().add( 'tWrite', t3-t2 )
-        logger.info( f"Finished generating zarr chunk: read avet: {cim().ave('tRead')}, preprocess avet: {cim().ave('tPrep')}, write avet: {cim().ave('tWrite')}")
+        logger.info( f"Finished generating zarr chunk: read avet: {cim().ave('tRead'):.2f}, preprocess avet: {cim().ave('tPrep'):.2f}, write avet: {cim().ave('tWrite'):.2f}")
 
     def get_zarr_source(self, zpath: str ):
         zsrc = EISZarrSource(zpath)
@@ -262,14 +259,13 @@ class EISDataSource( DataSource ):
     def _get_schema(self):
         self.urlpath = self._get_cache(self.urlpath)[0]
         if self._schema == None:
-            if self.urlpath.startswith( "s3:"):
-                from eis_smce.data.storage.s3 import s3m
-                self._file_list = s3m().get_file_list( self.urlpath )
-            else:
-                from eis_smce.data.storage.local import lfm
-                self._file_list = lfm().get_file_list( self.urlpath, self.pspec )
-            self.nchunks = len(self._file_list)
-            self.logger.info( f"Created file list from {self.urlpath} with {self.nchunks} parts")
+            # if self.urlpath.startswith( "s3:"):
+            #     from eis_smce.data.storage.s3 import s3m
+            #     self._file_list = s3m().get_file_list( self.urlpath )
+            # else:
+            from eis_smce.data.storage.local import lfm
+            self._file_list_map = lfm().get_file_lists(self.urlpath, self.pspec)
+            self.logger.info( f"Created file list from {self.urlpath}")
             dsmeta = {}
             ds0 =  self._get_partition( 0 )
             ds1 =  self._get_partition( -1 )
@@ -293,7 +289,7 @@ class EISDataSource( DataSource ):
 
     def close(self):
         """Delete open file from memory"""
-        self._file_list = None
+        self._file_list_map = None
         self._parts = {}
         self._ds = None
         self._schema = None

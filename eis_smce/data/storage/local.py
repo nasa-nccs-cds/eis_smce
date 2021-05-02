@@ -53,23 +53,31 @@ class LocalFileManager(EISSingleton ):
     def sort_key( item: Dict ):
         return item['sort_key']
 
-    def get_file_list(self, urlpath: str, collection_specs: Dict ) -> List[Dict]:
+    def get_file_lists(self, urlpath: str, collection_specs: Dict) -> Dict[str, List[Dict]]:
         from intake.source.utils import reverse_format
         filepath_pattern = self._parse_urlpath( urlpath )
         filepath_glob = path_to_glob( filepath_pattern )
         input_files = glob.glob(filepath_glob)
         file_sort = FileSortKey[ collection_specs.get('sort', 'filename') ]
         is_glob = has_char( filepath_pattern, "*?[" )
-        files_list = []
+        file_list_map: Dict[str,List[Dict]] = {}
         self.logger.info(f" Processing {len(input_files)} input files from glob '{filepath_glob}'")
         for file_path in input_files:
             try:
+                file_key = self.get_file_key( file_path )
+                files_list = file_list_map.setdefault( file_key, [] )
                 (file_name, file_pattern) = (os.path.basename(file_path) , os.path.basename(filepath_pattern)) if is_glob else (file_path,filepath_pattern)
-                metadata = reverse_format( file_pattern, file_name )
+                metadata: Dict[str,str] = reverse_format( file_pattern, file_name )
                 metadata['resolved'] = file_path
                 metadata['sort_key'] = file_sort.key( collection_specs, metadata )
                 files_list.append(metadata)
             except ValueError as err:
                 self.logger.error( f" Metadata processing error: {err}, Did you mix glob and pattern in file name?")
-        files_list.sort( key=self.sort_key )
-        return files_list
+        for files_list in file_list_map.values(): files_list.sort( key=self.sort_key )
+        return file_list_map
+
+    def get_file_key(self, file_path: str ) -> str:
+        with xa.open_dataset( file_path ) as dset:
+            data_vars: List[str] = [ str(v) for v in dset.data_vars.keys() ]
+            data_vars.sort()
+            return "-".join( data_vars )
