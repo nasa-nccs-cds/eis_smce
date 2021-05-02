@@ -145,7 +145,8 @@ class EISDataSource( DataSource ):
         store = self.get_store( path, True )
         mds: xa.Dataset = self.to_dask( **kwargs )
         for aId in self.dynamic_metadata_ids: mds.attrs.pop( aId, "" )
-        self.logger.info( f" merged_dset -> zarr: {store}\n   -------------------- Merged dataset: -------------------- \n{mds}\n")
+        with xa.set_options( display_max_rows=100 ):
+            self.logger.info( f" merged_dset -> zarr: {store}\n   -------------------- Merged dataset: -------------------- \n{mds}\n")
         zargs = dict( compute=False, consolidated=True )
         if init: zargs['mode'] = 'w'
         else:    zargs['append_dim'] = kwargs.get( 'merge_dim', EISDataSource.default_merge_dim )

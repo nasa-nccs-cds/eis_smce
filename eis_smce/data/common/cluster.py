@@ -17,8 +17,6 @@ class DaskClusterManager(EISSingleton):
         if self._cluster is not None:
             self._cluster.close()
             self._client.close()
-        logger = logging.getLogger( "distributed.utils_perf" )
-        logger.setLevel( logging.ERROR )
         self._cluster = LocalCluster( **kwargs )
         self._client = Client( self._cluster )
         return self._client

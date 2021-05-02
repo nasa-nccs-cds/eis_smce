@@ -1,8 +1,9 @@
-import time
+import time, logging
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 from eis_smce.data.common.base import eisc
 from eis_smce.data.conversion.zarr import zc
-from eis_smce.data.common.cluster import dcm
+logger = logging.getLogger("distributed.utils_perf")
+logger.setLevel(logging.ERROR)
 
 test_run = False
 input_dir = "/discover/nobackup/projects/eis_freshwater/swang9/OL_10km/OUTPUT.1980.imerg.fixed"
