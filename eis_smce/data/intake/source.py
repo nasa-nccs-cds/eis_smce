@@ -95,7 +95,7 @@ class EISDataSource( DataSource ):
                     merge_coord = np.array( [merge_coord_val] )
             else:
                 merge_coord = np.array(  pspec['files'].index( source_file_path ) )
-            ds.expand_dims( dim={ merge_dim: merge_coord }, axis=0 )
+            rds = ds.expand_dims( dim={ merge_dim: merge_coord }, axis=0 )
         else:
             vlist = {}
             for vid, xv in ds.items():
@@ -103,7 +103,8 @@ class EISDataSource( DataSource ):
                     xv = xv.expand_dims(dim=merge_dim, axis=0)
                 vlist[vid] = xv
 
-            return xa.Dataset( vlist, ds.coords, ds.attrs )
+            rds = xa.Dataset( vlist, ds.coords, ds.attrs )
+        return rds
 
     def read( self, **kwargs ) -> xa.Dataset:
         merge_dim = kwargs.get( 'merge_dim', self.default_merge_dim )
@@ -112,6 +113,8 @@ class EISDataSource( DataSource ):
         file_list = self.get_file_list(**kwargs)
         t0 = time.time()
         self.logger.info( f"Reading merged dataset from {len(file_list)} files, merge_dim = {merge_dim}")
+        self.logger.info(f"  * First file = {file_list[0]}")
+        self.logger.info(f"  * Last file = {file_list[-1]}")
         self.pspec['files'] = file_list
         rv: xa.Dataset = xa.open_mfdataset( file_list, concat_dim=merge_dim, coords="minimal", data_vars="all",
                                             preprocess=partial( self.preprocess, self.pspec ), parallel = True )
