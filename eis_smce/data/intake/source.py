@@ -76,6 +76,8 @@ class EISDataSource( DataSource ):
         time_format = pspec.get( 'time_format', None )
         source_file_path = ds.encoding["source"]
         dynamic_metadata = dict( _eis_source_path = source_file_path )
+        if not cim().test_equal( "_ndatavars_", len( ds.data_vars ) ):
+            eisc().logger.error( f"\n\n  @@@@@@@@@@ File {source_file_path} is non-compliant: {ds}\n")
         for aId in pspec['dynamic_metadata_ids']:
             att_val = ds.attrs.pop(aId,None)
             if att_val is not None:
@@ -229,9 +231,6 @@ class EISDataSource( DataSource ):
         merge_dim = pspec.get( 'merge_dim', EISDataSource.default_merge_dim )
         ds0 = xa.open_dataset( input_path )
         ds0.compute()
-        if not cim().test_equal( "_ndatavars_", len( ds0.data_vars ) ):
-            eisc().logger.info( f"File {input_path} in non-compliant: {ds0}")
-            raise Exception( f"File {input_path} has unexpected number of data variables: {len( ds0.data_vars )}")
         t1 = time.time()
         region = { merge_dim: slice( chunk_index, chunk_index + ds0.sizes[merge_dim] ) }
         dset = EISDataSource.preprocess( pspec, ds0 )
@@ -240,8 +239,8 @@ class EISDataSource( DataSource ):
         dset.to_zarr( store, mode='a', region=region )
         ds0.close(); del ds0; dset.close(); del dset
         t3 = time.time()
-        cim().set( 'tRead', t1-t0 ), cim().set( 'tPrep', t2-t1 ), cim().set( 'tWrite', t3-t2 )
-        logger.info( f"Finished generating zarr chunk {output_path}: read avet: {cim().ave('tRead')}, preprocess avet: {cim().ave('tPrep')}, write avet: {cim().ave('tWrite')}")
+        cim().add( 'tRead', t1-t0 ), cim().add( 'tPrep', t2-t1 ), cim().add( 'tWrite', t3-t2 )
+        logger.info( f"Finished generating zarr chunk: read avet: {cim().ave('tRead')}, preprocess avet: {cim().ave('tPrep')}, write avet: {cim().ave('tWrite')}")
 
     def get_zarr_source(self, zpath: str ):
         zsrc = EISZarrSource(zpath)
