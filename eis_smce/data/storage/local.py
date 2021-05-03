@@ -1,7 +1,7 @@
 from eis_smce.data.common.base import EISSingleton
 from enum import Enum
 from intake.source.utils import path_to_glob
-from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
+from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable, Set
 from functools import partial
 import xarray as xa
 import glob, os
@@ -53,6 +53,13 @@ class LocalFileManager(EISSingleton ):
     def sort_key( item: Dict ):
         return item['sort_key']
 
+    def get_file_list_segments(self, files: List[str]):
+        list_segments = {}
+        file_var_sets = [ self.get_file_var_set(f) for f in files ]
+        var_set_intersect = file_var_sets[0].intersection( *file_var_sets )
+        var_set_difference = file_var_sets[0].symmetric_difference( *file_var_sets )
+        if len( var_set_intersect ) > 0: list_segments[var_set_intersect] = files
+
     def get_file_lists(self, urlpath: str, collection_specs: Dict) -> Dict[str, List[Dict]]:
         from intake.source.utils import reverse_format
         filepath_pattern = self._parse_urlpath( urlpath )
@@ -81,3 +88,7 @@ class LocalFileManager(EISSingleton ):
             data_vars: List[str] = [ str(v) for v in dset.data_vars.keys() ]
             data_vars.sort()
             return "-".join( data_vars )
+
+    def get_file_var_set(self, file_path: str) -> Set[str]:
+        with xa.open_dataset(file_path) as dset:
+            return { str(v) for v in dset.data_vars.keys() }
