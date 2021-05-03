@@ -56,9 +56,11 @@ class LocalFileManager(EISSingleton ):
     def get_file_list_segments(self, files: List[str]):
         list_segments = {}
         file_var_sets = [ self.get_file_var_set(f) for f in files ]
-        var_set_intersect = file_var_sets[0].intersection( *file_var_sets )
+        var_set_intersect  = file_var_sets[0].intersection( *file_var_sets )
         var_set_difference = file_var_sets[0].symmetric_difference( *file_var_sets )
         if len( var_set_intersect ) > 0: list_segments[var_set_intersect] = files
+        for var_set in file_var_sets:
+
 
     def get_file_lists(self, urlpath: str, collection_specs: Dict) -> Dict[str, List[Dict]]:
         from intake.source.utils import reverse_format
