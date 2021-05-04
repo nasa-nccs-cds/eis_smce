@@ -12,7 +12,7 @@ class ZarrConverter(EISSingleton):
         super(ZarrConverter, self).__init__()
         self.start_time = None
 
-    def standard_conversion(self, input: str, output: str, **kwargs ) -> EISZarrSource:
+    def standard_conversion(self, input: str, output: str, **kwargs ):
         try:
             self.start_time = time.time()
             h4s: EISDataSource = intake.open_hdf4( input )
@@ -21,6 +21,7 @@ class ZarrConverter(EISSingleton):
         except Exception as err:
             self.logger.error( f"Error in ZarrConverter.standard_conversion: {err}")
             self.logger.error(f"{traceback.format_exc()}")
+            traceback.print_exc()
 
     def get_input(self, input: str, **kwargs ) -> xa.Dataset:
         h4s = intake.open_hdf4(input)

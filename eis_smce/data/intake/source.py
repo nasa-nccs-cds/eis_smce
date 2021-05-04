@@ -107,7 +107,6 @@ class EISDataSource( DataSource ):
     def read( self, **kwargs ) -> xa.Dataset:
         merge_dim = kwargs.get( 'merge_dim', self.default_merge_dim )
         self.pspec = dict(  pattern=self.urlpath, merge_dim=merge_dim, dynamic_metadata_ids = self.dynamic_metadata_ids, **kwargs )
-        self._load_metadata()
         var_list: Set[str] = kwargs.get('vlist', None)
         ibatch = kwargs.get( 'ibatch', -1 )
         file_list = self.get_file_list( var_list, ibatch )
@@ -156,6 +155,7 @@ class EISDataSource( DataSource ):
         try:
             from eis_smce.data.storage.s3 import s3m
             from eis_smce.data.common.cluster import dcm
+            self._load_metadata()
             for vlist in self.segment_manager.get_vlists():
                 ib = 0
                 while True:
