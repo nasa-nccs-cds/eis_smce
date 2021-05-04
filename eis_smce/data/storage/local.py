@@ -1,13 +1,12 @@
-from eis_smce.data.common.base import EISSingleton
+from eis_smce.data.common.base import EISSingleton, eisc
 from enum import Enum
 from intake.source.utils import path_to_glob
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable, Set
-from functools import partial
+import numpy as np
 import xarray as xa
 import glob, os
 from datetime import datetime
 
-def lfm(): return LocalFileManager.instance()
 def has_char(string: str, chars: str): return 1 in [c in string for c in chars]
 
 class FileSortKey(Enum):
@@ -41,10 +40,62 @@ class FileSortKey(Enum):
             merge_dim = collection_specs.get('merge_dim', 'time')
             return  dset[merge_dim].values[0]
 
-class LocalFileManager(EISSingleton ):
+class DatasetSegmentSpec:
 
-    def __init__( self, **kwargs ):
-        EISSingleton.__init__( self, **kwargs )
+    def __init__(self, name: str, file_specs: List[Dict[str, str]], vlist: Set[str] ):
+        self._name = name
+        self._file_specs: List[Dict[str, str]] = file_specs
+        self._vlist: Set[str] = vlist
+
+    def get_file_specs(self) -> List[Dict[str, str]]:
+        return self._file_specs
+
+    def add_file_spec(self, fspec: Dict[str,str]):
+        self._file_specs.append( fspec )
+
+    def sort( self, key ):
+        self._file_specs.sort( key=key )
+
+class SegmentedDatasetManager:
+
+    def __init__(self):
+        self._segment_specs: Dict[ Set[str], DatasetSegmentSpec ] = {}
+        self._dynamic_attributes = set()
+        self._base_metadata: Dict = None
+        self._file_var_sets = []
+        self._input_files = None
+        self._file_specs: Dict[str,Dict[str,str]] = {}
+
+    def equal_attr(self, v0, v1 ) -> bool:
+        if v1 is None: return False
+        if type(v0) is np.ndarray:    return np.array_equal( v0, v1 )
+        if type(v0) is xa.DataArray:  return v0.equals( v1 )
+        return v0 == v1
+
+    def get_vlists(self) -> List[Set[str]]:
+        return self._file_var_sets
+
+    def get_file_specs(self, vlist: Set[str] ) -> List[Dict[str,str]]:
+        return self._segment_specs[vlist].get_file_specs()
+
+    def get_segment_spec(self, vlist: Set[str] ) -> DatasetSegmentSpec:
+        return self._segment_specs[ vlist ]
+
+    def get_file_key(self, file_path: str ) -> str:
+        with xa.open_dataset( file_path ) as dset:
+            data_vars: List[str] = [ str(v) for v in dset.data_vars.keys() ]
+            data_vars.sort()
+            return "-".join( data_vars )
+
+    def _process_file(self, file_path: str ):
+        with xa.open_dataset(file_path) as dset:
+            if self._base_metadata is None:
+                self._base_metadata =  dset.attrs.copy()
+            else:
+                for k,v in dset.attrs.items():
+                    if not self.equal_attr( dset.attrs[k], self._base_metadata.get( k, None ) ):
+                        self._dynamic_attributes.add( str(k) )
+            self._file_var_sets.append( { str(v) for v in dset.data_vars.keys() } )
 
     def _parse_urlpath( self, urlpath: str ) -> str:
         return urlpath.split(":")[-1].replace("//","/").replace("//","/")
@@ -53,44 +104,39 @@ class LocalFileManager(EISSingleton ):
     def sort_key( item: Dict ):
         return item['sort_key']
 
-    def get_file_list_segments(self, files: List[str]):
-        list_segments = {}
-        file_var_sets = [ self.get_file_var_set(f) for f in files ]
-        var_set_intersect  = file_var_sets[0].intersection( *file_var_sets )
-        var_set_difference = file_var_sets[0].symmetric_difference( *file_var_sets )
-        if len( var_set_intersect ) > 0: list_segments[var_set_intersect] = files
-        for var_set in file_var_sets:
-
-
-    def get_file_lists(self, urlpath: str, collection_specs: Dict) -> Dict[str, List[Dict]]:
+    def _generate_file_specs(self, urlpath: str, collection_specs: Dict):
         from intake.source.utils import reverse_format
         filepath_pattern = self._parse_urlpath( urlpath )
         filepath_glob = path_to_glob( filepath_pattern )
-        input_files = glob.glob(filepath_glob)
+        self._input_files = glob.glob(filepath_glob)
         file_sort = FileSortKey[ collection_specs.get('sort', 'filename') ]
         is_glob = has_char( filepath_pattern, "*?[" )
-        file_list_map: Dict[str,List[Dict]] = {}
-        self.logger.info(f" Processing {len(input_files)} input files from glob '{filepath_glob}'")
-        for file_path in input_files:
+        eisc().logger.info(f" Processing {len(self._input_files)} input files from glob '{filepath_glob}'")
+
+        for file_path in self._input_files:
             try:
-                file_key = self.get_file_key( file_path )
-                files_list = file_list_map.setdefault( file_key, [] )
                 (file_name, file_pattern) = (os.path.basename(file_path) , os.path.basename(filepath_pattern)) if is_glob else (file_path,filepath_pattern)
                 metadata: Dict[str,str] = reverse_format( file_pattern, file_name )
                 metadata['resolved'] = file_path
                 metadata['sort_key'] = file_sort.key( collection_specs, metadata )
-                files_list.append(metadata)
+                self._file_specs[ file_path ] = metadata
             except ValueError as err:
-                self.logger.error( f" Metadata processing error: {err}, Did you mix glob and pattern in file name?")
-        for files_list in file_list_map.values(): files_list.sort( key=self.sort_key )
-        return file_list_map
+                eisc().logger.error( f" Metadata processing error: {err}, Did you mix glob and pattern in file name?")
 
-    def get_file_key(self, file_path: str ) -> str:
-        with xa.open_dataset( file_path ) as dset:
-            data_vars: List[str] = [ str(v) for v in dset.data_vars.keys() ]
-            data_vars.sort()
-            return "-".join( data_vars )
+    def process_files(self, urlpath: str, collection_specs: Dict ):
+        self._generate_file_specs(urlpath, collection_specs)
+        for f in self._input_files:
+            self._process_file( f )
 
-    def get_file_var_set(self, file_path: str) -> Set[str]:
-        with xa.open_dataset(file_path) as dset:
-            return { str(v) for v in dset.data_vars.keys() }
+        var_set_intersect: Set[str]  = self._file_var_sets[0].intersection( *self._file_var_sets )
+        var_set_difference: Set[str] = self._file_var_sets[0].symmetric_difference( *self._file_var_sets )
+        if len( var_set_intersect ) > 0: self._segment_specs[ var_set_intersect ] = DatasetSegmentSpec("", list(self._file_specs.values()), var_set_intersect)
+
+        for f, var_set in zip( self._input_files, self._file_var_sets ):
+            outlier_vars: Set[str] = var_set_difference.intersection( var_set )
+            if len( outlier_vars ) > 0:
+                outlier_key = "_" + "-".join( outlier_vars )
+                outlier_data: DatasetSegmentSpec = self._segment_specs.setdefault( outlier_vars, DatasetSegmentSpec( outlier_key, [], outlier_vars ) )
+                outlier_data.add_file_spec( self._file_specs[f] )
+
+        for segment_spec in self._segment_specs.values(): segment_spec.sort( key=self.sort_key )

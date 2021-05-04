@@ -4,8 +4,9 @@ from dask.diagnostics import ProgressBar, Profiler, ResourceProfiler, CacheProfi
 import traitlets.config as tlc, random, string
 from eis_smce.data.common.cluster import dcm, cim
 from datetime import datetime
+from eis_smce.data.storage.local import SegmentedDatasetManager
 from intake.source.utils import reverse_format
-from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable, MutableMapping
+from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable, MutableMapping, Set
 from functools import partial
 import dask.delayed, boto3, os, traceback
 from dask.distributed import Client, LocalCluster
@@ -28,13 +29,13 @@ class EISDataSource( DataSource ):
     def __init__(self, **kwargs ):
         super(EISDataSource, self).__init__( **kwargs )
         self.logger = eisc().logger
-        self._file_list_map: Dict[str,List[Dict[str,str]]] = None
+        self.segment_manager = SegmentedDatasetManager()
         self._parts: Dict[int,xa.Dataset] = {}
         self._schema: Schema = None
         self._ds: xa.Dataset = None
         self.pspec = None
         self.batch_size = kwargs.get( 'batch_size', 1000 )
-        self.dynamic_metadata_ids = []
+        self.dynamic_metadata_ids = set()
 
     def _open_partition(self, ipart: int) -> xa.Dataset:
         raise NotImplementedError()
@@ -42,13 +43,10 @@ class EISDataSource( DataSource ):
     def _get_partition(self, ipart: int ) -> xa.Dataset:
         return self._open_partition(ipart)
 
-    def get_file_list( self, **kwargs ) -> List[str]:
-        ibatch = kwargs.get( 'ibatch', -1 )
-        key = kwargs.get( 'key', None )
-        files_list = self._file_list_map[key]
-        nchunks = len( files_list )
-        (istart,istop)  = (0,nchunks) if (ibatch < 0) else (self.batch_size*ibatch,self.batch_size*(ibatch+1))
-        return [ files_list[ip].get("resolved") for ip in range(istart,istop) ]
+    def get_file_list( self, vlist: Set[str], ibatch: int ) -> List[str]:
+        file_spec_list:  List[Dict[str,str]] = self.segment_manager.get_file_specs( vlist )
+        (istart,istop)  = ( 0, len( file_spec_list ) ) if (ibatch < 0) else (self.batch_size*ibatch,self.batch_size*(ibatch+1))
+        return [ file_spec_list[ip].get("resolved") for ip in range(istart,istop) ]
 
     def get_local_file_path(self, data_url: str):
         if data_url.startswith("s3"):
@@ -80,6 +78,7 @@ class EISDataSource( DataSource ):
                 dynamic_metadata[f"_{aId}"] = att_val
         ds = ds.assign( dynamic_metadata )
         if merge_dim not in list( ds.coords.keys() ):
+            ds = ds.drop_vars( set( ds.data_vars.keys() ).difference( pspec['vlist'] ) )
             filepath_pattern = eiss.item_path(pattern)
             is_glob = has_char(filepath_pattern, "*?[")
             (file_path, file_pattern) = ( os.path.basename(source_file_path), os.path.basename(filepath_pattern)) if is_glob else (source_file_path, filepath_pattern)
@@ -97,11 +96,11 @@ class EISDataSource( DataSource ):
             rds = ds.expand_dims( dim={ merge_dim: merge_coord }, axis=0 )
         else:
             vlist = {}
-            for vid, xv in ds.items():
+            for vid in pspec['vlist']:
+                xv = ds[vid]
                 if merge_dim not in list( xv.coords.keys() ):
                     xv = xv.expand_dims(dim=merge_dim, axis=0)
                 vlist[vid] = xv
-
             rds = xa.Dataset( vlist, ds.coords, ds.attrs )
         return rds
 
@@ -109,26 +108,21 @@ class EISDataSource( DataSource ):
         merge_dim = kwargs.get( 'merge_dim', self.default_merge_dim )
         self.pspec = dict(  pattern=self.urlpath, merge_dim=merge_dim, dynamic_metadata_ids = self.dynamic_metadata_ids, **kwargs )
         self._load_metadata()
-        file_list = self.get_file_list(**kwargs)
+        var_list: Set[str] = kwargs.get('vlist', None)
+        ibatch = kwargs.get( 'ibatch', -1 )
+        file_list = self.get_file_list( var_list, ibatch )
+        self.pspec['nchunks'] = len( file_list )
+        self.pspec['vlist'] = var_list
         t0 = time.time()
         self.logger.info( f"Reading merged dataset from {len(file_list)} files, merge_dim = {merge_dim}")
-        self.logger.info(f"  * First file = {file_list[0]}")
-        self.logger.info(f"  * Last file = {file_list[-1]}")
         self.pspec['files'] = file_list
-        rv: xa.Dataset = xa.open_mfdataset( file_list, concat_dim=merge_dim, coords="minimal", data_vars="all",
+        rv: xa.Dataset = xa.open_mfdataset( file_list, concat_dim=merge_dim, coords="minimal", data_vars=var_list,
                                             preprocess=partial( self.preprocess, self.pspec ), parallel = True )
         self.logger.info( f"Completed merge in {time.time()-t0} secs" )
         return rv
 
-    def test_for_equality(self, attvals: List[Any]):
-        if ( len(attvals) != self.nchunks): return False
-        if isinstance( attvals[0], np.ndarray ):
-            return all( (x == attvals[0]).all() for x in attvals)
-        else:
-            return all( (x == attvals[0]) for x in attvals)
-
     @staticmethod
-    def get_cache_path( path: str ) -> str:
+    def get_cache_path( path: str, pspec: Dict ) -> str:
         from eis_smce.data.storage.s3 import s3m
         if path.startswith("s3:"):
             (bucket, item) = s3m().parse(path)
@@ -144,59 +138,29 @@ class EISDataSource( DataSource ):
 
     def create_storage_item(self, path: str, **kwargs ) -> List[str]:
         init = ( kwargs.get( 'ibatch', 0 ) == 0 )
-        store = self.get_store( path, True )
+#        store = self.get_store( path, True )
         mds: xa.Dataset = self.to_dask( **kwargs )
         for aId in self.dynamic_metadata_ids: mds.attrs.pop( aId, "" )
-        with xa.set_options( display_max_rows=100 ):
-            self.logger.info( f" merged_dset -> zarr: {store}\n   -------------------- Merged dataset: -------------------- \n{mds}\n")
         zargs = dict( compute=False, consolidated=True )
         if init: zargs['mode'] = 'w'
         else:    zargs['append_dim'] = kwargs.get( 'merge_dim', EISDataSource.default_merge_dim )
+        store = EISDataSource.get_cache_path(path,self.pspec)
+        with xa.set_options( display_max_rows=100 ):
+            self.logger.info( f" merged_dset -> zarr: {store}\n   -------------------- Merged dataset: -------------------- \n{mds}\n")
         mds.to_zarr( store, **zargs )
         input_files = mds['_eis_source_path'].values.tolist()
         mds.close(); del mds
         return input_files
 
-    # def export(self, path: str, **kwargs ) -> EISZarrSource:
-    #     try:
-    #         from eis_smce.data.storage.s3 import s3m
-    #         from eis_smce.data.common.cluster import dcm
-    #         store = self.get_store(path, True)
-    #         mds: xa.Dataset = self.create_storage_item( store, **kwargs )
-    #         use_cache = kwargs.get( "cache", True )
-    #         chunks_per_part = 10
-    #
-    #         client: Client = dcm().client
-    #         compute = (client is None)
-    #         zsources = []
-    #         self.logger.info( f"Exporting paritions to: {path}, compute = {compute}, vars = {list(mds.keys())}" )
-    #         for ic in range(0, self.nchunks, chunks_per_part):
-    #             t0 = time.time()
-    #             zsources.append( EISDataSource._export_partition( store, mds, ic, chunks_per_part, compute=compute, **kwargs ) )
-    #             self.logger.info(f"Completed partition export in {time.time()-t0} sec")
-    #
-    #         if not compute:
-    #             zsources = client.compute( zsources, sync=True )
-    #         mds.close()
-    #
-    #         if( use_cache and path.startswith("s3:") ):
-    #             self.logger.info(f"Uploading zarr file to: {path}")
-    #             s3m().upload_files( path )
-    #
-    #         return EISZarrSource(path)
-    #     except Exception  as err:
-    #         self.logger.error(f"Exception in export: {err}")
-    #         self.logger.error(traceback.format_exc())
-
     def export_parallel(self, path: str, **kwargs ):
         try:
             from eis_smce.data.storage.s3 import s3m
             from eis_smce.data.common.cluster import dcm
-            for key in self._file_list_map.keys():
+            for vlist in self.segment_manager.get_vlists():
                 ib = 0
                 while True:
                     t0 = time.time()
-                    input_files =self.create_storage_item( path, ibatch=ib, key=key, **kwargs )
+                    input_files =self.create_storage_item( path, ibatch=ib, vlist=vlist, **kwargs )
                     tasks, nfiles, t1 = [], len(input_files), time.time()
                     self.logger.info( f"Exporting batch {ib} with {nfiles} files to: {path}" )
                     for ic in range( nfiles ):
@@ -206,25 +170,17 @@ class EISDataSource( DataSource ):
                         dcm().client.compute( tasks, sync=True )
                     print( f"Completed processing batch {ib} ({nfiles} files) in {time.time()-t0:.1f} (init: {t1-t0:.1f}) sec.")
                     ib = ib + 1
-                    if ib*self.batch_size >= self.nchunks: break
+                    if ib*self.batch_size >= self.pspec['nchunks']: break
 
         except Exception  as err:
             self.logger.error(f"Exception in export: {err}")
             self.logger.error(traceback.format_exc())
 
-    # @staticmethod
-    # def _export_partition(  store: Union[str,MutableMapping], mds: xa.Dataset, chunk_offset: int, nchunks: int, **kwargs ):
-    #     merge_dim = kwargs.get( 'merge_dim', EISDataSource.default_merge_dim )
-    #     region = { merge_dim: slice(chunk_offset, chunk_offset + nchunks) }
-    #     eisc().logger.info( f"Exporting {nchunks} chunks at offset {chunk_offset} to store {store}" )
-    #     dset = mds[region]
-    #     return dset.to_zarr( store, mode='a', region=region )
-
     @classmethod
     def _export_partition_parallel( cls, input_path: str, output_path:str, chunk_index: int,  pspec: Dict ):
         logger = logging.getLogger('eis_smce.intake')
         t0 = time.time()
-        store = EISDataSource.get_cache_path( output_path )
+        store = EISDataSource.get_cache_path( output_path, pspec )
         merge_dim = pspec.get( 'merge_dim', EISDataSource.default_merge_dim )
         ds0 = xa.open_dataset( input_path )
         ds0.compute()
@@ -263,22 +219,9 @@ class EISDataSource( DataSource ):
             #     from eis_smce.data.storage.s3 import s3m
             #     self._file_list = s3m().get_file_list( self.urlpath )
             # else:
-            from eis_smce.data.storage.local import lfm
-            self._file_list_map = lfm().get_file_lists(self.urlpath, self.pspec)
+            self.segment_manager.process_files( self.urlpath, self.pspec )
             self.logger.info( f"Created file list from {self.urlpath}")
-            dsmeta = {}
-            ds0 =  self._get_partition( 0 )
-            ds1 =  self._get_partition( -1 )
-            for k,v in ds0.attrs.items():
-                if self.equal_attr( ds0.attrs[k], ds1.attrs.get( k, None ) ):    dsmeta[k] = v
-                else:                                                            self.dynamic_metadata_ids.append( k )
-            metadata = {
-                'dims': dict(ds0.dims),
-                'data_vars': {k: list(ds0[k].coords) for k in ds0.data_vars.keys()},
-                'coords': tuple(ds0.coords.keys()),
-            }
-            metadata.update( dsmeta )
-            self._schema = Schema(datashape=None, dtype=None, shape=None, npartitions=self.nchunks, extra_metadata=metadata)
+            self._schema = Schema( datashape=None, dtype=None, shape=None )
         return self._schema
 
     def equal_attr(self, v0, v1 ) -> bool:
@@ -289,7 +232,6 @@ class EISDataSource( DataSource ):
 
     def close(self):
         """Delete open file from memory"""
-        self._file_list_map = None
         self._parts = {}
         self._ds = None
         self._schema = None
