@@ -1,13 +1,17 @@
 from eis_smce.data.common.base import EISSingleton, eisc
 from enum import Enum
 from intake.source.utils import path_to_glob
-from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable, Set
+from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable, Set, Iterable
 import numpy as np
 import xarray as xa
 import glob, os, time
 from datetime import datetime
 
 def has_char(string: str, chars: str): return 1 in [c in string for c in chars]
+def skey( svals: Iterable[str] ):
+    sv = list(svals)
+    sv.sort()
+    return "-".join(sv)
 
 class FileSortKey(Enum):
     filename = 1
@@ -42,9 +46,9 @@ class FileSortKey(Enum):
 
 class DatasetSegmentSpec:
 
-    def __init__(self, name: str, file_specs: List[Dict[str, str]], vlist: Set[str] ):
+    def __init__(self, name: str,  vlist: Set[str] ):
         self._name = name
-        self._file_specs: List[Dict[str, str]] = file_specs
+        self._file_specs: List[Dict[str, str]] = []
         self._vlist: Set[str] = vlist
 
     def get_file_specs(self) -> List[Dict[str, str]]:
@@ -52,6 +56,9 @@ class DatasetSegmentSpec:
 
     def add_file_spec(self, fspec: Dict[str,str]):
         self._file_specs.append( fspec )
+
+    def add_file_specs(self, fspecs: Iterable[Dict[str,str]]):
+        self._file_specs.extend( fspecs )
 
     def sort( self, key ):
         self._file_specs.sort( key=key )
@@ -76,10 +83,10 @@ class SegmentedDatasetManager:
         return self._file_var_sets
 
     def get_file_specs(self, vlist: Set[str] ) -> List[Dict[str,str]]:
-        return self._segment_specs[vlist].get_file_specs()
+        return self._segment_specs[ skey(vlist) ].get_file_specs()
 
     def get_segment_spec(self, vlist: Set[str] ) -> DatasetSegmentSpec:
-        return self._segment_specs[ vlist ]
+        return self._segment_specs[ skey(vlist) ]
 
     def get_file_key(self, file_path: str ) -> str:
         with xa.open_dataset( file_path ) as dset:
@@ -136,7 +143,7 @@ class SegmentedDatasetManager:
         var_set_intersect: Set[str]  = self._file_var_sets[0].intersection( *self._file_var_sets )
         var_set_diffs: List[Set] = [ s.difference(var_set_intersect) for s in self._file_var_sets ]
         var_set_difference: Set[str] = var_set_diffs[0].union( *var_set_diffs )
-        if len( var_set_intersect ) > 0: self._segment_specs[ var_set_intersect ] = DatasetSegmentSpec("", list(self._file_specs.values()), var_set_intersect)
+        if len( var_set_intersect ) > 0: self.addSegmentSpec( "", self._file_specs.values(), var_set_intersect )
         t3 = time.time()
 
         print( f"Pre-Processing {len(self._input_files)} files:")
@@ -144,9 +151,13 @@ class SegmentedDatasetManager:
             outlier_vars: Set[str] = var_set_difference.intersection( var_set )
             if len( outlier_vars ) > 0:
                 outlier_key = "_" + "-".join( outlier_vars )
-                outlier_data: DatasetSegmentSpec = self._segment_specs.setdefault( outlier_vars, DatasetSegmentSpec( outlier_key, [], outlier_vars ) )
-                outlier_data.add_file_spec( self._file_specs[f] )
+                self.addSegmentSpec( outlier_key, [ self._file_specs[f] ], outlier_vars )
 
         for segment_spec in self._segment_specs.values(): segment_spec.sort( key=self.sort_key )
         t4 = time.time()
         print(f"Done preprocessing with times {t1-t0:.2f} {t2-t1:.2f} {t3-t2:.2f} {t4-t3:.2f}")
+
+    def addSegmentSpec(self, name: str, file_specs: Iterable[Dict[str, str]], vlist: Set[str] ):
+        seg_spec: DatasetSegmentSpec = self._segment_specs.setdefault( skey(vlist), DatasetSegmentSpec( name, vlist ))
+        seg_spec.add_file_specs( file_specs )
+        return seg_spec
