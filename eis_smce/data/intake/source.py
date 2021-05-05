@@ -75,7 +75,7 @@ class EISDataSource( ):
                 dynamic_metadata[f"_{aId}"] = att_val
         ds = ds.assign( dynamic_metadata )
  #       print( f"preprocess --> Assigning metadata variables: {dynamic_metadata}")
-        new_vlist = pspec['vlist'] + list( dynamic_metadata.keys() )
+        new_vlist = list( pspec['vlist'] ) + list( dynamic_metadata.keys() )
         if merge_dim not in list( ds.coords.keys() ):
             ds = ds.drop_vars( set( ds.data_vars.keys() ).difference( new_vlist ) )
             filepath_pattern = eiss.item_path(pattern)
