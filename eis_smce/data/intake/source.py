@@ -1,7 +1,6 @@
 from intake.source.base import DataSource, Schema
 import collections, json, shutil, math
 from dask.diagnostics import ProgressBar, Profiler, ResourceProfiler, CacheProfiler
-import traitlets.config as tlc, random, string
 from eis_smce.data.common.cluster import dcm, cim
 from datetime import datetime
 from eis_smce.data.storage.local import SegmentedDatasetManager
@@ -19,8 +18,7 @@ from eis_smce.data.common.base import eisc, EISSingleton as eiss
 def dsort( d: Dict ) -> Dict: return { k:d[k] for k in sorted(d.keys()) }
 def has_char(string: str, chars: str): return 1 in [c in string for c in chars]
 
-class EISDataSource( tlc.Configurable ):
-    default_merge_dim = tlc.Unicode("time").tag(config=True)
+class EISDataSource( ):
 
     def __init__(self, input: str ):
         super(EISDataSource, self).__init__()

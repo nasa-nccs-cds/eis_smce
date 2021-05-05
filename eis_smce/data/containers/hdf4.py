@@ -1,14 +1,12 @@
-import traitlets.config as tlc
 from pyhdf.SD import SD, SDC, SDS
 from collections.abc import MutableMapping
 from pathlib import Path
 import xarray as xa
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 
-class ModisDataset(tlc.Configurable):
+class ModisDataset():
 
     def __init__( self, filepath: str, **kwargs ):
-        tlc.Configurable.__init__(**kwargs)
         self._filepath = filepath
         self._sd: Optional[SD] = None
 

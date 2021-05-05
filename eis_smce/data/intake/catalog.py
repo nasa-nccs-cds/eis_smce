@@ -1,4 +1,3 @@
-import traitlets.config as tlc
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 import intake, os, boto3
 from eis_smce.data.common.base import EISSingleton
