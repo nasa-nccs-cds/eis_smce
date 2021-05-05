@@ -19,23 +19,21 @@ from eis_smce.data.common.base import eisc, EISSingleton as eiss
 def dsort( d: Dict ) -> Dict: return { k:d[k] for k in sorted(d.keys()) }
 def has_char(string: str, chars: str): return 1 in [c in string for c in chars]
 
-class EISDataSource( DataSource ):
-    """Common behaviours for plugins in this repo"""
-    version = 0.1
-    container = 'xarray'
-    partition_access = True
-    default_merge_dim = "time"
+class EISDataSource( tlc.Configurable ):
+    default_merge_dim = tlc.Unicode("time").tag(config=True)
 
-    def __init__(self, **kwargs ):
-        super(EISDataSource, self).__init__( **kwargs )
+    def __init__(self, input: str ):
+        super(EISDataSource, self).__init__()
+        self._input = input
         self.logger = eisc().logger
         self.segment_manager = SegmentedDatasetManager()
         self._parts: Dict[int,xa.Dataset] = {}
         self._schema: Schema = None
         self._ds: xa.Dataset = None
         self.pspec = None
-        self.batch_size = kwargs.get( 'batch_size', 1000 )
+        self.batch_size = eisc().get( 'batch_size', 1000 )
         self.dynamic_metadata_ids = set()
+        self.segment_manager.process_files( self._input )
 
     def _open_partition(self, ipart: int) -> xa.Dataset:
         raise NotImplementedError()
@@ -142,8 +140,8 @@ class EISDataSource( DataSource ):
         for aId in self.dynamic_metadata_ids: mds.attrs.pop( aId, "" )
         zargs = dict( compute=False, consolidated=True )
         if init: zargs['mode'] = 'w'
-        else:    zargs['append_dim'] = kwargs.get( 'merge_dim', EISDataSource.default_merge_dim )
-        store = EISDataSource.get_cache_path(path,self.pspec)
+        else:    zargs['append_dim'] = kwargs.get( 'merge_dim', self.default_merge_dim )
+        store = self.get_cache_path(path,self.pspec)
         with xa.set_options( display_max_rows=100 ):
             self.logger.info( f" merged_dset -> zarr: {store}\n   -------------------- Merged dataset: -------------------- \n{mds}\n")
         mds.to_zarr( store, **zargs )
@@ -155,7 +153,6 @@ class EISDataSource( DataSource ):
         try:
             from eis_smce.data.storage.s3 import s3m
             from eis_smce.data.common.cluster import dcm
-            self._load_metadata()
             for vlist in self.segment_manager.get_vlists():
                 ib = 0
                 while True:

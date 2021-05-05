@@ -14,8 +14,8 @@ class FileSortKey(Enum):
     pattern = 2
     coordinate = 3
 
-    def key(self, collection_specs: Dict, file_specs: Dict ):
-        return self.sort_key_method( collection_specs, file_specs )
+    def key(self, file_specs: Dict ):
+        return self.sort_key_method( file_specs )
 
     @property
     def sort_key_method( self ):
@@ -25,19 +25,19 @@ class FileSortKey(Enum):
         raise Exception( f"Unknown sort_key_method: {self} vs {self.filename}" )
 
     @staticmethod
-    def filename_key( collection_specs: Dict, file_specs: Dict ):
+    def filename_key( file_specs: Dict ):
         return os.path.basename( file_specs['resolved'] )
 
     @staticmethod
-    def pattern_key( collection_specs: Dict, file_specs: Dict ):
-        merge_dim = collection_specs.get('merge_dim','time')
-        time_format = collection_specs.get('time_format', None )
+    def pattern_key( file_specs: Dict ):
+        merge_dim = eisc().get('merge_dim','time')
+        time_format = eisc().get('time_format', None )
         return file_specs[merge_dim] if time_format is None else datetime.strptime( file_specs[merge_dim], time_format)
 
     @staticmethod
-    def coordinate_key( collection_specs: Dict, file_specs: Dict ):
+    def coordinate_key( file_specs: Dict ):
         with xa.open_dataset( file_specs['resolved'] ) as dset:
-            merge_dim = collection_specs.get('merge_dim', 'time')
+            merge_dim = eisc().get('merge_dim', 'time')
             return  dset[merge_dim].values[0]
 
 class DatasetSegmentSpec:
@@ -104,12 +104,12 @@ class SegmentedDatasetManager:
     def sort_key( item: Dict ):
         return item['sort_key']
 
-    def _generate_file_specs(self, urlpath: str, collection_specs: Dict):
+    def _generate_file_specs(self, urlpath: str, **kwargs):
         from intake.source.utils import reverse_format
         filepath_pattern = self._parse_urlpath( urlpath )
         filepath_glob = path_to_glob( filepath_pattern )
         self._input_files = glob.glob(filepath_glob)
-        file_sort = FileSortKey[ collection_specs.get('sort', 'filename') ]
+        file_sort = FileSortKey[ kwargs.get('sort', 'filename') ]
         is_glob = has_char( filepath_pattern, "*?[" )
         eisc().logger.info(f" Processing {len(self._input_files)} input files from glob '{filepath_glob}'")
 
@@ -118,13 +118,13 @@ class SegmentedDatasetManager:
                 (file_name, file_pattern) = (os.path.basename(file_path) , os.path.basename(filepath_pattern)) if is_glob else (file_path,filepath_pattern)
                 metadata: Dict[str,str] = reverse_format( file_pattern, file_name )
                 metadata['resolved'] = file_path
-                metadata['sort_key'] = file_sort.key( collection_specs, metadata )
+                metadata['sort_key'] = file_sort.key( metadata )
                 self._file_specs[ file_path ] = metadata
             except ValueError as err:
                 eisc().logger.error( f" Metadata processing error: {err}, Did you mix glob and pattern in file name?")
 
-    def process_files(self, urlpath: str, collection_specs: Dict ):
-        self._generate_file_specs(urlpath, collection_specs)
+    def process_files(self, urlpath: str ):
+        self._generate_file_specs( urlpath )
         for f in self._input_files:
             self._process_file( f )
 

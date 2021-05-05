@@ -14,6 +14,13 @@ class EISSingleton(tlc.Configurable):
         self.update_config( eisc().config )
         self._config_instances.append( self )
         self.logger = eisc().logger
+        self._configuration = {}
+
+    def config(self, **kwargs ):
+        self._configuration.update( kwargs )
+
+    def parm(self, key, default=None ):
+        return self._configuration.get( key, default )
 
     @classmethod
     def _walk_mro(cls):
@@ -67,10 +74,15 @@ class EISConfiguration( tlc.Configurable ):
         os.makedirs( self.cache_dir, exist_ok=True )
         self.name = kwargs.pop( "name", "eis.smce" )
         self.mode =  kwargs.pop( "mode", "default" )
-        self._config: Config = None
         self._configure_()
         super(EISConfiguration, self).__init__( **kwargs )
         self.setup_logging()
+
+    def get(self, key: str, default = None ):
+        try:
+            return self.config[ key ]
+        except KeyError:
+            return default
 
     @classmethod
     def instance(cls,  **kwargs):
@@ -117,13 +129,12 @@ class EISConfiguration( tlc.Configurable ):
             trait_values[tid] = tval
 
     def _configure_(self):
-        if self._config is None:
-            self._lock = threading.Lock()
-            cfg_file = self.config_file( self.name, self.mode )
-            (self.config_dir, fname) = os.path.split(cfg_file)
-            self._config_files = [fname]
-            self._config = load_pyconfig_files(self._config_files, self.config_dir)
-            self.update_config(self._config)
+        self._lock = threading.Lock()
+        cfg_file = self.config_file( self.name, self.mode )
+        (self.config_dir, fname) = os.path.split(cfg_file)
+        self._config_files = [fname]
+        config = load_pyconfig_files(self._config_files, self.config_dir)
+        self.update_config(config)
 
     @classmethod
     def config_file(cls, name: str, mode: str) -> str:
