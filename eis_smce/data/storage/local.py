@@ -4,7 +4,7 @@ from intake.source.utils import path_to_glob
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable, Set
 import numpy as np
 import xarray as xa
-import glob, os
+import glob, os, time
 from datetime import datetime
 
 def has_char(string: str, chars: str): return 1 in [c in string for c in chars]
@@ -157,14 +157,19 @@ class SegmentedDatasetManager:
         print()
 
     def process_files(self, urlpath: str ):
+        t0 = time.time()
         self._generate_file_specs( urlpath )
+
+        print( "Testing varlists in all files")
+        t1 = time.time()
         for f in self._input_files:
             self._process_file( f )
-
+        t2 = time.time()
 
         var_set_intersect: Set[str]  = self._file_var_sets[0].intersection( *self._file_var_sets )
-        var_set_difference: Set[str] = set().union( [ s.difference(var_set_intersect) for s in self._file_var_sets ] )
+        var_set_difference: Set[str] = set([]).union( [ s.difference(var_set_intersect) for s in self._file_var_sets ] )
         if len( var_set_intersect ) > 0: self._segment_specs[ var_set_intersect ] = DatasetSegmentSpec("", list(self._file_specs.values()), var_set_intersect)
+        t3 = time.time()
 
         print( f"Pre-Processing {len(self._input_files)} files:")
         for (f, var_set) in self.progressBar( zip( self._input_files, self._file_var_sets ) ):
@@ -175,3 +180,4 @@ class SegmentedDatasetManager:
                 outlier_data.add_file_spec( self._file_specs[f] )
 
         for segment_spec in self._segment_specs.values(): segment_spec.sort( key=self.sort_key )
+        t5 = time.time()
