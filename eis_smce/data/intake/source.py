@@ -155,6 +155,7 @@ class EISDataSource( ):
             from eis_smce.data.storage.s3 import s3m
             from eis_smce.data.common.cluster import dcm
             for vlist in self.segment_manager.get_vlists():
+                print( f"Processing vlist: {vlist}")
                 ib = 0
                 while True:
                     t0 = time.time()
