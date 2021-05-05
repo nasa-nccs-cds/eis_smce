@@ -3,7 +3,9 @@ from enum import Enum
 from intake.source.utils import path_to_glob
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable, Set, Iterable
 import numpy as np
-import xarray as xa
+from eis_smce.data.common.cluster import dcm, cim
+import dask, xarray as xa
+from dask.diagnostics import ProgressBar
 import glob, os, time
 from datetime import datetime
 
@@ -76,7 +78,7 @@ class SegmentedDatasetManager:
         self._input_files = None
         self._file_specs: Dict[str,Dict[str,str]] = {}
 
-    def equal_attr(self, v0, v1 ) -> bool:
+    def equal_attr(self, v0: Union[str,np.array], v1: Union[str,np.array] ) -> bool:
         if v1 is None: return False
         if type(v0) is np.ndarray:    return np.array_equal( v0, v1 )
         if type(v0) is xa.DataArray:  return v0.equals( v1 )
@@ -97,15 +99,22 @@ class SegmentedDatasetManager:
             data_vars.sort()
             return "-".join( data_vars )
 
-    def _process_file(self, file_path: str ):
+    @staticmethod
+    def _get_file_metadata( file_path: str ) -> Tuple[ Dict[str,Union[str,np.array]], Set[str] ]:
         with xa.open_dataset(file_path) as dset:
+            _attrs: Dict[str,Union[str,np.array]] = { str(k): v for k, v in dset.attrs.items() }
+            _vset: Set[str] = { str(v) for v in dset.data_vars.keys() }
+            return ( _attrs,  _vset)
+
+    def _process_files_metadata(self, fdata: List[ Tuple[ Dict[str,Union[str,np.array]], Set[str] ] ] ):
+        for ( _attrs, _vlist ) in fdata:
             if self._base_metadata is None:
-                self._base_metadata =  dset.attrs.copy()
+                self._base_metadata =  _attrs
             else:
-                for k,v in dset.attrs.items():
-                    if not self.equal_attr( dset.attrs[k], self._base_metadata.get( k, None ) ):
-                        self._dynamic_attributes.add( str(k) )
-            self._file_var_sets.append( { str(v) for v in dset.data_vars.keys() } )
+                for k,v in _attrs.items():
+                    if not self.equal_attr( v, self._base_metadata.get( k, None ) ):
+                        self._dynamic_attributes.add( k )
+            self._file_var_sets.append( _vlist )
 
     def _parse_urlpath( self, urlpath: str ) -> str:
         return urlpath.split(":")[-1].replace("//","/").replace("//","/")
@@ -139,8 +148,14 @@ class SegmentedDatasetManager:
 
         print( "Testing varlists in all files")
         t1 = time.time()
+        tasks = []
         for f in self._input_files:
-            self._process_file( f )
+            tasks.append( dask.delayed( self._get_file_metadata )(f) )
+
+        with dask.diagnostics.ProgressBar():
+            files_metadata = dcm().client.compute(tasks, sync=True)
+
+        self._process_files_metadata(files_metadata)
         t2 = time.time()
 
         var_set_intersect: Set[str]  = self._file_var_sets[0].intersection( *self._file_var_sets )
