@@ -73,8 +73,6 @@ class EISDataSource( ):
             att_val = ds.attrs.pop(aId,None)
             if att_val is not None:
                 dynamic_metadata[f"_{aId}"] = att_val
-        ds = ds.assign( dynamic_metadata )
-        print( f"preprocess --> Assigning metadata variables: {dynamic_metadata}")
         if merge_dim not in list( ds.coords.keys() ):
             ds = ds.drop_vars( set( ds.data_vars.keys() ).difference( pspec['vlist'] ) )
             filepath_pattern = eiss.item_path(pattern)
@@ -100,6 +98,7 @@ class EISDataSource( ):
                     xv = xv.expand_dims(dim=merge_dim, axis=0)
                 vlist[vid] = xv
             rds = xa.Dataset( vlist, ds.coords, ds.attrs )
+        rds = rds.assign(dynamic_metadata)
         return rds
 
     def read( self, **kwargs ) -> xa.Dataset:
@@ -137,6 +136,7 @@ class EISDataSource( ):
         init = ( kwargs.get( 'ibatch', 0 ) == 0 )
 #        store = self.get_store( path, True )
         mds: xa.Dataset = self.to_dask( **kwargs )
+        input_files = mds['_eis_source_path'].values.tolist()
         for aId in self.dynamic_metadata_ids: mds.attrs.pop( aId, "" )
         zargs = dict( compute=False, consolidated=True )
         if init: zargs['mode'] = 'w'
@@ -145,7 +145,6 @@ class EISDataSource( ):
         with xa.set_options( display_max_rows=100 ):
             self.logger.info( f" merged_dset -> zarr: {store}\n   -------------------- Merged dataset: -------------------- \n{mds}\n")
         mds.to_zarr( store, **zargs )
-        input_files = mds['_eis_source_path'].values.tolist()
         mds.close(); del mds
         return input_files
 
