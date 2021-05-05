@@ -101,7 +101,7 @@ class EISDataSource( ):
         return rds
 
     def read( self, **kwargs ) -> xa.Dataset:
-        merge_dim = kwargs.get( 'merge_dim', self.default_merge_dim )
+        merge_dim = eisc().get( 'merge_dim', 'time' )
         self.pspec = dict(  pattern=self.urlpath, merge_dim=merge_dim, dynamic_metadata_ids = self.dynamic_metadata_ids, **kwargs )
         var_list: Set[str] = kwargs.get('vlist', None)
         ibatch = kwargs.get( 'ibatch', -1 )
