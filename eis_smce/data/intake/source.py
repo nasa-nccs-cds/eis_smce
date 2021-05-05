@@ -74,6 +74,7 @@ class EISDataSource( ):
             if att_val is not None:
                 dynamic_metadata[f"_{aId}"] = att_val
         ds = ds.assign( dynamic_metadata )
+        print( f"preprocess --> Assigning metadata variables: {dynamic_metadata}")
         if merge_dim not in list( ds.coords.keys() ):
             ds = ds.drop_vars( set( ds.data_vars.keys() ).difference( pspec['vlist'] ) )
             filepath_pattern = eiss.item_path(pattern)
@@ -102,7 +103,7 @@ class EISDataSource( ):
         return rds
 
     def read( self, **kwargs ) -> xa.Dataset:
-        merge_dim = eisc().get( 'merge_dim', 'time' )
+        merge_dim = eisc().get( 'merge_dim' )
         self.pspec = dict(  pattern=self.urlpath, merge_dim=merge_dim, dynamic_metadata_ids = self.dynamic_metadata_ids, **kwargs )
         var_list: Set[str] = kwargs.get('vlist', None)
         ibatch = kwargs.get( 'ibatch', -1 )
@@ -139,7 +140,7 @@ class EISDataSource( ):
         for aId in self.dynamic_metadata_ids: mds.attrs.pop( aId, "" )
         zargs = dict( compute=False, consolidated=True )
         if init: zargs['mode'] = 'w'
-        else:    zargs['append_dim'] = kwargs.get( 'merge_dim', self.default_merge_dim )
+        else:    zargs['append_dim'] = eisc().get( 'merge_dim' )
         store = self.get_cache_path(path,self.pspec)
         with xa.set_options( display_max_rows=100 ):
             self.logger.info( f" merged_dset -> zarr: {store}\n   -------------------- Merged dataset: -------------------- \n{mds}\n")
@@ -177,7 +178,7 @@ class EISDataSource( ):
         logger = logging.getLogger('eis_smce.intake')
         t0 = time.time()
         store = EISDataSource.get_cache_path( output_path, pspec )
-        merge_dim = pspec.get( 'merge_dim', EISDataSource.default_merge_dim )
+        merge_dim = pspec.get( 'merge_dim' )
         ds0 = xa.open_dataset( input_path )
         ds0.compute()
         t1 = time.time()

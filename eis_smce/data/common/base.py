@@ -59,7 +59,7 @@ class EISConfiguration( EISSingleton ):
 
     def __init__( self, **kwargs ):
         super(EISConfiguration, self).__init__(**kwargs)
-        self._config = dict( cache_dir= os.path.expanduser("~/.eis_smce/cache") )
+        self._config = dict( cache_dir= os.path.expanduser("~/.eis_smce/cache"), merge_dim = "time" )
 
     @property
     def cache_dir(self):

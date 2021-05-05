@@ -34,14 +34,14 @@ class FileSortKey(Enum):
 
     @staticmethod
     def pattern_key( file_specs: Dict ):
-        merge_dim = eisc().get('merge_dim','time')
+        merge_dim = eisc().get('merge_dim')
         time_format = eisc().get('time_format', None )
         return file_specs[merge_dim] if time_format is None else datetime.strptime( file_specs[merge_dim], time_format)
 
     @staticmethod
     def coordinate_key( file_specs: Dict ):
         with xa.open_dataset( file_specs['resolved'] ) as dset:
-            merge_dim = eisc().get('merge_dim', 'time')
+            merge_dim = eisc().get('merge_dim')
             return  dset[merge_dim].values[0]
 
 class DatasetSegmentSpec:
