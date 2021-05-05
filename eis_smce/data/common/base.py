@@ -14,13 +14,6 @@ class EISSingleton(tlc.Configurable):
         self.update_config( eisc().config )
         self._config_instances.append( self )
         self.logger = eisc().logger
-        self._configuration = {}
-
-    def config(self, **kwargs ):
-        self._configuration.update( kwargs )
-
-    def parm(self, key, default=None ):
-        return self._configuration.get( key, default )
 
     @classmethod
     def _walk_mro(cls):
