@@ -41,7 +41,8 @@ class EISDataSource( ):
 
     def get_file_list( self, vlist: Set[str], ibatch: int ) -> List[str]:
         file_spec_list:  List[Dict[str,str]] = self.segment_manager.get_file_specs( vlist )
-        (istart,istop)  = ( 0, len( file_spec_list ) ) if (ibatch < 0) else (self.batch_size*ibatch,self.batch_size*(ibatch+1))
+        Nf = len( file_spec_list )
+        (istart,istop)  = (0, Nf) if (ibatch < 0) else (self.batch_size*ibatch, min( self.batch_size*(ibatch+1), Nf ))
         return [ file_spec_list[ip].get("resolved") for ip in range(istart,istop) ]
 
     def get_local_file_path(self, data_url: str):
