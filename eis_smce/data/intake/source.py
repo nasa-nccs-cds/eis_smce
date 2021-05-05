@@ -24,7 +24,7 @@ class EISDataSource( tlc.Configurable ):
 
     def __init__(self, input: str ):
         super(EISDataSource, self).__init__()
-        self._input = input
+        self.urlpath = input
         self.logger = eisc().logger
         self.segment_manager = SegmentedDatasetManager()
         self._parts: Dict[int,xa.Dataset] = {}
@@ -33,7 +33,7 @@ class EISDataSource( tlc.Configurable ):
         self.pspec = None
         self.batch_size = eisc().get( 'batch_size', 1000 )
         self.dynamic_metadata_ids = set()
-        self.segment_manager.process_files( self._input )
+        self.segment_manager.process_files( self.urlpath )
 
     def _open_partition(self, ipart: int) -> xa.Dataset:
         raise NotImplementedError()
