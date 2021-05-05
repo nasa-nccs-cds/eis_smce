@@ -123,16 +123,51 @@ class SegmentedDatasetManager:
             except ValueError as err:
                 eisc().logger.error( f" Metadata processing error: {err}, Did you mix glob and pattern in file name?")
 
+    def progressBar( self, iterable, prefix='Progress:', suffix='Complete', decimals=1, length=50, fill='█', printEnd="\r"):
+        """
+        Call in a loop to create terminal progress bar
+        @params:
+            iteration   - Required  : current iteration (Int)
+            total       - Required  : total iterations (Int)
+            prefix      - Optional  : prefix string (Str)
+            suffix      - Optional  : suffix string (Str)
+            decimals    - Optional  : positive number of decimals in percent complete (Int)
+            length      - Optional  : character length of bar (Int)
+            fill        - Optional  : bar fill character (Str)
+            printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+        """
+
+        items = list( iterable )
+        total = len(items)
+
+        # Progress Bar Printing Function
+        def printProgressBar(iteration):
+            percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+            filledLength = int(length * iteration // total)
+            bar = fill * filledLength + '-' * (length - filledLength)
+            print(f'\r{prefix} |{bar}| {percent}% {suffix}', end=printEnd)
+
+        # Initial Call
+        printProgressBar(0)
+        # Update Progress Bar
+        for i, item in enumerate(items):
+            yield item
+            printProgressBar(i + 1)
+        # Print New Line on Complete
+        print()
+
     def process_files(self, urlpath: str ):
         self._generate_file_specs( urlpath )
         for f in self._input_files:
             self._process_file( f )
 
+
         var_set_intersect: Set[str]  = self._file_var_sets[0].intersection( *self._file_var_sets )
-        var_set_difference: Set[str] = self._file_var_sets[0].symmetric_difference( *self._file_var_sets )
+        var_set_difference: Set[str] = set().union( [ s.difference(var_set_intersect) for s in self._file_var_sets ] )
         if len( var_set_intersect ) > 0: self._segment_specs[ var_set_intersect ] = DatasetSegmentSpec("", list(self._file_specs.values()), var_set_intersect)
 
-        for f, var_set in zip( self._input_files, self._file_var_sets ):
+        print( f"Pre-Processing {len(self._input_files)} files:")
+        for (f, var_set) in self.progressBar( zip( self._input_files, self._file_var_sets ) ):
             outlier_vars: Set[str] = var_set_difference.intersection( var_set )
             if len( outlier_vars ) > 0:
                 outlier_key = "_" + "-".join( outlier_vars )
