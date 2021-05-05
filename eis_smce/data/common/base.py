@@ -10,8 +10,7 @@ class EISSingleton(tlc.Configurable):
     _config_instances: List["EISSingleton"] = []
 
     def __init__(self, *args, **kwargs ):
-        super(EISSingleton, self).__init__()
-        self.update_config( eisc().config )
+        super(EISSingleton, self).__init__( config=eisc().config )
         self._config_instances.append( self )
         self.logger = eisc().logger
 
