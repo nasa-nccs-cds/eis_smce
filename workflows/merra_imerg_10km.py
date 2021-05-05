@@ -15,6 +15,6 @@ if __name__ == '__main__':
 
     dcm().init_cluster()
     eisc(cache="/gpfsm/dnb43/projects/p151/zarr", mode="eis.freshwater.swang9", time_format="%Y%m%d%H%M")
-    input=f"file://{input_dir}/SURFACEMODEL/{month}/LIS_HIST" + "_{time}.d01.nc",
-    output=f"/gpfsm/dnb43/projects/p151/zarr/LIS/OL_10km/2000_2021/MERRA_IMERG.zarr",
+    input=f"file://{input_dir}/SURFACEMODEL/{month}/LIS_HIST" + "_{time}.d01.nc"
+    output=f"/gpfsm/dnb43/projects/p151/zarr/LIS/OL_10km/2000_2021/MERRA_IMERG.zarr"
     zc().standard_conversion( input, output )
