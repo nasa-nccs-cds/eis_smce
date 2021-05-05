@@ -51,6 +51,9 @@ class DatasetSegmentSpec:
         self._file_specs: List[Dict[str, str]] = []
         self._vlist: Set[str] = vlist
 
+    def get_vlist(self) -> Set[str]:
+        return self._vlist
+
     def get_file_specs(self) -> List[Dict[str, str]]:
         return self._file_specs
 
@@ -80,7 +83,7 @@ class SegmentedDatasetManager:
         return v0 == v1
 
     def get_vlists(self) -> List[Set[str]]:
-        return list(self._segment_specs.keys())
+        return [ ss.get_vlist() for ss in self._segment_specs.values() ]
 
     def get_file_specs(self, vlist: Set[str] ) -> List[Dict[str,str]]:
         return self._segment_specs[ skey(vlist) ].get_file_specs()
