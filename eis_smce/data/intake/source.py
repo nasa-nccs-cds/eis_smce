@@ -73,8 +73,11 @@ class EISDataSource( ):
             att_val = ds.attrs.pop(aId,None)
             if att_val is not None:
                 dynamic_metadata[f"_{aId}"] = att_val
+        ds = ds.assign( dynamic_metadata )
+ #       print( f"preprocess --> Assigning metadata variables: {dynamic_metadata}")
+        new_vlist = pspec['vlist'] + list( dynamic_metadata.keys() )
         if merge_dim not in list( ds.coords.keys() ):
-            ds = ds.drop_vars( set( ds.data_vars.keys() ).difference( pspec['vlist'] ) )
+            ds = ds.drop_vars( set( ds.data_vars.keys() ).difference( new_vlist ) )
             filepath_pattern = eiss.item_path(pattern)
             is_glob = has_char(filepath_pattern, "*?[")
             (file_path, file_pattern) = ( os.path.basename(source_file_path), os.path.basename(filepath_pattern)) if is_glob else (source_file_path, filepath_pattern)
@@ -92,13 +95,12 @@ class EISDataSource( ):
             rds = ds.expand_dims( dim={ merge_dim: merge_coord }, axis=0 )
         else:
             vlist = {}
-            for vid in pspec['vlist']:
+            for vid in new_vlist:
                 xv = ds[vid]
                 if merge_dim not in list( xv.coords.keys() ):
                     xv = xv.expand_dims(dim=merge_dim, axis=0)
                 vlist[vid] = xv
             rds = xa.Dataset( vlist, ds.coords, ds.attrs )
-        rds = rds.assign(dynamic_metadata)
         return rds
 
     def read( self, **kwargs ) -> xa.Dataset:
