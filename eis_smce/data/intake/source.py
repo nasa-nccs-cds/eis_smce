@@ -124,7 +124,7 @@ class EISDataSource( ):
         if path.startswith("s3:"):
             (bucket, item) = s3m().parse(path)
             path = f"{eisc().cache_dir}/{item}"
-        return path + pspec['sname']
+        return path + pspec['sname'] + ".zarr"
 
     # @staticmethod
     # def get_store( path: str, clear: bool = False, **kwargs ):
