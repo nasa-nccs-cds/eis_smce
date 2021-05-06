@@ -131,7 +131,7 @@ class SegmentedDatasetManager:
                     if not self.equal_attr( v, self._base_metadata.get( k, None ) ):
                         self._dynamic_attributes.add( k )
             self._file_var_sets.append( _vlist )
-        print( f"  ****  Computed Dynamic attributes: {list(self._dynamic_attributes)}")
+        print( f"  ****  Computed Dynamic Attributes: {list(self._dynamic_attributes)}")
 
     def _parse_urlpath( self, urlpath: str ) -> str:
         return urlpath.split(":")[-1].replace("//","/").replace("//","/")
