@@ -53,6 +53,10 @@ class DatasetSegmentSpec:
         self._file_specs: List[Dict[str, str]] = []
         self._vlist: Set[str] = vlist
 
+    @property
+    def name(self):
+        return self._name
+
     def get_vlist(self) -> Set[str]:
         return self._vlist
 
@@ -98,6 +102,9 @@ class SegmentedDatasetManager:
 
     def get_segment_size(self, vlist: Set[str] ) -> int:
         return self._segment_specs[ skey(vlist) ].size()
+
+    def get_segment_name(self, vlist: Set[str] ) -> int:
+        return self._segment_specs[ skey(vlist) ].name
 
     def get_segment_spec(self, vlist: Set[str] ) -> DatasetSegmentSpec:
         return self._segment_specs[ skey(vlist) ]

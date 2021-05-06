@@ -16,7 +16,7 @@ class ZarrConverter(EISSingleton):
             self.start_time = time.time()
             eisds: EISDataSource = EISDataSource( input )
             eisds.export_parallel( output )
-            print( f"Completed conversion to {output} in {(time.time()-self.start_time)/60} minutes" )
+            print( f"Completed conversion in {(time.time()-self.start_time)/60} minutes" )
         except Exception as err:
             self.logger.error( f"Error in ZarrConverter.standard_conversion: {err}")
             self.logger.error(f"{traceback.format_exc()}")

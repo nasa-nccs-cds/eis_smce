@@ -109,6 +109,7 @@ class EISDataSource( ):
         file_list = self.get_file_list( var_list, ibatch )
         self.pspec['nchunks'] = self.segment_manager.get_segment_size( var_list )
         self.pspec['vlist'] = var_list
+        self.pspec['sname'] = self.segment_manager.get_segment_name( var_list )
         t0 = time.time()
         self.logger.info( f"Reading merged dataset from {len(file_list)} files, merge_dim = {merge_dim}")
         self.pspec['files'] = file_list
@@ -123,14 +124,14 @@ class EISDataSource( ):
         if path.startswith("s3:"):
             (bucket, item) = s3m().parse(path)
             path = f"{eisc().cache_dir}/{item}"
-        return path
+        return path + pspec['sname']
 
-    @staticmethod
-    def get_store( path: str, clear: bool = False, **kwargs ):
-        from eis_smce.data.storage.s3 import s3m
-        use_cache = kwargs.get( 'cache', True )
-        store = EISDataSource.get_cache_path(path) if use_cache else s3m().get_store(path,clear)
-        return store
+    # @staticmethod
+    # def get_store( path: str, clear: bool = False, **kwargs ):
+    #     from eis_smce.data.storage.s3 import s3m
+    #     use_cache = kwargs.get( 'cache', True )
+    #     store = EISDataSource.get_cache_path(path) if use_cache else s3m().get_store(path,clear)
+    #     return store
 
     def create_storage_item(self, path: str, **kwargs ) -> List[str]:
         init = ( kwargs.get( 'ibatch', 0 ) == 0 )
@@ -141,7 +142,7 @@ class EISDataSource( ):
         zargs = dict( compute=False, consolidated=True )
         if init: zargs['mode'] = 'w'
         else:    zargs['append_dim'] = eisc().get( 'merge_dim' )
-        store = self.get_cache_path(path,self.pspec)
+        store = self.get_cache_path( path, self.pspec )
         with xa.set_options( display_max_rows=100 ):
             self.logger.info( f" merged_dset -> zarr: {store}\n   -------------------- Merged dataset: -------------------- \n{mds}\n")
         mds.to_zarr( store, **zargs )
@@ -157,7 +158,7 @@ class EISDataSource( ):
                 ib = 0
                 while True:
                     t0 = time.time()
-                    input_files =self.create_storage_item( path, ibatch=ib, vlist=vlist, **kwargs )
+                    input_files = self.create_storage_item( path, ibatch=ib, vlist=vlist, **kwargs )
                     nfiles, t1 = len(input_files), time.time()
                     self.logger.info( f"Exporting batch {ib} with {nfiles} files to: {path}" )
                     tasks = [ dask.delayed( EISDataSource._export_partition_parallel )( input_files[ic], path, ic, self.pspec ) for ic in range( nfiles ) ]

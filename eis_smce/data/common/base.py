@@ -6,12 +6,7 @@ class EISSingleton():
     _instance = None
 
     def __init__(self, *args, **kwargs ):
-        self._logger = None
-
-    @property
-    def logger(self):
-        self.setup_logging()
-        return self._logger
+        pass
 
     @staticmethod
     def item_path( path: str) -> str:
@@ -26,6 +21,10 @@ class EISSingleton():
         return cls._instance
 
     @property
+    def logger(self):
+        return eisc().logger
+
+    @property
     def hostname(self):
         return socket.gethostname()
 
@@ -38,28 +37,25 @@ class EISSingleton():
         """Has an instance been created?"""
         return hasattr(cls, "_instance") and cls._instance is not None
 
-    def setup_logging(self):
-        if self._logger is None:
-            self._logger = logging.getLogger('eis_smce.intake')
-            self._logger.setLevel(logging.DEBUG)
-            log_file = f'{eisc().cache_dir}/logging/eis_smce.{self.hostname}.{self.pid}.log'
-            print( f" ***   Opening Log file: {log_file}  *** ")
-            os.makedirs( os.path.dirname(log_file), exist_ok=True )
-            fh = logging.FileHandler( log_file )
-            fh.setLevel(logging.DEBUG)
-            ch = logging.StreamHandler()
-            ch.setLevel(logging.ERROR)
-            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-            fh.setFormatter(formatter)
-            ch.setFormatter(formatter)
-            self._logger.addHandler(fh)
-            self._logger.addHandler(ch)
-
 class EISConfiguration( EISSingleton ):
 
     def __init__( self, **kwargs ):
         super(EISConfiguration, self).__init__(**kwargs)
         self._config = dict( cache_dir= os.path.expanduser("~/.eis_smce/cache"), merge_dim = "time" )
+        self._logger = None
+
+    @property
+    def logger(self):
+        self.setup_logging()
+        return self._logger
+
+    @property
+    def hostname(self):
+        return socket.gethostname()
+
+    @property
+    def pid(self):
+        return os.getpid()
 
     @property
     def cache_dir(self):
@@ -98,6 +94,23 @@ class EISConfiguration( EISSingleton ):
             yield item
             printProgressBar(i + 1)
         print()
+
+    def setup_logging(self):
+        if self._logger is None:
+            self._logger = logging.getLogger('eis_smce.intake')
+            self._logger.setLevel(logging.DEBUG)
+            log_file = f'{eisc().cache_dir}/logging/eis_smce.{self.hostname}.{self.pid}.log'
+            print( f" ***   Opening Log file: {log_file}  *** ")
+            os.makedirs( os.path.dirname(log_file), exist_ok=True )
+            fh = logging.FileHandler( log_file )
+            fh.setLevel(logging.DEBUG)
+            ch = logging.StreamHandler()
+            ch.setLevel(logging.ERROR)
+            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            fh.setFormatter(formatter)
+            ch.setFormatter(formatter)
+            self._logger.addHandler(fh)
+            self._logger.addHandler(ch)
 
 def eisc(**kwargs) -> EISConfiguration:
     _eisc = EISConfiguration.instance()
