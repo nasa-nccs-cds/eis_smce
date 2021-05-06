@@ -2,7 +2,7 @@ import xarray as xa
 import numpy as np
 
 sample_input = "/discover/nobackup/projects/eis_freshwater/swang9/OL_10km/OUTPUT.1980.imerg.fixed/SURFACEMODEL/200007/LIS_HIST_200007160000.d01.nc"
-zarr_dest = " /gpfsm/dnb43/projects/p151/zarr/LIS/OL_10km/1980/2000_2021/MERRA_IMERG.zarr"
+zarr_dest = "/gpfsm/dnb43/projects/p151/zarr/LIS/OL_10km/1980/2000_2021/MERRA_IMERG.zarr"
 vname = "SoilMoist_tavg"
 
 ids: xa.Dataset = xa.open_dataset( sample_input )
