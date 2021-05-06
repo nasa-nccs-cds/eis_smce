@@ -15,5 +15,5 @@ if __name__ == '__main__':
     input=f"file://{input_dir}/SURFACEMODEL/{month}/LIS_HIST" + "_{time}.d01.nc"
     output=f"/gpfsm/dnb43/projects/p151/zarr/LIS/OL_10km/1980/MERRA_IMERG.zarr"
 
-    dcm().init_cluster()
+    dcm().init_cluster(processes=True)
     zc().standard_conversion( input, output )
