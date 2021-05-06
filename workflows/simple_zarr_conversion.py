@@ -6,5 +6,5 @@ merge_dim = "time"
 cache_dir = "/discover/nobackup/tpmaxwel/cache"
 zarr_file = f"{cache_dir}/zarr_test.zarr"
 
-dset: xa.Dataset = xa.open_mfdataset( input_files, concat_dim=merge_dim, coords="minimal", parallel = True )
+dset: xa.Dataset = xa.open_mfdataset( input_files, concat_dim=merge_dim,  parallel = True ) # coords="minimal",
 dset.to_zarr( zarr_file, mode="w" )
