@@ -153,7 +153,7 @@ class EISDataSource( ):
             from eis_smce.data.storage.s3 import s3m
             from eis_smce.data.common.cluster import dcm
             for vlist in self.segment_manager.get_vlists():
-                print( f"Processing vlist: {vlist}, nchunks = {self.pspec['nchunks']}")
+                print( f"Processing vlist: {vlist}")
                 ib = 0
                 while True:
                     t0 = time.time()
@@ -162,7 +162,7 @@ class EISDataSource( ):
                     self.logger.info( f"Exporting batch {ib} with {nfiles} files to: {path}" )
                     tasks = [ dask.delayed( EISDataSource._export_partition_parallel )( input_files[ic], path, ic, self.pspec ) for ic in range( nfiles ) ]
                     dcm().client.compute( tasks, sync=True )
-                    print( f"Completed processing batch {ib} ({nfiles} files) in {time.time()-t0:.1f} (init: {t1-t0:.1f}) sec.")
+                    print( f"Completed processing batch {ib} ({nfiles}/{self.pspec['nchunks']} files) in {time.time()-t0:.1f} (init: {t1-t0:.1f}) sec.")
                     ib = ib + 1
                     if ib*self.batch_size >= self.pspec['nchunks']: break
 

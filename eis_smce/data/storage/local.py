@@ -169,7 +169,7 @@ class SegmentedDatasetManager:
         t3 = time.time()
 
         print( f"Pre-Processing {len(self._input_files)} files:")
-        for (f, var_set) in eisc().progressBar( zip( self._input_files, self._file_var_sets ) ):
+        for (f, var_set) in zip( self._input_files, self._file_var_sets ):
             outlier_vars: Set[str] = var_set_difference.intersection( var_set )
             if len( outlier_vars ) > 0:
                 outlier_key = "_" + "-".join( outlier_vars )
