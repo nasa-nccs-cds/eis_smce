@@ -68,7 +68,7 @@ class EISDataSource( ):
         source_file_path = ds.encoding["source"]
         dynamic_metadata = dict( _eis_source_path = source_file_path )
         if not cim().test_equal( "_ndatavars_", len( ds.data_vars ) ):
-            eisc().logger.error( f"\n\n  @@@@@@@@@@ File {source_file_path} is non-compliant: {ds}\n")
+            eisc().logger.error( f"\n\n  @@@@@@@@@@ File {source_file_path} is non-compliant, vars: {list(ds.data_vars.keys())}\n")
         for aId in pspec['dynamic_metadata_ids']:
             att_val = ds.attrs.pop(aId,None)
             if att_val is not None:
