@@ -109,6 +109,9 @@ class SegmentedDatasetManager:
     def get_segment_spec(self, vlist: Set[str] ) -> DatasetSegmentSpec:
         return self._segment_specs[ skey(vlist) ]
 
+    def get_dynamic_attributes(self) -> Set[str]:
+        return self._dynamic_attributes
+
     def get_file_key(self, file_path: str ) -> str:
         with xa.open_dataset( file_path ) as dset:
             data_vars: List[str] = [ str(v) for v in dset.data_vars.keys() ]

@@ -30,7 +30,6 @@ class EISDataSource( ):
         self._ds: xa.Dataset = None
         self.pspec = None
         self.batch_size = eisc().get( 'batch_size', 1000 )
-        self.dynamic_metadata_ids = set()
         self.segment_manager.process_files( self.urlpath )
 
     def _open_partition(self, ipart: int) -> xa.Dataset:
@@ -103,10 +102,10 @@ class EISDataSource( ):
 
     def read( self, **kwargs ) -> xa.Dataset:
         merge_dim = eisc().get( 'merge_dim' )
-        self.pspec = dict(  pattern=self.urlpath, merge_dim=merge_dim, dynamic_metadata_ids = self.dynamic_metadata_ids, **kwargs )
         var_list: Set[str] = kwargs.get('vlist', None)
         ibatch = kwargs.get( 'ibatch', -1 )
         file_list = self.get_file_list( var_list, ibatch )
+        self.pspec = dict(pattern=self.urlpath, merge_dim=merge_dim, dynamic_metadata_ids=self.segment_manager.get_dynamic_attributes(), **kwargs)
         self.pspec['nchunks'] = self.segment_manager.get_segment_size( var_list )
         self.pspec['vlist'] = var_list
         self.pspec['sname'] = self.segment_manager.get_segment_name( var_list )
@@ -138,7 +137,7 @@ class EISDataSource( ):
 #        store = self.get_store( path, True )
         mds: xa.Dataset = self.to_dask( **kwargs )
         input_files = mds['_eis_source_path'].values.tolist()
-        for aId in self.dynamic_metadata_ids: mds.attrs.pop( aId, "" )
+        for aId in self.pspec['dynamic_metadata_ids']: mds.attrs.pop( aId, "" )
         zargs = dict( compute=False, consolidated=True )
         if init: zargs['mode'] = 'w'
         else:    zargs['append_dim'] = eisc().get( 'merge_dim' )
