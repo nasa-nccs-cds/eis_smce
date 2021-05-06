@@ -56,6 +56,9 @@ class DatasetSegmentSpec:
     def get_vlist(self) -> Set[str]:
         return self._vlist
 
+    def is_empty(self):
+        return len( self._file_specs ) == 0
+
     def get_file_specs(self) -> List[Dict[str, str]]:
         return self._file_specs
 
@@ -176,7 +179,7 @@ class SegmentedDatasetManager:
         print(f"Done preprocessing with times {t1-t0:.2f} {t2-t1:.2f} {t3-t2:.2f} {t4-t3:.2f}")
 
     def addSegmentSpec(self, name: str, file_specs: Iterable[Dict[str, str]], vlist: Set[str] ):
-        print( f"Adding segment {name}: vars = {list(vlist)}")
         seg_spec: DatasetSegmentSpec = self._segment_specs.setdefault( skey(vlist), DatasetSegmentSpec( name, vlist ))
+        if seg_spec.is_empty(): print(f"Adding segment: name='{name}', vars = {list(vlist)}")
         seg_spec.add_file_specs( file_specs )
         return seg_spec
