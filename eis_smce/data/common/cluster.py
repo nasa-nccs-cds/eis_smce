@@ -1,4 +1,4 @@
-import numpy as np
+import logging, numpy as np
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 from dask.distributed import Client, LocalCluster
 from .base import EISSingleton
@@ -11,6 +11,8 @@ class DaskClusterManager(EISSingleton):
         self._cluster: LocalCluster = None
 
     def init_cluster( self, **kwargs ) -> Client:
+        logger = logging.getLogger("distributed.utils_perf")
+        logger.setLevel(logging.ERROR)
         if self._cluster is not None:
             self._cluster.close()
             self._client.close()

@@ -107,7 +107,7 @@ class EISDataSource( ):
         var_list: Set[str] = kwargs.get('vlist', None)
         ibatch = kwargs.get( 'ibatch', -1 )
         file_list = self.get_file_list( var_list, ibatch )
-        self.pspec['nchunks'] = len( file_list )
+        self.pspec['nchunks'] = self.segment_manager.get_segment_size( var_list )
         self.pspec['vlist'] = var_list
         t0 = time.time()
         self.logger.info( f"Reading merged dataset from {len(file_list)} files, merge_dim = {merge_dim}")
@@ -153,18 +153,15 @@ class EISDataSource( ):
             from eis_smce.data.storage.s3 import s3m
             from eis_smce.data.common.cluster import dcm
             for vlist in self.segment_manager.get_vlists():
-                print( f"Processing vlist: {vlist}")
+                print( f"Processing vlist: {vlist}, nchunks = {self.pspec['nchunks']}")
                 ib = 0
                 while True:
                     t0 = time.time()
                     input_files =self.create_storage_item( path, ibatch=ib, vlist=vlist, **kwargs )
-                    tasks, nfiles, t1 = [], len(input_files), time.time()
+                    nfiles, t1 = len(input_files), time.time()
                     self.logger.info( f"Exporting batch {ib} with {nfiles} files to: {path}" )
-                    for ic in range( nfiles ):
-                        tasks.append( dask.delayed( EISDataSource._export_partition_parallel )( input_files[ic], path, ic, self.pspec ) )
-
-                    with ProgressBar(), Profiler() as prof, ResourceProfiler() as rprof, CacheProfiler() as cprof:
-                        dcm().client.compute( tasks, sync=True )
+                    tasks = [ dask.delayed( EISDataSource._export_partition_parallel )( input_files[ic], path, ic, self.pspec ) for ic in range( nfiles ) ]
+                    dcm().client.compute( tasks, sync=True )
                     print( f"Completed processing batch {ib} ({nfiles} files) in {time.time()-t0:.1f} (init: {t1-t0:.1f}) sec.")
                     ib = ib + 1
                     if ib*self.batch_size >= self.pspec['nchunks']: break

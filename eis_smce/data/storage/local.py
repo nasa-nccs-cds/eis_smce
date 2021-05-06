@@ -59,6 +59,9 @@ class DatasetSegmentSpec:
     def is_empty(self):
         return len( self._file_specs ) == 0
 
+    def size(self):
+        return len( self._file_specs )
+
     def get_file_specs(self) -> List[Dict[str, str]]:
         return self._file_specs
 
@@ -92,6 +95,9 @@ class SegmentedDatasetManager:
 
     def get_file_specs(self, vlist: Set[str] ) -> List[Dict[str,str]]:
         return self._segment_specs[ skey(vlist) ].get_file_specs()
+
+    def get_segment_size(self, vlist: Set[str] ) -> int:
+        return self._segment_specs[ skey(vlist) ].size()
 
     def get_segment_spec(self, vlist: Set[str] ) -> DatasetSegmentSpec:
         return self._segment_specs[ skey(vlist) ]
@@ -151,14 +157,9 @@ class SegmentedDatasetManager:
 
         print( "Testing varlists in all files")
         t1 = time.time()
-        tasks = []
-        for f in self._input_files:
-            tasks.append( dask.delayed( self._get_file_metadata )(f) )
-
-        with dask.diagnostics.ProgressBar():
-            files_metadata = dcm().client.compute(tasks, sync=True)
-
-        self._process_files_metadata(files_metadata)
+        tasks = [ dask.delayed( self._get_file_metadata )(f) for f in self._input_files ]
+        files_metadata = dcm().client.compute( tasks, sync=True )
+        self._process_files_metadata( files_metadata )
         t2 = time.time()
 
         var_set_intersect: Set[str]  = self._file_var_sets[0].intersection( *self._file_var_sets )
