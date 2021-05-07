@@ -186,7 +186,7 @@ class SegmentedDatasetManager:
                 outlier_key = "_" + "-".join( outlier_vars )
                 self.addSegmentSpec( outlier_key, [ self._file_specs[f] ], outlier_vars )
 
-        for segment_spec in self._segment_specs.values(): segment_spec.sort( key=self.sort_key )
+#        for segment_spec in self._segment_specs.values(): segment_spec.sort( key=self.sort_key )
         t4 = time.time()
         print(f"Done preprocessing with times {t1-t0:.2f} {t2-t1:.2f} {t3-t2:.2f} {t4-t3:.2f}")
 
