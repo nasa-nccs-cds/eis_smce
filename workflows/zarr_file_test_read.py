@@ -33,7 +33,6 @@ with xa.set_options( display_max_rows=100 ):
     test_array: xa.DataArray = zds[vname]
     print( f"\n{vname} shape: {test_array.shape}"  )
     print( f"{vname} attrs: {test_array.attrs}"  )
-    axes = list( range( 1, test_array.ndim ) )
     test_data: np.ndarray = test_array[time_index].max().values
     print( f"{vname} max:"  )
     print( test_data )
