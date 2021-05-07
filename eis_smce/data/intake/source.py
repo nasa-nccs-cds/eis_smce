@@ -115,7 +115,7 @@ class EISDataSource( ):
                                             preprocess=partial( self.preprocess, self.pspec ), parallel = True )
         mdim = rv[merge_dim].values
         print( f"Reading merged dataset[{ibatch}] from {len(file_list)} files:" )
-        print( f" --> File Range: '{file_list[0]}' -> '{file_list[-1]}'" )
+        print( f" --> File Range: '{os.path.basename(file_list[0])}' -> '{os.path.basename(file_list[-1])}'" )
         print( f" --> {merge_dim} range: {mdim[0]} -> {mdim[-1]}")
         self.logger.info( f"Completed merge in {time.time()-t0} secs" )
         return rv
@@ -186,7 +186,7 @@ class EISDataSource( ):
         dset = EISDataSource.preprocess( pspec, ds0 )
         mval = dset[merge_dim].values[0]
         spath = dset['_eis_source_path'].values[0]
-        cls.logger().info(f' %% Export_partition_parallel: region: {region}, {merge_dim} = {mval}, _eis_source_path = {spath}' )
+        cls.logger.info(f' %% Export_partition_parallel: region: {region}, {merge_dim} = {mval}, _eis_source_path = {spath}' )
         dset.to_zarr( store, mode='a', region=region )
         ds0.close(); del ds0; dset.close(); del dset
 
