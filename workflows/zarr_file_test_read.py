@@ -29,8 +29,6 @@ for iT in range(100):
 with xa.set_options( display_max_rows=100 ):
     print( f"\nzds:"  )
     print( zds )
-    print( f"\nzds['history'] = {zds['_history'].values}" )
-    print( f"zds['time'][{time_index}] = {zds['time'].values[time_index]}" )
 
     test_array: xa.DataArray = zds[vname]
     print( f"\n{vname} shape: {test_array.shape}"  )
