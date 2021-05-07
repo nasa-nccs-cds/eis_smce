@@ -144,6 +144,7 @@ class EISDataSource( ):
         store = self.get_cache_path( path, self.pspec )
         with xa.set_options( display_max_rows=100 ):
             self.logger.info( f" merged_dset -> zarr: {store}\n   -------------------- Merged dataset: -------------------- \n{mds}\n")
+        print( f"Writin to zarr file: {store}" )
         mds.to_zarr( store, **zargs )
         mds.close(); del mds
         return input_files
