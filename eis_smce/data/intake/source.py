@@ -163,7 +163,8 @@ class EISDataSource( ):
                     nfiles, t1 = len(input_files), time.time()
                     self.logger.info( f"Exporting batch {ib} with {nfiles} files to: {path}" )
                     ispecs = [ dict( chunk_index=ic, input_path=input_files[ic] ) for ic in range( nfiles ) ]
-                    dcm().client.map( partial( EISDataSource._export_partition_parallel, path, self.pspec ), ispecs )
+                    results = dcm().client.map( partial( EISDataSource._export_partition_parallel, path, self.pspec ), ispecs )
+                    dcm().client.compute( results )
                     print( f"Completed processing batch {ib} ({nfiles}/{self.pspec['nchunks']} files) in {time.time()-t0:.1f} (init: {t1-t0:.1f}) sec.")
                     ib = ib + 1
                     if ib*self.batch_size >= self.pspec['nchunks']: break
