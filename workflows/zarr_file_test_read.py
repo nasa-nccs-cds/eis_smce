@@ -3,12 +3,11 @@ import numpy as np
 
 time_index = 100
 vname = "GPP_tavg"
-# sample_input = "/discover/nobackup/projects/eis_freshwater/swang9/OL_10km/OUTPUT.1980.imerg.fixed/SURFACEMODEL/200007/LIS_HIST_200007160000.d01.nc"
 zarr_dest0 = "/gpfsm/dnb43/projects/p151/zarr/LIS/OL_10km/1980/MERRA_IMERG.zarr"
 zarr_dest1 = "/gpfsm/dnb43/projects/p151/zarr/LIS/OL_10km/1980/MERRA_IMERG.zarr_Swnet_tavg-SWdown_f_tavg-LWdown_f_tavg-Lwnet_tavg"
 zarr_dest2 = "/discover/nobackup/tpmaxwel/cache/zarr_test.zarr"
 
-zds: xa.Dataset = xa.open_zarr( zarr_dest0 )
+zds: xa.Dataset = xa.open_zarr( zarr_dest2 )
 sample_input = zds['_eis_source_path'].values[time_index]
 print( f"sample input path: {sample_input}"  )
 ids: xa.Dataset = xa.open_dataset( sample_input )
@@ -24,7 +23,8 @@ for k,v in zds.attrs.items():
 #tvals = zds['time'].values
 #fvals = zds['_eis_source_path'].values
 for iT in range(100):
-    print( f" {iT}: {os.path.basename(zds['_eis_source_path'].values[iT])}")
+#    print( f" {iT}: {os.path.basename(zds['_eis_source_path'].values[iT])}")
+    print( f" {iT}: {os.path.basename(zds['time'].values[iT])}")
 
 with xa.set_options( display_max_rows=100 ):
     print( f"\nzds:"  )
