@@ -7,9 +7,9 @@ zarr_dest0 = "/gpfsm/dnb43/projects/p151/zarr/LIS/OL_10km/1980/MERRA_IMERG.zarr"
 zarr_dest1 = "/gpfsm/dnb43/projects/p151/zarr/LIS/OL_10km/1980/MERRA_IMERG.zarr_Swnet_tavg-SWdown_f_tavg-LWdown_f_tavg-Lwnet_tavg"
 zarr_dest2 = "/discover/nobackup/tpmaxwel/cache/zarr_test.zarr"
 
-zds: xa.Dataset = xa.open_zarr( zarr_dest2 )
-# sample_input = zds['_eis_source_path'].values[time_index]
-sample_input = '/discover/nobackup/projects/eis_freshwater/lahmers/RUN/1km_DOMAIN_DAens20_MCD15A2H.006_2019Flood/OUTPUT/SURFACEMODEL//201904/LIS_HIST_201904110000.d01.nc'
+zds: xa.Dataset = xa.open_zarr( zarr_dest0 )
+sample_input = zds['_eis_source_path'].values[time_index]
+# sample_input = '/discover/nobackup/projects/eis_freshwater/lahmers/RUN/1km_DOMAIN_DAens20_MCD15A2H.006_2019Flood/OUTPUT/SURFACEMODEL//201904/LIS_HIST_201904110000.d01.nc'
 print( f"sample input path: {sample_input}"  )
 ids: xa.Dataset = xa.open_dataset( sample_input )
 
@@ -21,11 +21,11 @@ print( f"\nzds attrs:"  )
 for k,v in zds.attrs.items():
     print( f"  **  {k}: {v}")
 
-#tvals = zds['time'].values
-#fvals = zds['_eis_source_path'].values
+tvals = zds['time'].values
+fvals = zds['_eis_source_path'].values
 for iT in range(100):
-#    print( f" {iT}: {os.path.basename(zds['_eis_source_path'].values[iT])}")
-    print( f" {iT}: {zds['time'].values[iT]}")
+    print( f" {iT}: {os.path.basename(zds['_eis_source_path'].values[iT])}")
+#    print( f" {iT}: {zds['time'].values[iT]}")
 
 with xa.set_options( display_max_rows=100 ):
     print( f"\nzds:"  )
