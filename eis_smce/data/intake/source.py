@@ -110,7 +110,7 @@ class EISDataSource( ):
         self.pspec['vlist'] = var_list
         self.pspec['sname'] = self.segment_manager.get_segment_name( var_list )
         t0 = time.time()
-        self.logger.info( f"Reading merged dataset from {len(file_list)} files, merge_dim = {merge_dim}")
+        print( f"Reading merged dataset[{ibatch}] from {len(file_list)} files, starting with '{file_list[0]}', merge_dim = {merge_dim}")
         self.pspec['files'] = file_list
         rv: xa.Dataset = xa.open_mfdataset( file_list, concat_dim=merge_dim, coords="minimal", data_vars=var_list,
                                             preprocess=partial( self.preprocess, self.pspec ), parallel = True )
@@ -133,7 +133,8 @@ class EISDataSource( ):
     #     return store
 
     def create_storage_item(self, path: str, **kwargs ) -> List[str]:
-        init = ( kwargs.get( 'ibatch', 0 ) == 0 )
+        ibatch =  kwargs.get( 'ibatch', 0 )
+        init = ( ibatch == 0 )
 #        store = self.get_store( path, True )
         mds: xa.Dataset = self.to_dask( **kwargs )
         input_files = mds['_eis_source_path'].values.tolist()
@@ -144,7 +145,7 @@ class EISDataSource( ):
         store = self.get_cache_path( path, self.pspec )
         with xa.set_options( display_max_rows=100 ):
             self.logger.info( f" merged_dset -> zarr: {store}\n   -------------------- Merged dataset: -------------------- \n{mds}\n")
-        print( f"Writin to zarr file: {store}" )
+        print( f"{'Writing' if init else 'Appending'} batch[{ibatch}] to zarr file: {store}"   )
         mds.to_zarr( store, **zargs )
         mds.close(); del mds
         return input_files
@@ -161,8 +162,8 @@ class EISDataSource( ):
                     input_files = self.create_storage_item( path, ibatch=ib, vlist=vlist, **kwargs )
                     nfiles, t1 = len(input_files), time.time()
                     self.logger.info( f"Exporting batch {ib} with {nfiles} files to: {path}" )
-                    tasks = [ dask.delayed( EISDataSource._export_partition_parallel )( input_files[ic], path, ic, self.pspec ) for ic in range( nfiles ) ]
-                    dcm().client.compute( tasks, sync=True )
+                    ispecs = [ dict( chunk_index=ic, input_path=input_files[ic] ) for ic in range( nfiles ) ]
+                    dcm().client.map( partial( EISDataSource._export_partition_parallel, path, self.pspec ), ispecs )
                     print( f"Completed processing batch {ib} ({nfiles}/{self.pspec['nchunks']} files) in {time.time()-t0:.1f} (init: {t1-t0:.1f}) sec.")
                     ib = ib + 1
                     if ib*self.batch_size >= self.pspec['nchunks']: break
@@ -172,23 +173,15 @@ class EISDataSource( ):
             self.logger.error(traceback.format_exc())
 
     @classmethod
-    def _export_partition_parallel( cls, input_path: str, output_path:str, chunk_index: int,  pspec: Dict ):
-        logger = logging.getLogger('eis_smce.intake')
-        t0 = time.time()
+    def _export_partition_parallel( cls, output_path:str, pspec: Dict, ispec: Dict ):
         store = EISDataSource.get_cache_path( output_path, pspec )
+        chunk_index = ispec['chunk_index']
         merge_dim = pspec.get( 'merge_dim' )
-        ds0 = xa.open_dataset( input_path )
-        ds0.compute()
-        t1 = time.time()
+        ds0 = xa.open_dataset( ispec['input_path'] )
         region = { merge_dim: slice( chunk_index, chunk_index + ds0.sizes[merge_dim] ) }
         dset = EISDataSource.preprocess( pspec, ds0 )
-        dset.compute()
-        t2 = time.time()
         dset.to_zarr( store, mode='a', region=region )
         ds0.close(); del ds0; dset.close(); del dset
-        t3 = time.time()
-        cim().add( 'tRead', t1-t0 ), cim().add( 'tPrep', t2-t1 ), cim().add( 'tWrite', t3-t2 )
-        logger.info( f"Finished generating zarr chunk: read avet: {cim().ave('tRead'):.2f}, preprocess avet: {cim().ave('tPrep'):.2f}, write avet: {cim().ave('tWrite'):.2f}")
 
     def get_zarr_source(self, zpath: str ):
         zsrc = EISZarrSource(zpath)
