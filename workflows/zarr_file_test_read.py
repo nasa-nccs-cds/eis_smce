@@ -8,7 +8,8 @@ zarr_dest1 = "/gpfsm/dnb43/projects/p151/zarr/LIS/OL_10km/1980/MERRA_IMERG.zarr_
 zarr_dest2 = "/discover/nobackup/tpmaxwel/cache/zarr_test.zarr"
 
 zds: xa.Dataset = xa.open_zarr( zarr_dest2 )
-sample_input = zds['_eis_source_path'].values[time_index]
+# sample_input = zds['_eis_source_path'].values[time_index]
+sample_input = '/discover/nobackup/projects/eis_freshwater/lahmers/RUN/1km_DOMAIN_DAens20_MCD15A2H.006_2019Flood/OUTPUT/SURFACEMODEL//201904/LIS_HIST_201904110000.d01.nc'
 print( f"sample input path: {sample_input}"  )
 ids: xa.Dataset = xa.open_dataset( sample_input )
 
