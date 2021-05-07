@@ -1,4 +1,4 @@
-import xarray as xa
+import os, xarray as xa
 import numpy as np
 
 time_index = 100
@@ -21,10 +21,10 @@ print( f"\nzds attrs:"  )
 for k,v in zds.attrs.items():
     print( f"  **  {k}: {v}")
 
-tvals = zds['time'].values
-fvals = zds['_eis_source_path'].values
+#tvals = zds['time'].values
+#fvals = zds['_eis_source_path'].values
 for iT in range(100):
-    print( f" {tvals[iT]}: {fvals[iT]}")
+    print( f" {iT}: {os.path.basename(zds['_eis_source_path'].values[time_index])}")
 
 with xa.set_options( display_max_rows=100 ):
     print( f"\nzds:"  )

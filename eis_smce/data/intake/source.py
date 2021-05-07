@@ -185,8 +185,8 @@ class EISDataSource( ):
         region = { merge_dim: slice( chunk_index, chunk_index + ds0.sizes[merge_dim] ) }
         dset = EISDataSource.preprocess( pspec, ds0 )
         mval = dset[merge_dim].values[0]
-        spath = dset['_eis_source_path'].values[0]
-        cls.logger.info(f' %% Export_partition_parallel: region: {region}, {merge_dim} = {mval}, _eis_source_path = {spath}' )
+        fname = os.path.basename( dset['_eis_source_path'].values[0] )
+        cls.logger.info(f'**Export: region: {region}, {merge_dim} = {mval}, file = {fname}' )
         dset.to_zarr( store, mode='a', region=region )
         ds0.close(); del ds0; dset.close(); del dset
 
