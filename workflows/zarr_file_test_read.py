@@ -8,7 +8,7 @@ zarr_dest0 = "/gpfsm/dnb43/projects/p151/zarr/LIS/OL_10km/1980/MERRA_IMERG.zarr"
 zarr_dest1 = "/gpfsm/dnb43/projects/p151/zarr/LIS/OL_10km/1980/MERRA_IMERG.zarr_Swnet_tavg-SWdown_f_tavg-LWdown_f_tavg-Lwnet_tavg"
 
 zds: xa.Dataset = xa.open_zarr( zarr_dest0 )
-sample_input =zds['_eis_source_path'][time_index]
+sample_input = zds['_eis_source_path'][time_index].values[0]
 print( f"sample input path: {sample_input}"  )
 ids: xa.Dataset = xa.open_dataset( sample_input )
 
