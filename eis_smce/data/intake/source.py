@@ -19,7 +19,7 @@ def dsort( d: Dict ) -> Dict: return { k:d[k] for k in sorted(d.keys()) }
 def has_char(string: str, chars: str): return 1 in [c in string for c in chars]
 
 class EISDataSource( ):
-    logger = EISConfiguration.logger()
+    logger = EISConfiguration.get_logger()
 
     def __init__(self, input: str ):
         super(EISDataSource, self).__init__()
