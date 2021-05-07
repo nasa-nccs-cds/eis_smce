@@ -6,7 +6,7 @@ from eis_smce.data.common.cluster import dcm
 logger = logging.getLogger("distributed.utils_perf")
 logger.setLevel(logging.ERROR)
 
-partial_run = True
+partial_run = False
 input_dir = "/discover/nobackup/projects/eis_freshwater/swang9/OL_10km/OUTPUT.1980.imerg.fixed"
 month = "200*" if partial_run else  "*"
 
