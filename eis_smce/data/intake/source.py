@@ -14,16 +14,16 @@ import intake, zarr, numpy as np
 import dask.bag as db
 import time, logging,  xarray as xa
 import intake_xarray as ixa   # Need this import to register 'xarray' container.
-from eis_smce.data.common.base import eisc, EISSingleton as eiss
+from eis_smce.data.common.base import eisc, EISConfiguration, EISSingleton as eiss
 def dsort( d: Dict ) -> Dict: return { k:d[k] for k in sorted(d.keys()) }
 def has_char(string: str, chars: str): return 1 in [c in string for c in chars]
 
 class EISDataSource( ):
+    logger = EISConfiguration.logger()
 
     def __init__(self, input: str ):
         super(EISDataSource, self).__init__()
         self.urlpath = input
-        self.logger = eisc().logger
         self.segment_manager = SegmentedDatasetManager()
         self._parts: Dict[int,xa.Dataset] = {}
         self._schema: Schema = None
@@ -110,10 +110,13 @@ class EISDataSource( ):
         self.pspec['vlist'] = var_list
         self.pspec['sname'] = self.segment_manager.get_segment_name( var_list )
         t0 = time.time()
-        print( f"Reading merged dataset[{ibatch}] from {len(file_list)} files, starting with '{file_list[0]}', merge_dim = {merge_dim}")
         self.pspec['files'] = file_list
         rv: xa.Dataset = xa.open_mfdataset( file_list, concat_dim=merge_dim, coords="minimal", data_vars=var_list,
                                             preprocess=partial( self.preprocess, self.pspec ), parallel = True )
+        mdim = rv[merge_dim].values
+        print( f"Reading merged dataset[{ibatch}] from {len(file_list)} files:" )
+        print( f" --> File Range: '{file_list[0]}' -> '{file_list[-1]}'" )
+        print( f" --> {merge_dim} range: {mdim[0]} -> {mdim[-1]}")
         self.logger.info( f"Completed merge in {time.time()-t0} secs" )
         return rv
 
@@ -181,6 +184,9 @@ class EISDataSource( ):
         ds0 = xa.open_dataset( ispec['input_path'] )
         region = { merge_dim: slice( chunk_index, chunk_index + ds0.sizes[merge_dim] ) }
         dset = EISDataSource.preprocess( pspec, ds0 )
+        mval = dset[merge_dim].values[0]
+        spath = dset['_eis_source_path'].values[0]
+        cls.logger().info(f' %% Export_partition_parallel: region: {region}, {merge_dim} = {mval}, _eis_source_path = {spath}' )
         dset.to_zarr( store, mode='a', region=region )
         ds0.close(); del ds0; dset.close(); del dset
 
