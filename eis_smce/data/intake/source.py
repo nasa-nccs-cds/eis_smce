@@ -41,7 +41,7 @@ class EISDataSource( ):
     def get_file_list( self, vlist: Set[str], ibatch: int ) -> List[str]:
         file_spec_list:  List[Dict[str,str]] = self.segment_manager.get_file_specs( vlist )
         Nf = len( file_spec_list )
-        (istart,istop)  = (0, Nf) if (ibatch < 0) else (self.batch_size*ibatch, min( self.batch_size*(ibatch+1), Nf ))
+        (istart,istop)  = (0, Nf) if (ibatch < 0) else (ibatch, min( ibatch + self.batch_size, Nf ))
         return [ file_spec_list[ip].get("resolved") for ip in range(istart,istop) ]
 
     def get_local_file_path(self, data_url: str):
@@ -159,18 +159,19 @@ class EISDataSource( ):
             from eis_smce.data.common.cluster import dcm
             for vlist in self.segment_manager.get_vlists():
                 print( f"Processing vlist: {vlist}")
+                file_spec_list: List[Dict[str, str]] = self.segment_manager.get_file_specs(vlist)
                 ib = 0
                 while True:
                     t0 = time.time()
                     input_files = self.create_storage_item( path, ibatch=ib, vlist=vlist, **kwargs )
                     nfiles, t1 = len(input_files), time.time()
                     self.logger.info( f"Exporting batch {ib} with {nfiles} files to: {path}" )
-                    ispecs = [ dict( chunk_index=ic, input_path=input_files[ic] ) for ic in range( nfiles ) ]
+                    ispecs = [ dict( chunk_index=ic+ib, input_path=file_spec_list[ic+ib]['resolved'] ) for ic in range( nfiles ) ]
                     results = dcm().client.map( partial( EISDataSource._export_partition_parallel, path, self.pspec ), ispecs )
                     dcm().client.compute( results )
                     print( f"Completed processing batch {ib} ({nfiles}/{self.pspec['nchunks']} files) in {time.time()-t0:.1f} (init: {t1-t0:.1f}) sec.")
-                    ib = ib + 1
-                    if ib*self.batch_size >= self.pspec['nchunks']: break
+                    ib = ib + self.batch_size
+                    if ib >= self.pspec['nchunks']: break
 
         except Exception  as err:
             self.logger.error(f"Exception in export: {err}")
