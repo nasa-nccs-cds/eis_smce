@@ -22,7 +22,7 @@ class EISSingleton():
 
     @property
     def logger(self):
-        return eisc().logger
+        return EISConfiguration.get_logger()
 
     @property
     def hostname(self):
@@ -90,7 +90,7 @@ class EISConfiguration( EISSingleton ):
         print()
 
     @classmethod
-    def logger(cls):
+    def get_logger(cls):
         _logger = logging.getLogger(f'eis_smce.intake.{cls.hostname()}.{cls.pid()}')
         if len( _logger.handlers ) == 0:
             _logger.setLevel(logging.DEBUG)
