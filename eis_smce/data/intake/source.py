@@ -71,7 +71,6 @@ class EISDataSource( ):
             if att_val is not None:
                 dynamic_metadata[f"_{aId}"] = att_val
         ds = ds.assign( dynamic_metadata )
- #       print( f"preprocess --> Assigning metadata variables: {dynamic_metadata}")
         new_vlist = list( pspec['vlist'] ) + list( dynamic_metadata.keys() )
         if merge_dim not in list( ds.coords.keys() ):
             ds = ds.drop_vars( set( ds.data_vars.keys() ).difference( new_vlist ) )
@@ -166,9 +165,12 @@ class EISDataSource( ):
                     input_files = self.create_storage_item( path, ibatch=ib, vlist=vlist, **kwargs )
                     nfiles, t1 = len(input_files), time.time()
                     self.logger.info( f"Exporting batch {ib} with {nfiles} files to: {path}" )
-                    ispecs = [ dict( chunk_index=ic+ib, input_path=file_spec_list[ic+ib]['resolved'] ) for ic in range( nfiles ) ]
+                    ispecs = [ dict( chunk_index=ic, input_path=file_spec_list[ic]['resolved'] ) for ic in range( ib, nfiles+ib ) ]
                     results = dcm().client.map( partial( EISDataSource._export_partition_parallel, path, self.pspec ), ispecs )
-                    dcm().client.compute( results )
+                    with ResourceProfiler(20) as rprof, CacheProfiler() as cprof:
+                        dcm().client.compute( results )
+                    for rp in rprof.results: self.logger.info( f"RP: {rp}" )
+                    for cp in cprof.results: self.logger.info( f"CP: {cp}" )
                     print( f"Completed processing batch {ib} ({nfiles}/{self.pspec['nchunks']} files) in {time.time()-t0:.1f} (init: {t1-t0:.1f}) sec.")
                     ib = ib + self.batch_size
                     if ib >= self.pspec['nchunks']: break
