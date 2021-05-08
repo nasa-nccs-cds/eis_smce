@@ -2,7 +2,7 @@ import os, xarray as xa
 import numpy as np
 
 time_index = 100
-vname = "SWdown_f_tavg" # "GPP_tavg"
+vname = "Streamflow_tavg" # "GPP_tavg"
 zarr_dest0 = "/gpfsm/dnb43/projects/p151/zarr/LIS/OL_10km/1980/MERRA_IMERG.zarr"
 zarr_dest1 = "/gpfsm/dnb43/projects/p151/zarr/LIS/OL_10km/1980//MERRA_IMERG_SWdown_f_tavg-Swnet_tavg-Lwnet_tavg-LWdown_f_tavg.zarr"
 zarr_dest2 = "/discover/nobackup/tpmaxwel/cache/zarr_test.zarr"
