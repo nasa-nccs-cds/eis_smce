@@ -169,8 +169,8 @@ class EISDataSource( ):
                     results = dcm().client.map( partial( EISDataSource._export_partition_parallel, path, self.pspec ), ispecs )
                     with ResourceProfiler(20) as rprof, CacheProfiler() as cprof:
                         dcm().client.compute( results )
-                    for rp in rprof.results: self.logger.info( f"RP: {rp}" )
-                    for cp in cprof.results: self.logger.info( f"CP: {cp}" )
+                        for rp in rprof.results: self.logger.info( f"RP: {rp}" )
+                        for cp in cprof.results: self.logger.info( f"CP: {cp}" )
                     print( f"Completed processing batch {ib} ({nfiles}/{self.pspec['nchunks']} files) in {time.time()-t0:.1f} (init: {t1-t0:.1f}) sec.")
                     ib = ib + self.batch_size
                     if ib >= self.pspec['nchunks']: break
