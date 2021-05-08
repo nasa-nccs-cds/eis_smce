@@ -145,6 +145,7 @@ class SegmentedDatasetManager:
 
     def _generate_file_specs(self, urlpath: str, **kwargs):
         from intake.source.utils import reverse_format
+        merge_dim = eisc().get('merge_dim')
         filepath_pattern = self._parse_urlpath( urlpath )
         filepath_glob = path_to_glob( filepath_pattern )
         self._input_files = glob.glob(filepath_glob)
@@ -162,9 +163,9 @@ class SegmentedDatasetManager:
             except ValueError as err:
                 eisc().logger.error( f" Metadata processing error: {err}, Did you mix glob and pattern in file name?")
 
-    def process_files(self, urlpath: str ):
+    def process_files(self, urlpath: str, **kwargs ):
         t0 = time.time()
-        self._generate_file_specs( urlpath )
+        self._generate_file_specs( urlpath, **kwargs )
 
         print( "Testing varlists in all files")
         t1 = time.time()

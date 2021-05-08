@@ -210,18 +210,6 @@ class EISDataSource( ):
         if ( len( fparts ) == 1 ): return fparts[0]
         return db.from_sequence( fparts )
 
-    def _get_schema(self):
-        self.urlpath = self._get_cache(self.urlpath)[0]
-        if self._schema == None:
-            # if self.urlpath.startswith( "s3:"):
-            #     from eis_smce.data.storage.s3 import s3m
-            #     self._file_list = s3m().get_file_list( self.urlpath )
-            # else:
-            self.segment_manager.process_files( self.urlpath, self.pspec )
-            self.logger.info( f"Created file list from {self.urlpath}")
-            self._schema = Schema( datashape=None, dtype=None, shape=None )
-        return self._schema
-
     def equal_attr(self, v0, v1 ) -> bool:
         if v1 is None: return False
         if type(v0) is np.ndarray:    return np.array_equal( v0, v1 )
