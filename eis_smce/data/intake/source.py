@@ -30,7 +30,7 @@ class EISDataSource( ):
         self._ds: xa.Dataset = None
         self.pspec = None
         self.batch_size = eisc().get( 'batch_size', 1000 )
-        self.segment_manager.process_files( self.urlpath )
+        self.chunk_size = self.segment_manager.process_files( self.urlpath )
 
     def _open_partition(self, ipart: int) -> xa.Dataset:
         raise NotImplementedError()
@@ -104,12 +104,11 @@ class EISDataSource( ):
         var_list: Set[str] = kwargs.get('vlist', None)
         ibatch = kwargs.get( 'ibatch', -1 )
         file_list = self.get_file_list( var_list, ibatch )
-        self.pspec = dict(pattern=self.urlpath, merge_dim=merge_dim, dynamic_metadata_ids=self.segment_manager.get_dynamic_attributes(), **kwargs)
-        self.pspec['nchunks'] = self.segment_manager.get_segment_size( var_list )
-        self.pspec['vlist'] = var_list
-        self.pspec['sname'] = self.segment_manager.get_segment_name( var_list )
+        self.pspec = dict( pattern=self.urlpath, merge_dim=merge_dim, chunk_size=self.chunk_size, files=file_list,
+                           vlist=var_list, dynamic_metadata_ids=self.segment_manager.get_dynamic_attributes(),
+                           nchunks = self.segment_manager.get_segment_size( var_list ),
+                           sname = self.segment_manager.get_segment_name( var_list ), **kwargs )
         t0 = time.time()
-        self.pspec['files'] = file_list
         rv: xa.Dataset = xa.open_mfdataset( file_list, concat_dim=merge_dim, coords="minimal", data_vars=var_list,
                                             preprocess=partial( self.preprocess, self.pspec ), parallel = True )
         mdim = rv[merge_dim].values
@@ -165,14 +164,14 @@ class EISDataSource( ):
                     input_files = self.create_storage_item( path, ibatch=ib, vlist=vlist, **kwargs )
                     nfiles, t1 = len(input_files), time.time()
                     self.logger.info( f"Exporting batch {ib} with {nfiles} files to: {path}" )
-                    ispecs = [ dict( chunk_index=ic, input_path=file_spec_list[ic]['resolved'] ) for ic in range( ib, nfiles+ib ) ]
+                    ispecs = [ dict( chunk_index=ic, input_path=file_spec_list[ic]['resolved'] ) for ic in range( ib, ib+nfiles*self.chunk_size, self.chunk_size ) ]
                     results = dcm().client.map( partial( EISDataSource._export_partition_parallel, path, self.pspec ), ispecs )
                     with ResourceProfiler(20) as rprof, CacheProfiler() as cprof:
                         dcm().client.compute( results )
                         for rp in rprof.results: self.logger.info( f"RP: {rp}" )
                         for cp in cprof.results: self.logger.info( f"CP: {cp}" )
                     print( f"Completed processing batch {ib} ({nfiles}/{self.pspec['nchunks']} files) in {time.time()-t0:.1f} (init: {t1-t0:.1f}) sec.")
-                    ib = ib + self.batch_size
+                    ib = ib + self.batch_size*self.chunk_size
                     if ib >= self.pspec['nchunks']: break
 
         except Exception  as err:
@@ -185,7 +184,7 @@ class EISDataSource( ):
         chunk_index = ispec['chunk_index']
         merge_dim = pspec.get( 'merge_dim' )
         ds0 = xa.open_dataset( ispec['input_path'] )
-        region = { merge_dim: slice( chunk_index, chunk_index + ds0.sizes[merge_dim] ) }
+        region = { merge_dim: slice( chunk_index, chunk_index + pspec['chunk_size'] ) }
         dset = EISDataSource.preprocess( pspec, ds0 )
         mval = dset[merge_dim].values[0]
         fname = os.path.basename( dset['_eis_source_path'].values[0] )

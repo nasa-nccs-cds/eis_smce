@@ -5,7 +5,7 @@ from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapp
 import numpy as np
 from eis_smce.data.common.cluster import dcm, cim
 import dask, xarray as xa
-from dask.diagnostics import ProgressBar
+from functools import partial
 import glob, os, time
 from datetime import datetime
 
@@ -119,22 +119,29 @@ class SegmentedDatasetManager:
             return "-".join( data_vars )
 
     @staticmethod
-    def _get_file_metadata( file_path: str ) -> Tuple[ Dict[str,Union[str,np.array]], Set[str] ]:
+    def _get_file_metadata( merge_dim: str,  file_path: str ) -> Tuple[ Dict[str,Union[str,np.array]], Set[str] ]:
         with xa.open_dataset(file_path) as dset:
             _attrs: Dict[str,Union[str,np.array]] = { str(k): v for k, v in dset.attrs.items() }
+            _attrs['nchunks'] = dset.sizes[ merge_dim ]
             _vset: Set[str] = { str(v) for v in dset.data_vars.keys() }
             return ( _attrs,  _vset)
 
-    def _process_files_metadata(self, fdata: List[ Tuple[ Dict[str,Union[str,np.array]], Set[str] ] ] ):
+    def _process_files_metadata(self, fdata: List[ Tuple[ Dict[str,Union[str,np.array]], Set[str] ] ] ) -> int:
+        chunk_size = None
         for ( _attrs, _vlist ) in fdata:
             if self._base_metadata is None:
                 self._base_metadata =  _attrs
             else:
                 for k,v in _attrs.items():
-                    if not self.equal_attr( v, self._base_metadata.get( k, None ) ):
-                        self._dynamic_attributes.add( k )
+                    if k == "chunk_size":
+                        if chunk_size == None: chunk_size = v
+                        else: assert (v==chunk_size), f"Variable chunk sizes not supported: {v} vs {chunk_size}"
+                    else:
+                        if not self.equal_attr( v, self._base_metadata.get( k, None ) ):
+                            self._dynamic_attributes.add( k )
             self._file_var_sets.append( _vlist )
         print( f"  ****  Computed Dynamic Attributes: {list(self._dynamic_attributes)}")
+        return chunk_size
 
     def _parse_urlpath( self, urlpath: str ) -> str:
         return urlpath.split(":")[-1].replace("//","/").replace("//","/")
@@ -145,7 +152,6 @@ class SegmentedDatasetManager:
 
     def _generate_file_specs(self, urlpath: str, **kwargs):
         from intake.source.utils import reverse_format
-        merge_dim = eisc().get('merge_dim')
         filepath_pattern = self._parse_urlpath( urlpath )
         filepath_glob = path_to_glob( filepath_pattern )
         self._input_files = glob.glob(filepath_glob)
@@ -163,15 +169,15 @@ class SegmentedDatasetManager:
             except ValueError as err:
                 eisc().logger.error( f" Metadata processing error: {err}, Did you mix glob and pattern in file name?")
 
-    def process_files(self, urlpath: str, **kwargs ):
+    def process_files(self, urlpath: str, **kwargs ) -> int:
         t0 = time.time()
         self._generate_file_specs( urlpath, **kwargs )
-
+        merge_dim = eisc().get('merge_dim')
         print( "Testing varlists in all files")
         t1 = time.time()
-        tasks = [ dask.delayed( self._get_file_metadata )(f) for f in self._input_files ]
+        tasks = dcm().client.map( partial( self._get_file_metadata, merge_dim ), self._input_files )
         files_metadata = dcm().client.compute( tasks, sync=True )
-        self._process_files_metadata( files_metadata )
+        chunk_size = self._process_files_metadata( files_metadata )
         t2 = time.time()
 
         var_set_intersect: Set[str]  = self._file_var_sets[0].intersection( *self._file_var_sets )
@@ -190,6 +196,7 @@ class SegmentedDatasetManager:
         for segment_spec in self._segment_specs.values(): segment_spec.sort( key=self.sort_key )
         t4 = time.time()
         print(f"Done preprocessing with times {t1-t0:.2f} {t2-t1:.2f} {t3-t2:.2f} {t4-t3:.2f}")
+        return chunk_size
 
     def addSegmentSpec(self, name: str, file_specs: Iterable[Dict[str, str]], vlist: Set[str] ):
         seg_spec: DatasetSegmentSpec = self._segment_specs.setdefault( skey(vlist), DatasetSegmentSpec( name, vlist ))
