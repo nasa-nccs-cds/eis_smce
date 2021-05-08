@@ -22,6 +22,10 @@ class DaskClusterManager(EISSingleton):
     def client(self) -> Client:
         return self._client
 
+    def shutdown(self):
+        self._client.close()
+        self._cluster.close()
+
 def dcm(): return DaskClusterManager.instance()
 
 

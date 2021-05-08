@@ -2,13 +2,14 @@ import os, xarray as xa
 import numpy as np
 
 time_index = 100
-vname = "Streamflow_tavg" # "GPP_tavg"
+vname = "SWE_tavg" # "GPP_tavg"
 zarr_dest0 = "/gpfsm/dnb43/projects/p151/zarr/LIS/OL_10km/1980/MERRA_IMERG.zarr"
 zarr_dest1 = "/gpfsm/dnb43/projects/p151/zarr/LIS/OL_10km/1980//MERRA_IMERG_SWdown_f_tavg-Swnet_tavg-Lwnet_tavg-LWdown_f_tavg.zarr"
 zarr_dest2 = "/discover/nobackup/tpmaxwel/cache/zarr_test.zarr"
 zarr_dest3 = "/gpfsm/dnb43/projects/p151/zarr/LIS/OL_1km/ROUTING/LIS_HIST.d01.zarr"
+zarr_dest4 = "/gpfsm/dnb43/projects/p151/zarr/LIS/OL_1km/SURFACEMODEL/LIS_HIST.d01.zarr"
 
-zds: xa.Dataset = xa.open_zarr( zarr_dest3 )
+zds: xa.Dataset = xa.open_zarr( zarr_dest4 )
 sample_input = zds['_eis_source_path'].values[time_index]
 print( f"sample input path: {sample_input}"  )
 ids: xa.Dataset = xa.open_dataset( sample_input )

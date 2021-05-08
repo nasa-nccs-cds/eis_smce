@@ -18,6 +18,9 @@ surface_2013_1km = dict(  input=f"file://discover/nobackup/projects/eis_freshwat
 
 if __name__ == '__main__':
 
+    dcm().init_cluster( processes=True )
+
     dset = surface_2013_1km
-    dcm().init_cluster(processes=True)
     zc().standard_conversion( dset['input'],  dset['output'] )
+
+    dcm().shutdown()
