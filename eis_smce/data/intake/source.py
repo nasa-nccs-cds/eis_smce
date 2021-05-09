@@ -149,7 +149,7 @@ class EISDataSource( ):
         else:    zargs['append_dim'] = eisc().get( 'merge_dim' )
         store = self.get_cache_path( path, self.pspec )
         with xa.set_options( display_max_rows=100 ):
-            self.logger.info( f" merged_dset -> zarr: {store}\n   -------------------- Merged dataset: -------------------- \n{mds}\n")
+            self.logger.info( f" merged_dset -> zarr: {store}\n   -------------------- Merged dataset batch[{ibatch}] -------------------- \n{mds}\n")
         print( f"{'Writing' if init else 'Appending'} batch[{ibatch}] to zarr file: {store}"   )
         mds.to_zarr( store, **zargs )
         mds.close(); del mds
@@ -171,10 +171,10 @@ class EISDataSource( ):
                     ispecs = [ dict( chunk_index=ic, input_path=file_spec_list[ic]['resolved'] ) for ic in range( ib, ib+nfiles*self.chunk_size, self.chunk_size ) ]
                     with ResourceProfiler(20) as rprof, CacheProfiler() as cprof:
                         results = dcm().client.map(partial(EISDataSource._export_partition_parallel, path, self.pspec), ispecs)
-                        dcm().client.compute( results )
+                        dcm().client.compute( results, sync=True )
                         for rp in rprof.results: self.logger.info( f"RP: {rp}" )
                         for cp in cprof.results: self.logger.info( f"CP: {cp}" )
-                    print( f"Completed processing batch {ib} ({nfiles}/{self.pspec['nchunks']} files) in {time.time()-t0:.1f} (init: {t1-t0:.1f}) sec.")
+                    print( f"Completed processing batch {ib} ({nfiles}/{self.pspec['nchunks']} files) in {(time.time()-t0)/60:.1f} (init: {(t1-t0)/60:.1f}) min.")
                     ib = ib + self.batch_size*self.chunk_size
                     if ib >= self.pspec['nchunks']: break
 
