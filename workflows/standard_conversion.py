@@ -6,7 +6,7 @@ from eis_smce.data.common.cluster import dcm
 logger = logging.getLogger("distributed.utils_perf")
 logger.setLevel(logging.ERROR)
 
-partial_run = True
+partial_run = False
 eisc( cache="/gpfsm/dnb43/projects/p151/zarr", mode="eis.freshwater.swang9", time_format="%Y%m%d%H%M", batch_size=1000, merge_dim='time' )
 
 month = "200304" if partial_run else "**"
