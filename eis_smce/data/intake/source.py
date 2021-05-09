@@ -105,7 +105,7 @@ class EISDataSource( ):
         ibatch = kwargs.get( 'ibatch', -1 )
         file_list = self.get_file_list( var_list, ibatch )
         self.pspec = dict( pattern=self.urlpath, merge_dim=merge_dim, chunk_size=self.chunk_size, files=file_list,
-                           vlist=var_list, dynamic_metadata_ids=self.segment_manager.get_dynamic_attributes(),
+                           dynamic_metadata_ids=self.segment_manager.get_dynamic_attributes(),
                            nchunks = self.segment_manager.get_segment_size( var_list ),
                            sname = self.segment_manager.get_segment_name( var_list ), **kwargs )
         t0 = time.time()
