@@ -15,8 +15,13 @@ import dask.bag as db
 import time, logging,  xarray as xa
 import intake_xarray as ixa   # Need this import to register 'xarray' container.
 from eis_smce.data.common.base import eisc, EISConfiguration, EISSingleton as eiss
+
 def dsort( d: Dict ) -> Dict: return { k:d[k] for k in sorted(d.keys()) }
 def has_char(string: str, chars: str): return 1 in [c in string for c in chars]
+def eis_item_path( path: str) -> str: return path.split(":")[-1].replace("//", "/").replace("//", "/")
+def parse_url( urlpath: str) -> Tuple[str, str]:
+    ptoks = urlpath.split(":")[-1].strip("/").split("/")
+    return ( ptoks[0], "/".join( ptoks[1:] ) )
 
 class EISDataSource( ):
     logger = EISConfiguration.get_logger()
@@ -74,7 +79,7 @@ class EISDataSource( ):
         new_vlist = list( pspec['vlist'] ) + list( dynamic_metadata.keys() )
         if merge_dim not in list( ds.coords.keys() ):
             ds = ds.drop_vars( set( ds.data_vars.keys() ).difference( new_vlist ) )
-            filepath_pattern = eiss.item_path(pattern)
+            filepath_pattern = eis_item_path(pattern)
             is_glob = has_char(filepath_pattern, "*?[")
             (file_path, file_pattern) = ( os.path.basename(source_file_path), os.path.basename(filepath_pattern)) if is_glob else (source_file_path, filepath_pattern)
             metadata = reverse_format( file_pattern, file_path )
@@ -120,9 +125,8 @@ class EISDataSource( ):
 
     @staticmethod
     def get_cache_path( path: str, pspec: Dict ) -> str:
-        from eis_smce.data.storage.s3 import s3m
         if path.startswith("s3:"):
-            (bucket, item) = s3m().parse(path)
+            (bucket, item) = parse_url(path)
             path = f"{eisc().cache_dir}/{item}"
         return path + pspec['sname'] + ".zarr"
 
