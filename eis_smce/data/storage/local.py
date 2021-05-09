@@ -122,7 +122,7 @@ class SegmentedDatasetManager:
     def _get_file_metadata( merge_dim: str,  file_path: str ) -> Tuple[ Dict[str,Union[str,np.array]], Set[str] ]:
         with xa.open_dataset(file_path) as dset:
             _attrs: Dict[str,Union[str,np.array]] = { str(k): v for k, v in dset.attrs.items() }
-            _attrs['nchunks'] = dset.sizes[ merge_dim ]
+            _attrs['chunk_size'] = dset.sizes[ merge_dim ]
             _vset: Set[str] = { str(v) for v in dset.data_vars.keys() }
             return ( _attrs,  _vset)
 
