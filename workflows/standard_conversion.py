@@ -21,17 +21,16 @@ merra_2000_1km = dict(  input=f"swang9/OL_1km/OUTPUT.RST.2000/SURFACEMODEL/{mont
                         output=f"LIS/OL_1km/2000_2021/MERRA/LIS_HIST.d01"  )
 merra_imerg_2000_1km = dict(  input=f"swang9/OL_1km/OUTPUT.RST.2000.imerg.fixed/SURFACEMODEL/{month}/LIS_HIST*.nc",
                               output=f"LIS/OL_1km/2000_2021/MERRA_IMERG/LIS_HIST.d01" )
-
 MCD15A2H_2019Flood   = dict(  input=f"lahmers/RUN/1km_DOMAIN_DAens20_MCD15A2H.006_2019Flood/OUTPUT/ROUTING/**/LIS_HIST*.nc",
                               output=f"LIS/DA_1km/MODIS_Flood_2019/ROUTING/LIS_HIST.d01" )
 MCD15A2H_2019FloodSM   = dict(  input=f"lahmers/RUN/1km_DOMAIN_DAens20_MCD15A2H.006_2019Flood/OUTPUT/SURFACEMODEL/**/LIS_HIST*.nc",
                                 output=f"LIS/DA_1km/MODIS_Flood_2019/SURFACEMODEL/LIS_HIST.d01" )
+MCD15A2H_2019Drought   = dict(  input=f"/discover/nobackup/projects/eis_freshwater/lahmers/RUN/1km_DOMAIN_DAens20_MCD15A2H.006_2019Drought/OUTPUT/SURFACEMODEL/**/LIS_HIST*.nc",
+                                output=f"LIS/DA_1km/MODIS_Drought_2019/SURFACEMODEL/LIS_HIST.d01" )
+MCD15A2H_2002Drought   = dict(  input=f"/discover/nobackup/projects/eis_freshwater/lahmers/RUN/10km_DOMAIN_DAens20_MCD15A2H.006_2002_2021/OUTPUT.DA/SURFACEMODEL/**/LIS_HIST*.nc",
+                                output=f"LIS/DA_10km/MODIS_Droughts_2002_2021/SURFACEMODEL/LIS_HIST.d01" )
 
-#MCD15A2H_2019Flood   = dict(  input=f"/discover/nobackup/projects/eis_freshwater/lahmers/RUN/1km_DOMAIN_DAens20_MCD15A2H.006_2019Drought/OUTPUT/SURFACEMODEL/**/LIS_HIST*.nc",
-#                              output=f"LIS/DA_1km/MODIS_Flood_2019/ROUTING/LIS_HIST.d01" )
-
-
-dset = MCD15A2H_2019Flood
+dset = MCD15A2H_2002Drought
 
 if __name__ == '__main__':
 
