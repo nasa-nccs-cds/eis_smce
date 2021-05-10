@@ -31,7 +31,7 @@ MCD15A2H_2019FloodSM   = dict(  input=f"lahmers/RUN/1km_DOMAIN_DAens20_MCD15A2H.
 #                              output=f"LIS/DA_1km/MODIS_Flood_2019/ROUTING/LIS_HIST.d01" )
 
 
-dset = MCD15A2H_2019FloodSM
+dset = MCD15A2H_2019Flood
 
 if __name__ == '__main__':
 
