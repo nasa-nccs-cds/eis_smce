@@ -24,14 +24,20 @@ merra_imerg_2000_1km = dict(  input=f"swang9/OL_1km/OUTPUT.RST.2000.imerg.fixed/
 
 MCD15A2H_2019Flood   = dict(  input=f"lahmers/RUN/1km_DOMAIN_DAens20_MCD15A2H.006_2019Flood/OUTPUT/ROUTING/**/LIS_HIST*.nc",
                               output=f"LIS/DA_1km/MODIS_Flood_2019/ROUTING/LIS_HIST.d01" )
+MCD15A2H_2019FloodSM   = dict(  input=f"lahmers/RUN/1km_DOMAIN_DAens20_MCD15A2H.006_2019Flood/OUTPUT/SURFACEMODEL/**/LIS_HIST*.nc",
+                                output=f"LIS/DA_1km/MODIS_Flood_2019/SURFACEMODEL/LIS_HIST.d01" )
 
-dset = MCD15A2H_2019Flood
+#MCD15A2H_2019Flood   = dict(  input=f"/discover/nobackup/projects/eis_freshwater/lahmers/RUN/1km_DOMAIN_DAens20_MCD15A2H.006_2019Drought/OUTPUT/SURFACEMODEL/**/LIS_HIST*.nc",
+#                              output=f"LIS/DA_1km/MODIS_Flood_2019/ROUTING/LIS_HIST.d01" )
+
+
+dset = MCD15A2H_2019FloodSM
 
 if __name__ == '__main__':
 
     dcm().init_cluster( processes=True )
 
     zc().standard_conversion( f"file:/{input_dir}/{dset['input']}",  f"{output_dir}/{dset['output']}" )
-    print( f"S3 upload command:\n\t '>> aws s3 mv {output_dir}/{dset['output']}   s3://{bucket}/{dset['output']}  --acl bucket-owner-full-control --recursive' ")
+    print( f"S3 upload command:\n\t '>> aws s3 mv {output_dir}/{dset['output']}.zarr   s3://{bucket}/{dset['output']}.zarr  --acl bucket-owner-full-control --recursive' ")
 
     dcm().shutdown()
