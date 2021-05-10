@@ -1,6 +1,7 @@
 import logging, numpy as np
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 from dask.distributed import Client, LocalCluster
+from dask.diagnostics import ProgressBar, Profiler, ResourceProfiler, CacheProfiler
 from dask_jobqueue import PBSCluster
 from .base import EISSingleton
 
@@ -10,17 +11,17 @@ class DaskClusterManager(EISSingleton):
         super(DaskClusterManager, self).__init__()
         self._client: Client = None
         self._cluster: LocalCluster = None
+        self._pbar = ProgressBar(dt=5)
 
     def init_cluster( self, **kwargs ) -> Client:
-        if self._cluster is not None:
-            self._cluster.close()
-            self._client.close()
+        self.shutdown()
         if 'jobs' in kwargs:
             self._cluster = PBSCluster()
             self._cluster.scale( kwargs.pop('jobs') )
         else:
             self._cluster = LocalCluster( **kwargs )
         self._client = Client( self._cluster )
+        self._pbar.register()
         return self._client
 
     @property
@@ -28,8 +29,12 @@ class DaskClusterManager(EISSingleton):
         return self._client
 
     def shutdown(self):
-        self._client.close()
-        self._cluster.close()
+        if self._cluster is not None:
+            self._client.close()
+            self._cluster.close()
+            self._pbar.unregister()
+            self._cluster = None
+            self._client = None
 
 def dcm(): return DaskClusterManager.instance()
 

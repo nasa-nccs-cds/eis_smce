@@ -169,11 +169,8 @@ class EISDataSource( ):
                     nfiles, t1 = len(input_files), time.time()
                     self.logger.info( f"Exporting batch {ib} with {nfiles} files to: {path}" )
                     ispecs = [ dict( chunk_index=ic, input_path=file_spec_list[ic]['resolved'] ) for ic in range( ib, ib+nfiles*self.chunk_size, self.chunk_size ) ]
-                    with ResourceProfiler(dt=20) as rprof, CacheProfiler() as cprof, ProgressBar(dt=2) as pb:
-                        results = dcm().client.map( partial( EISDataSource._export_partition_parallel, path, self.pspec ), ispecs )
-                        dcm().client.compute( results, sync=True )
-                        for rp in rprof.results: self.logger.info( f"RP: {rp}" )
-                        for cp in cprof.results: self.logger.info( f"CP: {cp}" )
+                    results = dcm().client.map( partial( EISDataSource._export_partition_parallel, path, self.pspec ), ispecs )
+                    dcm().client.compute( results, sync=True )
                     print( f"Completed processing batch {ib} ({nfiles}/{self.pspec['nchunks']} files) in {(time.time()-t0)/60:.1f} (init: {(t1-t0)/60:.1f}) min.")
                     ib = ib + self.batch_size*self.chunk_size
                     if ib >= self.pspec['nchunks']: break

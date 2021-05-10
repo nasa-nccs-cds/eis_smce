@@ -22,7 +22,10 @@ merra_2000_1km = dict(  input=f"swang9/OL_1km/OUTPUT.RST.2000/SURFACEMODEL/{mont
 merra_imerg_2000_1km = dict(  input=f"swang9/OL_1km/OUTPUT.RST.2000.imerg.fixed/SURFACEMODEL/{month}/LIS_HIST*.nc",
                               output=f"LIS/OL_1km/2000_2021/MERRA_IMERG/LIS_HIST.d01" )
 
-dset = merra_2000_1km
+MCD15A2H_2019Flood   = dict(  input=f"lahmers/RUN/1km_DOMAIN_DAens20_MCD15A2H.006_2019Flood/OUTPUT/ROUTING/**/LIS_HIST*.nc",
+                              output=f"LIS/DA_1km/MODIS_Flood_2019/ROUTING/LIS_HIST.d01" )
+
+dset = MCD15A2H_2019Flood
 
 if __name__ == '__main__':
 
