@@ -170,7 +170,7 @@ class EISDataSource( ):
                     self.logger.info( f"Exporting batch {ib} with {nfiles} files to: {path}" )
                     ispecs = [ dict( chunk_index=ic, input_path=file_spec_list[ic]['resolved'] ) for ic in range( ib, ib+nfiles*self.chunk_size, self.chunk_size ) ]
                     with ResourceProfiler(dt=20) as rprof, CacheProfiler() as cprof, ProgressBar(dt=2) as pb:
-                        results = dcm().client.map(partial(EISDataSource._export_partition_parallel, path, self.pspec), ispecs)
+                        results = dcm().client.map( partial( EISDataSource._export_partition_parallel, path, self.pspec ), ispecs )
                         dcm().client.compute( results, sync=True )
                         for rp in rprof.results: self.logger.info( f"RP: {rp}" )
                         for cp in cprof.results: self.logger.info( f"CP: {cp}" )

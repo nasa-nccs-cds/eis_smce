@@ -1,6 +1,7 @@
 import logging, numpy as np
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 from dask.distributed import Client, LocalCluster
+from dask_jobqueue import PBSCluster
 from .base import EISSingleton
 
 class DaskClusterManager(EISSingleton):
@@ -14,7 +15,11 @@ class DaskClusterManager(EISSingleton):
         if self._cluster is not None:
             self._cluster.close()
             self._client.close()
-        self._cluster = LocalCluster( **kwargs )
+        if 'jobs' in kwargs:
+            self._cluster = PBSCluster()
+            self._cluster.scale( kwargs.pop('jobs') )
+        else:
+            self._cluster = LocalCluster( **kwargs )
         self._client = Client( self._cluster )
         return self._client
 
