@@ -34,7 +34,7 @@ AMSR2                  = dict(  input=f"mwrzesie/Runs_10km/DA_AMSR2/OUTPUT_DA_AM
 SNODAS                 = dict(  input=f"mwrzesie/Runs_10km/DA_SNODAS/OUTPUT_snodasDA_obserr5cm/SURFACEMODEL/**/LIS_HIST*.nc",
                                 output=f"LIS/DA_10km/SNODAS/SURFACEMODEL/LIS_HIST.d01" )
 
-dset = AMSR2
+dset = SNODAS
 
 if __name__ == '__main__':
 
