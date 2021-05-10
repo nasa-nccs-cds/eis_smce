@@ -119,16 +119,22 @@ class SegmentedDatasetManager:
             return "-".join( data_vars )
 
     @staticmethod
-    def _get_file_metadata( merge_dim: str,  file_path: str ) -> Tuple[ Dict[str,Union[str,np.array]], Set[str] ]:
-        with xa.open_dataset(file_path) as dset:
-            _attrs: Dict[str,Union[str,np.array]] = { str(k): v for k, v in dset.attrs.items() }
-            _attrs['chunk_size'] = dset.sizes[ merge_dim ]
-            _vset: Set[str] = { str(v) for v in dset.data_vars.keys() }
-            return ( _attrs,  _vset)
+    def _get_file_metadata( merge_dim: str,  file_path: str ) -> Tuple[ Dict[str,Union[str,np.array]], Optional[Set[str]] ]:
+        try:
+            with xa.open_dataset(file_path) as dset:
+                _attrs: Dict[str,Union[str,np.array]] = { str(k): v for k, v in dset.attrs.items() }
+                _attrs['chunk_size'] = dset.sizes[ merge_dim ]
+                _vset: Set[str] = { str(v) for v in dset.data_vars.keys() }
+                return ( _attrs,  _vset )
+        except Exception as err:
+            return ( dict( exc=err, estr=str(err), file=file_path ), None )
 
     def _process_files_metadata(self, fdata: List[ Tuple[ Dict[str,Union[str,np.array]], Set[str] ] ] ) -> int:
         chunk_size = None
         for ( _attrs, _vlist ) in fdata:
+            if _vlist is None:
+                print( f"Error reading file {_attrs['file']: {_attrs['estr']}}")
+                raise( _attrs['exc'] )
             if self._base_metadata is None:
                 self._base_metadata =  _attrs
             else:

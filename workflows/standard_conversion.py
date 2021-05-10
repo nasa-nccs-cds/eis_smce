@@ -27,10 +27,14 @@ MCD15A2H_2019FloodSM   = dict(  input=f"lahmers/RUN/1km_DOMAIN_DAens20_MCD15A2H.
                                 output=f"LIS/DA_1km/MODIS_Flood_2019/SURFACEMODEL/LIS_HIST.d01" )
 MCD15A2H_2019Drought   = dict(  input=f"/discover/nobackup/projects/eis_freshwater/lahmers/RUN/1km_DOMAIN_DAens20_MCD15A2H.006_2019Drought/OUTPUT/SURFACEMODEL/**/LIS_HIST*.nc",
                                 output=f"LIS/DA_1km/MODIS_Drought_2019/SURFACEMODEL/LIS_HIST.d01" )
-MCD15A2H_2002Drought   = dict(  input=f"/discover/nobackup/projects/eis_freshwater/lahmers/RUN/10km_DOMAIN_DAens20_MCD15A2H.006_2002_2021/OUTPUT.DA/SURFACEMODEL/**/LIS_HIST*.nc",
+MCD15A2H_2002Drought   = dict(  input=f"/discover/nobackup/projects/eis_freshwater/lahmers/RUN/10km_DOMAIN_DAens20_MCD15A2H.006_2002_2021/OUTPUT.DA/SURFACEMODEL/**/LIS_HIST*.nc",    # Needs fixing.
                                 output=f"LIS/DA_10km/MODIS_Droughts_2002_2021/SURFACEMODEL/LIS_HIST.d01" )
+AMSR2                  = dict(  input=f"mwrzesie/Runs_10km/DA_AMSR2/OUTPUT_DA_AMSR2/SURFACEMODEL/**/LIS_HIST*.nc",
+                                output=f"LIS/DA_10km/AMSR2/SURFACEMODEL/LIS_HIST.d01" )
+SNODAS                 = dict(  input=f"mwrzesie/Runs_10km/DA_SNODAS/OUTPUT_snodasDA_obserr5cm/SURFACEMODEL/**/LIS_HIST*.nc",
+                                output=f"LIS/DA_10km/SNODAS/SURFACEMODEL/LIS_HIST.d01" )
 
-dset = MCD15A2H_2002Drought
+dset = AMSR2
 
 if __name__ == '__main__':
 
