@@ -13,16 +13,16 @@ bucket = "eis-dh-hydro"
 month = "200304" if partial_run else "**"
 input_dir = "/discover/nobackup/projects/eis_freshwater"
 output_dir = "/gpfsm/dnb43/projects/p151/zarr"
-imerg_fixed_10km = dict(  input=f"swang9/OL_10km/OUTPUT.1980.imerg.fixed/SURFACEMODEL/{month}/LIS_HIST" + "_{time}.d01.nc",
-                        output=f"LIS/OL_10km/1980/MERRA_IMERG"  )
-routing_2013_1km = dict(  input=f"swang9/OL_1km/OUTPUT.RST.2013/ROUTING/{month}/LIS_HIST*.nc",
-                          output=f"LIS/OL_1km/ROUTING/LIS_HIST.d01"  )
-merra_2000_1km = dict(  input=f"swang9/OL_1km/OUTPUT.RST.2000/SURFACEMODEL/{month}/LIS_HIST*.nc",
-                        output=f"LIS/OL_1km/2000_2021/MERRA/LIS_HIST.d01"  )
-merra_imerg_2000_1km = dict(  input=f"swang9/OL_1km/OUTPUT.RST.2000.imerg.fixed/SURFACEMODEL/{month}/LIS_HIST*.nc",
-                              output=f"LIS/OL_1km/2000_2021/MERRA_IMERG/LIS_HIST.d01" )
-MCD15A2H_2019Flood   = dict(  input=f"lahmers/RUN/1km_DOMAIN_DAens20_MCD15A2H.006_2019Flood/OUTPUT/ROUTING/**/LIS_HIST*.nc",
-                              output=f"LIS/DA_1km/MODIS_Flood_2019/ROUTING/LIS_HIST.d01" )
+imerg_fixed_10km       = dict(  input=f"swang9/OL_10km/OUTPUT.1980.imerg.fixed/SURFACEMODEL/{month}/LIS_HIST" + "_{time}.d01.nc",
+                                output=f"LIS/OL_10km/1980/MERRA_IMERG"  )
+routing_2013_1km       = dict(  input=f"swang9/OL_1km/OUTPUT.RST.2013/ROUTING/{month}/LIS_HIST*.nc",
+                                output=f"LIS/OL_1km/ROUTING/LIS_HIST.d01"  )
+merra_2000_1km         = dict(  input=f"swang9/OL_1km/OUTPUT.RST.2000/SURFACEMODEL/{month}/LIS_HIST*.nc",
+                                output=f"LIS/OL_1km/2000_2021/MERRA/LIS_HIST.d01"  )
+merra_imerg_2000_1km   = dict(  input=f"swang9/OL_1km/OUTPUT.RST.2000.imerg.fixed/SURFACEMODEL/{month}/LIS_HIST*.nc",
+                                output=f"LIS/OL_1km/2000_2021/MERRA_IMERG/LIS_HIST.d01" )
+MCD15A2H_2019Flood     = dict(  input=f"lahmers/RUN/1km_DOMAIN_DAens20_MCD15A2H.006_2019Flood/OUTPUT/ROUTING/**/LIS_HIST*.nc",
+                                output=f"LIS/DA_1km/MODIS_Flood_2019/ROUTING/LIS_HIST.d01" )
 MCD15A2H_2019FloodSM   = dict(  input=f"lahmers/RUN/1km_DOMAIN_DAens20_MCD15A2H.006_2019Flood/OUTPUT/SURFACEMODEL/**/LIS_HIST*.nc",
                                 output=f"LIS/DA_1km/MODIS_Flood_2019/SURFACEMODEL/LIS_HIST.d01" )
 MCD15A2H_2019Drought   = dict(  input=f"/discover/nobackup/projects/eis_freshwater/lahmers/RUN/1km_DOMAIN_DAens20_MCD15A2H.006_2019Drought/OUTPUT/SURFACEMODEL/**/LIS_HIST*.nc",
@@ -33,8 +33,10 @@ AMSR2                  = dict(  input=f"mwrzesie/Runs_10km/DA_AMSR2/OUTPUT_DA_AM
                                 output=f"LIS/DA_10km/AMSR2/SURFACEMODEL/LIS_HIST.d01" )
 SNODAS                 = dict(  input=f"mwrzesie/Runs_10km/DA_SNODAS/OUTPUT_snodasDA_obserr5cm/SURFACEMODEL/**/LIS_HIST*.nc",
                                 output=f"LIS/DA_10km/SNODAS/SURFACEMODEL/LIS_HIST.d01" )
+MCD15A2H_wSmoothing    = dict(  input=f"lahmers/RUN/10km_DOMAIN_DAens20_MCD15A2H.wSmoothing.006_2002_2021/OUTPUT.LAIsmooth.DA/SURFACEMODEL/**/LIS_HIST*.nc",
+                                output=f"LIS/DA_10km/MODIS_wSoother_2002_2021/SURFACEMODEL/LIS_HIST.d01" )
 
-dset = SNODAS
+dset = MCD15A2H_wSmoothing
 
 if __name__ == '__main__':
 
