@@ -133,7 +133,7 @@ class SegmentedDatasetManager:
         chunk_size = None
         for ( _attrs, _vlist ) in fdata:
             if _vlist is None:
-                print( f"\n ***** Error reading file {_attrs['file']: {_attrs['estr']}}\n")
+                print( f"\n ***** Error reading file {_attrs['file']}: {_attrs['estr']}\n")
                 raise( _attrs['exc'] )
             if self._base_metadata is None:
                 self._base_metadata =  _attrs
