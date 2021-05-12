@@ -34,7 +34,7 @@ class EISDataSource( ):
         self._schema: Schema = None
         self._ds: xa.Dataset = None
         self.pspec = None
-        self.batch_size = eisc().get( 'batch_size', 1000 )
+        self.batch_size = int( eisc().get( 'batch_size', 1000 ) )
         self.chunk_size = self.segment_manager.process_files( self.urlpath )
 
     def _open_partition(self, ipart: int) -> xa.Dataset:
