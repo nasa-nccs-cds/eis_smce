@@ -18,7 +18,6 @@ from eis_smce.data.common.base import eisc, EISConfiguration, EISSingleton as ei
 
 def dsort( d: Dict ) -> Dict: return { k:d[k] for k in sorted(d.keys()) }
 def has_char(string: str, chars: str): return 1 in [c in string for c in chars]
-def eis_item_path( path: str) -> str: return path.split(":")[-1].replace("//", "/").replace("//", "/")
 def parse_url( urlpath: str) -> Tuple[str, str]:
     ptoks = urlpath.split(":")[-1].strip("/").split("/")
     return ( ptoks[0], "/".join( ptoks[1:] ) )
@@ -79,7 +78,7 @@ class EISDataSource( ):
         new_vlist = list( pspec['vlist'] ) + list( dynamic_metadata.keys() )
         if merge_dim not in list( ds.coords.keys() ):
             ds = ds.drop_vars( set( ds.data_vars.keys() ).difference( new_vlist ) )
-            filepath_pattern = eis_item_path(pattern)
+            filepath_pattern = eiss.item_path(pattern)
             is_glob = has_char(filepath_pattern, "*?[")
             (file_path, file_pattern) = ( os.path.basename(source_file_path), os.path.basename(filepath_pattern)) if is_glob else (source_file_path, filepath_pattern)
             metadata = reverse_format( file_pattern, file_path )
@@ -155,10 +154,11 @@ class EISDataSource( ):
         mds.close(); del mds
         return input_files
 
-    def export_parallel(self, path: str, **kwargs ):
+    def export_parallel(self, output_url: str, **kwargs ):
         try:
             from eis_smce.data.storage.s3 import s3m
             from eis_smce.data.common.cluster import dcm
+            path = eiss.item_path( output_url )
             for vlist in self.segment_manager.get_vlists():
                 print( f"Processing vlist: {vlist}")
                 file_spec_list: List[Dict[str, str]] = self.segment_manager.get_file_specs(vlist)

@@ -8,6 +8,7 @@ import dask, xarray as xa
 from functools import partial
 import glob, os, time
 from datetime import datetime
+from eis_smce.data.common.base import eisc, EISConfiguration, EISSingleton as eiss
 
 def has_char(string: str, chars: str): return 1 in [c in string for c in chars]
 def skey( svals: Iterable[str] ):
@@ -149,16 +150,13 @@ class SegmentedDatasetManager:
         print( f"  ****  Computed Dynamic Attributes: {list(self._dynamic_attributes)}")
         return chunk_size
 
-    def _parse_urlpath( self, urlpath: str ) -> str:
-        return urlpath.split(":")[-1].replace("//","/").replace("//","/")
-
     @staticmethod
     def sort_key( item: Dict ):
         return item['sort_key']
 
     def _generate_file_specs(self, urlpath: str, **kwargs):
         from intake.source.utils import reverse_format
-        filepath_pattern = self._parse_urlpath( urlpath )
+        filepath_pattern = eiss.item_path( urlpath )
         filepath_glob = path_to_glob( filepath_pattern )
         self._input_files = glob.glob(filepath_glob)
         assert len(self._input_files) > 0, f"Input pattern does not match any files: '{filepath_glob}'"

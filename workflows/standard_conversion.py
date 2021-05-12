@@ -38,13 +38,13 @@ MCD15A2H_wSmoothing    = dict(  input=f"lahmers/RUN/10km_DOMAIN_DAens20_MCD15A2H
 THYSM                  = dict(  input=f"pliu/WORKING/DA_THYSM/lis_run/OUTPUT_010d/SURFACEMODEL/**/LIS_HIST*.nc",
                                 output=f"LIS/DA_010d/THYSM/SURFACEMODEL/LIS_HIST.d01" )
 
-dset = THYSM
+dset = MCD15A2H_2019FloodSM
 
 if __name__ == '__main__':
 
     dcm().init_cluster( processes=True )
 
-    zc().standard_conversion( f"file:/{input_dir}/{dset['input']}",  f"{output_dir}/{dset['output']}" )
+    zc().standard_conversion( f"file:/{input_dir}/{dset['input']}",  f"file:/{output_dir}/{dset['output']}" )
     print( f"S3 upload command:\n\t '>> aws s3 mv {output_dir}/{dset['output']}.zarr   s3://{bucket}/{dset['output']}.zarr  --acl bucket-owner-full-control --recursive' ")
 
     dcm().shutdown()
