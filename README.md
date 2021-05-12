@@ -16,9 +16,15 @@ eis_smce Setup
 ---------------
 Install eis_smce as follows:
 
+    > cd <install_dir>
     > git clone https://github.com/nasa-nccs-cds/eis_smce.git 
     > cd eis_smce
     > python setup.py install
+
+eis_smce Configuration
+----------------------
+
+Edit the config (*.cfg) file(s) under ~/.eis_smce/config
 
 Setup Amazon Credentials
 ------------------------
@@ -42,16 +48,21 @@ Discover Notes
 
 >> salloc --nodes=1 --constraint="sky|hasw" --time=12:00:00
 >> conda activate eis_smce
->> cd /discover/nobackup/tpmaxwel/eis_smce
->> python ./workflows/freshwater_swang9.py
+>> cd <install_dir>/eis_smce
+>> python ./workflows/zarr_conversion.py ~/.eis_smce/zc.cfg
 
 ### Upload
 
 >> salloc -p datamove --nodes=1 --time=02:00:00
 >> module load aws
->> cd /discover/nobackup/tpmaxwel/eis_smce
+>> cd <install_dir>/eis_smce
 >> source ./config/mfa.sh
+>> aws s3 mv  <local_zarr_path>  <s3_zarr_path> --acl bucket-owner-full-control --recursive
+
+#### Example CLI upload command:
+
 >> aws s3 mv  /gpfsm/dnb43/projects/p151/zarr/LIS/OL_1km/SURFACEMODEL/LIS_HIST.d01.zarr  s3://eis-dh-hydro/LIS/OL_1km/SURFACEMODEL/LIS_HIST.d01.zarr --acl bucket-owner-full-control --recursive
+
 
 
 
