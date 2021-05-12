@@ -63,6 +63,9 @@ class EISConfiguration( EISSingleton ):
     def get(self, key: str, default = None ):
         return self._config.get( key, default )
 
+    def __getitem__(self, key: str ) -> str:
+        return self._config.get( key, None )
+
     def progressBar( self, iterable, prefix='Progress:', suffix='Complete', decimals=1, length=50, fill='█', printEnd="\r"):
         """
         Call in a loop to create terminal progress bar
@@ -111,4 +114,18 @@ class EISConfiguration( EISSingleton ):
 def eisc(**kwargs) -> EISConfiguration:
     _eisc = EISConfiguration.instance()
     _eisc.configure( **kwargs )
+    return _eisc
+
+def eisc_config( config_file_path: str ) -> EISConfiguration:
+    _eisc = EISConfiguration.instance()
+    params = {}
+    with open(config_file_path) as config_file:
+        for line in config_file.readlines():
+            if not line.strip().startswith("#"):
+                toks = line.split("=")
+                if len( toks ) == 2:
+                    params[ toks[0].strip() ] = toks[1].strip()
+                else:
+                    _eisc.logger.warn( f"Skipping line in config file: '{line}'")
+    _eisc.configure( **params )
     return _eisc

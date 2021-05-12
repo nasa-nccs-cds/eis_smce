@@ -161,6 +161,7 @@ class SegmentedDatasetManager:
         filepath_pattern = self._parse_urlpath( urlpath )
         filepath_glob = path_to_glob( filepath_pattern )
         self._input_files = glob.glob(filepath_glob)
+        assert len(self._input_files) > 0, f"Input pattern does not match any files: '{filepath_glob}'"
         file_sort = FileSortKey[ kwargs.get('sort', 'filename') ]
         is_glob = has_char( filepath_pattern, "*?[" )
         eisc().logger.info(f" Processing {len(self._input_files)} input files from glob '{filepath_glob}'")
