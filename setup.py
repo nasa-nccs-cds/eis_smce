@@ -4,7 +4,7 @@ import os, shutil, glob
 
 name = 'eis_smce'
 LONG_DESCRIPTION = 'Applications and utilities to support the NASA Earth Information System'
-cfg_dir = "~/.eis_smce/config"
+cfg_dir = os.path.expanduser("~/.eis_smce/config")
 eis_cfg_files = glob.glob( os.path.join( os.path.dirname(os.path.abspath(__file__)), "config", "*.cfg" ) )
 version = "0.1"
 
