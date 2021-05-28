@@ -2,6 +2,7 @@ import time, logging, sys
 from eis_smce.data.common.base import  eisc_config
 from eis_smce.data.conversion.zarr import zc
 from eis_smce.data.common.cluster import dcm
+from eis_smce.data.intake.catalog import lcm
 logger = logging.getLogger("distributed.utils_perf")
 logger.setLevel(logging.ERROR)
 
@@ -18,12 +19,13 @@ if __name__ == '__main__':
     input_path  = f"{eisc['input_dir']}/{eisc['input_dset']}"
     output_url = f"file:/{eisc['output_dir']}/{eisc['output_dset']}"
     zarr_url   = f"s3://{eisc['bucket']}/{eisc['output_dset']}"
+    cat_name = eisc.get( 'cat_name', eisc['output_dset'].replace("/",".") )
 
     zc().standard_conversion( input_path, output_url  )
 
     print( f"S3 upload command:\n\t '>> aws s3 mv {output_url}.zarr {zarr_url}.zarr  --acl bucket-owner-full-control --recursive' ")
 
-    zc().write_catalog( output_url )
+    lcm().write_to_catalog( [output_url], cat_name )
 
     dcm().shutdown()
     sys.exit(0)

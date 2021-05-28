@@ -3,7 +3,6 @@ from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapp
 from eis_smce.data.intake.source import EISDataSource
 import intake, time, traceback, dask
 import xarray as xa
-from eis_smce.data.common.base import eisc
 
 class ZarrConverter(EISSingleton):
 
