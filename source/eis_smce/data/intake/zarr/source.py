@@ -17,9 +17,14 @@ class EISZarrSource( ZarrSource ):
     def get_plots(self) -> Dict:
         return dict( contour = dict( kind='contourf', groupby='sample', width = 800, height=600, levels=20 ) )
 
+    @property
+    def zarr_file_path(self):
+        zfpath = self.urlpath.split(":")[1].replace("//","/") if self.urlpath.startswith("file:") else self.urlpath
+        return f"{zfpath}.zarr"
+
     def yaml(self, **kwargs) -> str:
-        print( f"Generating yaml for zarr file at {self.urlpath }")
-        dset: xr.Dataset = xr.open_zarr( self.urlpath )
+        print( f"Generating yaml for zarr file at {self.zarr_file_path }")
+        dset: xr.Dataset = xr.open_zarr( self.zarr_file_path )
         description = self.get_attribute(dset, kwargs.get('description', 'att:LONGNAME'))
         self.cat_name = self.get_attribute(dset, kwargs.get('name', 'att:SHORTNAME'), self.urlpath.split("/")[-1])
         metadata = { **dset.attrs }
