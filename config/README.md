@@ -1,7 +1,7 @@
 # Configuration Parameters
 
 Each eis_smce workflow takes a run configuration file as input, which specifies 
-all execution parameters for the workflow. The installation process places sample 
+all execution parameters for the workflow. The python package installation process places sample 
 copies of all eis_smce run configuration files (*.cfg) in the directory *~/.eis_smce/config*.  
 
 ## Parameter Descriptions

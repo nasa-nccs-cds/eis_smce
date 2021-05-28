@@ -7,10 +7,7 @@ Create your conda environment as follows:
 
     > conda create --name eis_smce 
     > conda activate eis_smce
-    > conda install -c conda-forge nodejs ipykernel jupyterlab=2.2.9 awscli boto3 dask hvplot intake intake-xarray  numpy panel pyhdf rasterio rioxarray s3fs traitlets xarray zarr dask-jobqueue 
-    > jupyter labextension install @jupyter-widgets/jupyterlab-manager
-    > jupyter labextension install @pyviz/jupyterlab_pyviz
-    > python -m ipykernel install --user --name=eis_smce
+    > conda install -c conda-forge awscli boto3 dask hvplot intake intake-xarray  numpy pyhdf rasterio rioxarray s3fs traitlets xarray zarr dask-jobqueue 
 
 eis_smce Setup
 ---------------
@@ -18,13 +15,20 @@ Install eis_smce as follows:
 
     > cd <install_dir>
     > git clone https://github.com/nasa-nccs-cds/eis_smce.git 
-    > cd eis_smce
-    > python setup.py install
+    > cp ~/eis_smce/config/*.cfg <your_config_dir>
 
 eis_smce Configuration
 ----------------------
 
-Edit the config (*.cfg) file(s) under ~/.eis_smce/config
+* See the config [README](./config/README.md) for configuration documentation.
+* Edit the *<your_config_dir>/zc.cfg* file to configure zarr conversion.
+
+Zarr Conversion
+---------------
+To execute the zarr conversion workflow:
+
+    > cd <install_dir>/eis_smce/workflows
+    > python zarr_conversion.py <your_config_dir>/zc.cfg
 
 Setup Amazon Credentials
 ------------------------
