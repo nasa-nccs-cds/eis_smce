@@ -9,10 +9,6 @@ class EISZarrSource( ZarrSource ):
         metadata = kwargs.get( 'metadata', None )
         ZarrSource.__init__( self, urlpath, storage_options, metadata, **kwargs )
 
-    def get_attribute(self, dset: xr.Dataset, attval: str, default: str = "" ):
-        if attval.startswith('att:'):  return dset.attrs.get( attval[4:], default )
-        else:                          return attval
-
     def get_plots(self) -> Dict:
         return dict( contour = dict( kind='contourf', groupby='sample', width = 800, height=600, levels=20 ) )
 
@@ -20,6 +16,10 @@ class EISZarrSource( ZarrSource ):
     def zarr_file_path(self):
         zfpath = self.urlpath.split(":")[1].replace("//","/") if self.urlpath.startswith("file:") else self.urlpath
         return f"{zfpath}.zarr"
+
+    def get_attribute(self, dset: xr.Dataset, attval: str, default: str = "" ):
+        if attval.startswith('att:'):  return dset.attrs.get( attval[4:], default )
+        else:                          return attval
 
     def yaml(self, **kwargs) -> str:
         print( f"Generating yaml for zarr file at {self.zarr_file_path }")
