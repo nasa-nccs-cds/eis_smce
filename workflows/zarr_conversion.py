@@ -25,7 +25,7 @@ if __name__ == '__main__':
 
     print( f"S3 upload command:\n\t '>> aws s3 mv {output_url}.zarr {zarr_url}.zarr  --acl bucket-owner-full-control --recursive' ")
 
-    zc().write_to_catalog( output_url, cat_name )
+    zc().write_catalog( output_url, cat_name )
 
     dcm().shutdown()
     sys.exit(0)
