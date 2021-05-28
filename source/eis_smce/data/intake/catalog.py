@@ -2,7 +2,6 @@ from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapp
 import intake, os, boto3
 from eis_smce.data.common.base import EISSingleton
 import traitlets.config as tlc, random, string
-cat_name
 from intake.catalog.local import YAMLFilesCatalog, YAMLFileCatalog
 from intake.interface.gui import GUI
 from eis_smce.data.intake.zarr.source import EISZarrSource
