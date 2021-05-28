@@ -44,7 +44,7 @@ class ZarrConverter(EISSingleton):
         metadata.update(kwargs.pop("metadata", {}))
         metadata['dimensions'] = {key: list(c.shape) for key, c in dset.coords.items()}
         metadata['variables'] = {key: list(v.dims) for key, v in dset.items()}
-        data = { cat_name: {'driver': "EISZarrSource", 'description': description, 'metadata': metadata, 'args': dict(urlpath=zpath)}}
+        data = { cat_name: {'driver': "ZarrSource", 'description': description, 'metadata': metadata, 'args': dict(urlpath=zpath)}}
         cat_file = open( cat_path, "w")
         cat_file.write( yaml.dump(data, indent=2) )
 
