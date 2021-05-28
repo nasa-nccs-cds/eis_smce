@@ -25,10 +25,17 @@ class ZarrConverter(EISSingleton):
         h4s = intake.open_hdf4(input)
         return h4s.to_dask(**kwargs)
 
-    def write_catalog( self, zpath: str, **kwargs ):
+    def _cat_path( self, cat_name: str ) -> str:
+        from eis_smce.data.common.base import eisc
+        return f"file://{eisc().cat_dir}/{cat_name}.yml"
+
+    def write_catalog( self, zpath: str, cat_name: str, **kwargs ):
         from eis_smce.data.intake.zarr.source import EISZarrSource
         catalog_args = { k: kwargs.pop(k,None) for k in [ 'discription', 'name', 'metadata'] }
         zsrc = EISZarrSource( zpath, **kwargs )
-        zsrc.yaml( **catalog_args )
+        cat_path = self._cat_path(cat_name)
+        cat_file = open( cat_path, "w")
+        print( f"Writing catalog to {cat_path}")
+        cat_file.write( zsrc.yaml( **catalog_args ) )
 
 def zc(): return ZarrConverter.instance()
