@@ -1,14 +1,11 @@
 from intake.source.base import DataSource, Schema
 import collections, json, shutil, math
-from dask.diagnostics import ProgressBar, Profiler, ResourceProfiler, CacheProfiler
-from eis_smce.data.common.cluster import dcm, cim
 from datetime import datetime
 from eis_smce.data.storage.local import SegmentedDatasetManager
 from intake.source.utils import reverse_format
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable, MutableMapping, Set
 from functools import partial
 import dask.delayed, boto3, os, traceback
-from dask.distributed import Client, LocalCluster
 from eis_smce.data.intake.zarr.source import EISZarrSource
 import intake, zarr, numpy as np
 import dask.bag as db
@@ -193,9 +190,11 @@ class EISDataSource( ):
         dset.to_zarr( store, mode='a', region=region )
         ds0.close(); del ds0; dset.close(); del dset
 
-    def get_zarr_source(self, zpath: str ):
-        zsrc = EISZarrSource(zpath)
-        zsrc.yaml()
+    @classmethod
+    def write_catalog( cls, zpath: str, **kwargs ):
+        catalog_args = { k: kwargs.pop(k,None) for k in [ 'discription', 'name', 'metadata'] }
+        zsrc = EISZarrSource( zpath, **kwargs )
+        zsrc.yaml( **catalog_args )
 
     def print_bucket_contents(self, bucket_prefix: str ):
         s3 = boto3.resource('s3')

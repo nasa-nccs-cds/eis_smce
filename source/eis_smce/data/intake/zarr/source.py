@@ -4,7 +4,9 @@ import yaml, xarray as xr
 
 class EISZarrSource( ZarrSource ):
 
-    def __init__(self, urlpath, storage_options=None, metadata=None, **kwargs):
+    def __init__(self, urlpath, **kwargs ):
+        storage_options = kwargs.get( 'storage_options', None )
+        metadata = kwargs.get( 'metadata', None )
         ZarrSource.__init__( self, urlpath, storage_options, metadata, **kwargs )
         self.cat_name = None
 

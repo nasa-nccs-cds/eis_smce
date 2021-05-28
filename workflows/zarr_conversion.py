@@ -20,8 +20,10 @@ if __name__ == '__main__':
     zarr_url   = f"s3://{eisc['bucket']}/{eisc['output_dset']}"
 
     zc().standard_conversion( input_path, output_path  )
+
     print( f"S3 upload command:\n\t '>> aws s3 mv {output_path}.zarr {zarr_url}.zarr  --acl bucket-owner-full-control --recursive' ")
 
-    dcm().shutdown()
+    zc().write_catalog( output_path )
 
+    dcm().shutdown()
     sys.exit(0)
