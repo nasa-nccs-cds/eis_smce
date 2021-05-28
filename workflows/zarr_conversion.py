@@ -15,12 +15,12 @@ if __name__ == '__main__':
 
     dcm().init_cluster( processes=True )
 
-    input_url  = f"file:/{eisc['input_dir']}/{eisc['input_dset']}"
-    output_url = f"file:/{eisc['output_dir']}/{eisc['output_dset']}"
+    input_path  = f"{eisc['input_dir']}/{eisc['input_dset']}"
+    output_path = f"{eisc['output_dir']}/{eisc['output_dset']}"
     zarr_url   = f"s3://{eisc['bucket']}/{eisc['output_dset']}"
 
-    zc().standard_conversion( input_url, output_url  )
-    print( f"S3 upload command:\n\t '>> aws s3 mv {output_url}.zarr {zarr_url}.zarr  --acl bucket-owner-full-control --recursive' ")
+    zc().standard_conversion( input_path, output_path  )
+    print( f"S3 upload command:\n\t '>> aws s3 mv {output_path}.zarr {zarr_url}.zarr  --acl bucket-owner-full-control --recursive' ")
 
     dcm().shutdown()
 
