@@ -18,6 +18,7 @@ class EISZarrSource( ZarrSource ):
         return dict( contour = dict( kind='contourf', groupby='sample', width = 800, height=600, levels=20 ) )
 
     def yaml(self, **kwargs) -> str:
+        print( f"Generating yaml for zarr file at {self.urlpath }")
         dset: xr.Dataset = xr.open_zarr( self.urlpath )
         description = self.get_attribute(dset, kwargs.get('description', 'att:LONGNAME'))
         self.cat_name = self.get_attribute(dset, kwargs.get('name', 'att:SHORTNAME'), self.urlpath.split("/")[-1])
