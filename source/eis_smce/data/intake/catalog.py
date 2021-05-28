@@ -63,14 +63,9 @@ class LocalCatalogManager(EISSingleton):
     def __init__( self, **kwargs ):
         EISSingleton.__init__( self, **kwargs )
 
-    @property
-    def catalog_dir(self):
-        cat_dir = os.path.join(eisc().cache_dir, 'catalog' )
-        os.makedirs( cat_dir, exist_ok=True )
-        return cat_dir
-
     def cat_path( self, cat_name: str ) -> str:
-        return f"file://{self.catalog_dir}/{cat_name}.yml"
+        from eis_smce.data.common.base import eisc
+        return f"file://{eisc().cat_dir}/{cat_name}.yml"
 
     def cat( self, name: str = None ) -> YAMLFileCatalog:
         cat_path = self.cat_path(name)
@@ -82,17 +77,12 @@ class LocalCatalogManager(EISSingleton):
         self.logger.debug(f"Open YAMLFilesCatalog from url: {cat_path}")
         return YAMLFilesCatalog( cat_path )
 
-    def write_to_catalog( self, paths: List[str], name = None, **kwargs ):
-        if name is None:
-            for path in paths:
-                source = EISZarrSource( path )
-                source.yaml(**kwargs)
-        else:
-            catalog: YAMLFileCatalog = self.cat( name )
-            for path in paths:
-                source = EISZarrSource(path)
-                catalog.add( source, source.cat_name )
-            catalog.yaml()
+    def write_to_catalog( self, paths: List[str], name, **kwargs ):
+        catalog: YAMLFileCatalog = self.cat( name )
+        for path in paths:
+            source = EISZarrSource( path, **kwargs )
+            catalog.add( source, source.cat_name )
+        catalog.yaml()
 
     def delete_entry( self, cat_name: str ):
         from eis_smce.data.storage.s3 import s3m

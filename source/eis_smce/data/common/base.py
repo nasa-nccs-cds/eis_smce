@@ -57,6 +57,12 @@ class EISConfiguration( EISSingleton ):
         os.makedirs( _cache_dir, exist_ok=True )
         return _cache_dir
 
+    @property
+    def cat_dir(self):
+        _cat_dir = os.path.join( self.cache_dir, "catalog" )
+        os.makedirs( _cat_dir, exist_ok=True )
+        return _cat_dir
+
     def configure(self, **kwargs):
         self._config.update( kwargs )
 
