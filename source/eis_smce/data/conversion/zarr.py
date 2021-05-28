@@ -32,10 +32,10 @@ class ZarrConverter(EISSingleton):
     def write_catalog( self, zpath: str, cat_name: str, **kwargs ):
         from eis_smce.data.intake.zarr.source import EISZarrSource
         catalog_args = { k: kwargs.pop(k,None) for k in [ 'discription', 'name', 'metadata'] }
-        zsrc = EISZarrSource( zpath, **kwargs )
         cat_path = self._cat_path(cat_name)
+        print(f"Writing catalog for zarr dset at {zpath} to {cat_path}")
+        zsrc = EISZarrSource( zpath, **kwargs )
         cat_file = open( cat_path, "w")
-        print( f"Writing catalog to {cat_path}")
         cat_file.write( zsrc.yaml( **catalog_args ) )
 
 def zc(): return ZarrConverter.instance()

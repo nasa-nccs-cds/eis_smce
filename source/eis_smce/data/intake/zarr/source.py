@@ -8,7 +8,6 @@ class EISZarrSource( ZarrSource ):
         storage_options = kwargs.get( 'storage_options', None )
         metadata = kwargs.get( 'metadata', None )
         ZarrSource.__init__( self, urlpath, storage_options, metadata, **kwargs )
-        self.cat_name = None
 
     def get_attribute(self, dset: xr.Dataset, attval: str, default: str = "" ):
         if attval.startswith('att:'):  return dset.attrs.get( attval[4:], default )
