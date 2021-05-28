@@ -27,7 +27,7 @@ class ZarrConverter(EISSingleton):
 
     def _cat_path( self, cat_name: str ) -> str:
         from eis_smce.data.common.base import eisc
-        return f"file://{eisc().cat_dir}/{cat_name}.yml"
+        return f"{eisc().cat_dir}/{cat_name}.yml"
 
     def write_catalog( self, zpath: str, cat_name: str, **kwargs ):
         from eis_smce.data.intake.zarr.source import EISZarrSource
