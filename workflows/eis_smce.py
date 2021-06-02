@@ -1,7 +1,9 @@
 import importlib
 import os
 import sys
+import pathlib
 
+# pathlib.Path(__file__).parent.absolute()
 sys.path.insert(0, os.path.abspath('../source'))
 __file__ = {'sys': sys, 'importlib': importlib}
 
