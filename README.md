@@ -52,8 +52,8 @@ Discover Notes
 
 >> salloc --nodes=1 --constraint="sky|hasw" --time=12:00:00
 >> conda activate eis_smce
->> cd <install_dir>/eis_smce
->> python ./workflows/zarr_conversion.py ~/.eis_smce/config/zc.cfg
+>> cd <install_dir>/eis_smce/workflows
+>> python zarr_conversion.py ~/.eis_smce/config/zc.cfg
 
 ### Upload
 
