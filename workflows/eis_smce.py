@@ -1,11 +1,11 @@
 import importlib
 import os
 import sys
-import pathlib
+from pathlib import Path
 
-# pathlib.Path(__file__).parent.absolute()
-sys.path.insert(0, os.path.abspath('../source'))
-__file__ = {'sys': sys, 'importlib': importlib}
+source_root =  f"{Path().absolute().parent}/source"
+sys.path.insert( 0, source_root )
+__file__ = { 'sys': sys, 'importlib': importlib }
 
 del importlib
 del os

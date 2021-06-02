@@ -1,8 +1,10 @@
 import importlib
 import os
 import sys
+from pathlib import Path
 
-sys.path.insert(0, os.path.abspath('../source'))
+source_root =  f"{Path().absolute().parent}/source"
+sys.path.insert( 0, source_root )
 __file__ = {'sys': sys, 'importlib': importlib}
 
 del importlib
