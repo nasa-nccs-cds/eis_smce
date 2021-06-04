@@ -31,7 +31,7 @@ class EISDataSource( ):
         self._ds: xa.Dataset = None
         self.pspec = None
         self.batch_size = int( eisc().get( 'batch_size', 1000 ) )
-        self.chunk_size = self.segment_manager.process_files( self.urlpath )
+        self.segment_manager.process_files( self.urlpath )
 
     def _open_partition(self, ipart: int) -> xa.Dataset:
         raise NotImplementedError()
@@ -102,15 +102,18 @@ class EISDataSource( ):
 
     def read( self, **kwargs ) -> xa.Dataset:
         merge_dim = eisc().get( 'merge_dim' )
+        chunk_dim_size = eisc().get( 'chunk_dim_size', 100 )
+        dims = kwargs.get('dims')
         var_list: Set[str] = kwargs.get('vlist', None)
         ibatch = kwargs.get( 'ibatch', -1 )
+        chunks = { d: 100 for d in dims }
         file_list = self.get_file_list( var_list, ibatch )
-        self.pspec = dict( pattern=self.urlpath, merge_dim=merge_dim, chunk_size=self.chunk_size, files=file_list,
+        self.pspec = dict( pattern=self.urlpath, merge_dim=merge_dim, files=file_list,
                            dynamic_metadata_ids=self.segment_manager.get_dynamic_attributes(),
                            nchunks = self.segment_manager.get_segment_size( var_list ),
                            sname = self.segment_manager.get_segment_name( var_list ), **kwargs )
         t0 = time.time()
-        rv: xa.Dataset = xa.open_mfdataset( file_list, concat_dim=merge_dim, coords="minimal", data_vars=var_list,
+        rv: xa.Dataset = xa.open_mfdataset( file_list, concat_dim=merge_dim, coords="minimal", data_vars=var_list, chunks = chunk_dim_size,
                                             preprocess=partial( self.preprocess, self.pspec ), parallel = True )
         mdim = rv[merge_dim].values
         print( f"Reading merged dataset[{ibatch}] from {len(file_list)} files:" )
@@ -156,20 +159,20 @@ class EISDataSource( ):
             from eis_smce.data.storage.s3 import s3m
             from eis_smce.data.common.cluster import dcm
             path = eiss.item_path( output_url )
-            for vlist in self.segment_manager.get_vlists():
+            for [dims, vlist] in self.segment_manager.get_vlists():
                 print( f"Processing vlist: {vlist}")
                 file_spec_list: List[Dict[str, str]] = self.segment_manager.get_file_specs(vlist)
                 ib = 0
                 while True:
                     t0 = time.time()
-                    input_files = self.create_storage_item( path, ibatch=ib, vlist=vlist, **kwargs )
+                    input_files = self.create_storage_item( path, ibatch=ib, vlist=vlist, dims=dims, **kwargs )
                     nfiles, t1 = len(input_files), time.time()
                     self.logger.info( f"Exporting batch {ib} with {nfiles} files to: {path}" )
-                    ispecs = [ dict( chunk_index=ic, input_path=file_spec_list[ic]['resolved'] ) for ic in range( ib, ib+nfiles*self.chunk_size, self.chunk_size ) ]
+                    ispecs = [ dict( file_index=ic, input_path=file_spec_list[ic]['resolved'] ) for ic in range( ib, ib+nfiles ) ]
                     results = dcm().client.map( partial( EISDataSource._export_partition_parallel, path, self.pspec ), ispecs )
                     dcm().client.compute( results, sync=True )
-                    print( f"Completed processing batch {ib} ({nfiles}/{self.pspec['nchunks']} files) in {(time.time()-t0)/60:.1f} (init: {(t1-t0)/60:.1f}) min.")
-                    ib = ib + self.batch_size*self.chunk_size
+                    print( f"Completed processing batch {ib} ({nfiles} files) in {(time.time()-t0)/60:.1f} (init: {(t1-t0)/60:.1f}) min.")
+                    ib = ib + self.batch_size
                     if ib >= self.pspec['nchunks']: break
 
         except Exception  as err:
@@ -179,10 +182,10 @@ class EISDataSource( ):
     @classmethod
     def _export_partition_parallel( cls, output_path:str, pspec: Dict, ispec: Dict ):
         store = EISDataSource.get_cache_path( output_path, pspec )
-        chunk_index = ispec['chunk_index']
+        file_index = ispec['file_index']
         merge_dim = pspec.get( 'merge_dim' )
         ds0 = xa.open_dataset( ispec['input_path'] )
-        region = { merge_dim: slice( chunk_index, chunk_index + pspec['chunk_size'] ) }
+        region = { merge_dim: slice( file_index, file_index + pspec['chunk_size'] ) }
         dset = EISDataSource.preprocess( pspec, ds0 )
         mval = dset[merge_dim].values[0]
         fname = os.path.basename( dset['_eis_source_path'].values[0] )

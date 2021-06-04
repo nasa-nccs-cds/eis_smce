@@ -49,14 +49,19 @@ class FileSortKey(Enum):
 
 class DatasetSegmentSpec:
 
-    def __init__(self, name: str,  vlist: Set[str] ):
+    def __init__(self, name: str,  dims: List[int],  vlist: Set[str] ):
         self._name = name
-        self._file_specs: List[Dict[str, str]] = []
+        self._dims = dims
+        self._file_specs: List[ Dict[str, str] ] = []
         self._vlist: Set[str] = vlist
 
     @property
     def name(self):
         return self._name
+
+    @property
+    def dims(self):
+        return self._dims
 
     def get_vlist(self) -> Set[str]:
         return self._vlist
@@ -95,8 +100,8 @@ class SegmentedDatasetManager:
         if type(v0) is xa.DataArray:  return v0.equals( v1 )
         return v0 == v1
 
-    def get_vlists(self) -> List[Set[str]]:
-        return [ ss.get_vlist() for ss in self._segment_specs.values() ]
+    def get_vlists(self) -> List[List[List[int],Set[str]]]:
+        return [ [ ss.dims, ss.get_vlist() ] for ss in self._segment_specs.values() ]
 
     def get_file_specs(self, vlist: Set[str] ) -> List[Dict[str,str]]:
         return self._segment_specs[ skey(vlist) ].get_file_specs()
@@ -124,15 +129,15 @@ class SegmentedDatasetManager:
         try:
             with xa.open_dataset(file_path) as dset:
                 _attrs: Dict[str,Union[str,np.array]] = { str(k): v for k, v in dset.attrs.items() }
-                _attrs['chunk_size'] = dset.sizes[ merge_dim ]
+                _attrs['dims'] = dset.dims
                 _vset: Set[str] = { str(v) for v in dset.data_vars.keys() }
                 return ( _attrs,  _vset )
         except Exception as err:
             return ( dict( exc=err, estr=str(err), file=file_path ), None )
 
-    def _process_files_metadata(self, fdata: List[ Tuple[ Dict[str,Union[str,np.array]], Set[str] ] ] ) -> int:
-        chunk_size = None
+    def _process_files_metadata(self, fdata: List[ Tuple[ Dict[str,Union[str,np.array]], Set[str] ] ] ):
         for ( _attrs, _vlist ) in fdata:
+            dims = _attrs['dims']
             if _vlist is None:
                 print( f"\n ***** Error reading file {_attrs['file']}: {_attrs['estr']}\n")
                 raise( _attrs['exc'] )
@@ -140,15 +145,10 @@ class SegmentedDatasetManager:
                 self._base_metadata =  _attrs
             else:
                 for k,v in _attrs.items():
-                    if k == "chunk_size":
-                        if chunk_size == None: chunk_size = v
-                        else: assert (v==chunk_size), f"Variable chunk sizes not supported: {v} vs {chunk_size}"
-                    else:
-                        if not self.equal_attr( v, self._base_metadata.get( k, None ) ):
-                            self._dynamic_attributes.add( k )
-            self._file_var_sets.append( _vlist )
+                    if not self.equal_attr( v, self._base_metadata.get( k, None ) ):
+                        self._dynamic_attributes.add( k )
+            self._file_var_sets.append( [dims. _vlist] )
         print( f"  ****  Computed Dynamic Attributes: {list(self._dynamic_attributes)}")
-        return chunk_size
 
     @staticmethod
     def sort_key( item: Dict ):
@@ -182,29 +182,28 @@ class SegmentedDatasetManager:
         t1 = time.time()
         tasks = dcm().client.map( partial( self._get_file_metadata, merge_dim ), self._input_files )
         files_metadata = dcm().client.compute( tasks, sync=True )
-        chunk_size = self._process_files_metadata( files_metadata )
+        self._process_files_metadata( files_metadata )
         t2 = time.time()
 
-        var_set_intersect: Set[str]  = self._file_var_sets[0].intersection( *self._file_var_sets )
-        var_set_diffs: List[Set] = [ s.difference(var_set_intersect) for s in self._file_var_sets ]
+        var_set_intersect: Set[str]  = self._file_var_sets[0][1].intersection( *self._file_var_sets )
+        var_set_diffs: List[Set] = [ s.difference(var_set_intersect) for [d,s] in self._file_var_sets ]
         var_set_difference: Set[str] = var_set_diffs[0].union( *var_set_diffs )
         if len( var_set_intersect ) > 0: self.addSegmentSpec( "", self._file_specs.values(), var_set_intersect )
         t3 = time.time()
 
         print( f"Pre-Processing {len(self._input_files)} files:")
-        for (f, var_set) in zip( self._input_files, self._file_var_sets ):
+        for (f, [dims, var_set] ) in zip( self._input_files, self._file_var_sets ):
             outlier_vars: Set[str] = var_set_difference.intersection( var_set )
             if len( outlier_vars ) > 0:
                 outlier_key = "_" + "-".join( outlier_vars )
-                self.addSegmentSpec( outlier_key, [ self._file_specs[f] ], outlier_vars )
+                self.addSegmentSpec( outlier_key, [ self._file_specs[f] ], dims, outlier_vars )
 
         for segment_spec in self._segment_specs.values(): segment_spec.sort( key=self.sort_key )
         t4 = time.time()
         print(f"Done preprocessing with times {t1-t0:.2f} {t2-t1:.2f} {t3-t2:.2f} {t4-t3:.2f}")
-        return chunk_size
 
-    def addSegmentSpec(self, name: str, file_specs: Iterable[Dict[str, str]], vlist: Set[str] ):
-        seg_spec: DatasetSegmentSpec = self._segment_specs.setdefault( skey(vlist), DatasetSegmentSpec( name, vlist ))
-        if seg_spec.is_empty(): print(f"Adding segment: name='{name}', vars = {list(vlist)}")
+    def addSegmentSpec(self, name: str, file_specs: Iterable[Dict[str, str]], dims: Set[str], vlist: Set[str] ):
+        seg_spec: DatasetSegmentSpec = self._segment_specs.setdefault( skey(vlist), DatasetSegmentSpec( name, dims, vlist ))
+        if seg_spec.is_empty(): print(f"Adding segment: name='{name}', vars = {list(vlist)}, dims = {list(dims)}")
         seg_spec.add_file_specs( file_specs )
         return seg_spec
