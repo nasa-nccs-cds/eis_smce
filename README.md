@@ -7,7 +7,7 @@ Create your conda environment as follows:
 
     > conda create --name eis_smce 
     > conda activate eis_smce
-    > conda install -c conda-forge awscli boto3 dask hvplot intake intake-xarray  numpy pyhdf rasterio rioxarray s3fs traitlets xarray zarr dask-jobqueue 
+    > conda install -c conda-forge awscli boto3 dask hvplot intake intake-xarray  numpy pyhdf rasterio rioxarray s3fs traitlets xarray zarr dask-jobqueue rechunker
 
 eis_smce Setup
 ---------------
