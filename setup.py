@@ -6,6 +6,7 @@ name = 'eis_smce'
 LONG_DESCRIPTION = 'Applications and utilities to support the NASA Earth Information System'
 cfg_dir = os.path.expanduser("~/.eis_smce/config")
 eis_cfg_files = glob.glob( os.path.join( os.path.dirname(os.path.abspath(__file__)), "config", "*.cfg" ) )
+eis_smce_redirect = os.path.join( os.path.dirname(os.path.abspath(__file__) ), "workflows", "eis_smce" )
 version = "0.1"
 
 setup_args = dict(
@@ -31,6 +32,8 @@ setup(**setup_args)
 os.makedirs( cfg_dir, exist_ok=True )
 for eis_cfg_file in eis_cfg_files:
     shutil.copy( eis_cfg_file, cfg_dir )
+
+os.rename( f"{eis_smce_redirect}.py", f"{eis_smce_redirect}-disabled.py")
 
 
 
