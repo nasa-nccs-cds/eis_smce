@@ -1,5 +1,5 @@
 from intake_xarray.xzarr import ZarrSource
-from eis_smce.data.storage.s3 import s3m
+from data import s3m
 import xarray as xa
 
 bucket = "eis-dh-hydro"

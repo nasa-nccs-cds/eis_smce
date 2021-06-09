@@ -1,9 +1,7 @@
-import intake, time
-from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 import xarray as xa
-from eis_smce.data.common.base import eisc
-from eis_smce.data.conversion.zarr import zc
-from eis_smce.data.common.cluster import dcm
+from data import eisc
+from data import zc
+from data import dcm
 
 test_run = True
 input_dir = "/discover/nobackup/projects/eis_freshwater/swang9/OL_1km/OUTPUT.RST.2013"
