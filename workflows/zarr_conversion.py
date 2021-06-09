@@ -1,7 +1,7 @@
-import logging, sys
-from data import  eisc_config
-from data import zc
-from data import dcm
+import time, logging, sys
+from eis_smce.data.common.base import  eisc_config
+from eis_smce.data.conversion.zarr import zc
+from eis_smce.data.common.cluster import dcm
 logger = logging.getLogger("distributed.utils_perf")
 logger.setLevel(logging.ERROR)
 
