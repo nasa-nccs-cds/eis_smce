@@ -180,12 +180,14 @@ class EISDataSource( ):
             self.logger.error(traceback.format_exc())
 
     @classmethod
-    def _export_partition_parallel( cls, output_path:str, pspec: Dict, ispec: Dict ):
+    def _export_partition_parallel( cls, output_path:str, pspec: Dict, ispecs: List[Dict] ):
         store = EISDataSource.get_cache_path( output_path, pspec )
-        file_index = ispec['file_index']
+        file_indices = [ ispec['file_index'] for ispec in ispecs ]
+        input_files = [ ispec['input_path'] for ispec in ispecs ]
         merge_dim = pspec.get( 'merge_dim' )
-        ds0 = xa.open_dataset( ispec['input_path'] )
-        region = { merge_dim: slice( file_index, file_index + pspec['chunk_size'] ) }
+        chunks = pspec.get('chunks')
+        ds0 = xa.open_mfdataset( input_files, chunks, concat_dim=merge_dim )
+        region = { merge_dim: slice( file_indices[0], file_indices[-1] ) }
         dset = EISDataSource.preprocess( pspec, ds0 )
         mval = dset[merge_dim].values[0]
         fname = os.path.basename( dset['_eis_source_path'].values[0] )
