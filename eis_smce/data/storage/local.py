@@ -49,19 +49,14 @@ class FileSortKey(Enum):
 
 class DatasetSegmentSpec:
 
-    def __init__(self, name: str,  dims: List[int],  vlist: Set[str] ):
+    def __init__(self, name: str,  vlist: Set[str] ):
         self._name = name
-        self._dims = dims
         self._file_specs: List[ Dict[str, str] ] = []
         self._vlist: Set[str] = vlist
 
     @property
     def name(self):
         return self._name
-
-    @property
-    def dims(self):
-        return self._dims
 
     def get_vlist(self) -> Set[str]:
         return self._vlist
@@ -90,7 +85,7 @@ class SegmentedDatasetManager:
         self._segment_specs: Dict[ Set[str], DatasetSegmentSpec ] = {}
         self._dynamic_attributes = set()
         self._base_metadata: Dict = None
-        self._file_var_sets: List[Tuple] = []
+        self._file_var_sets: List[Set[str]] = []
         self._input_files = None
         self._file_specs: Dict[str,Dict[str,str]] = {}
 
@@ -100,8 +95,8 @@ class SegmentedDatasetManager:
         if type(v0) is xa.DataArray:  return v0.equals( v1 )
         return v0 == v1
 
-    def get_vlists(self) -> List[Tuple]:
-        return [ ( ss.dims, ss.get_vlist() ) for ss in self._segment_specs.values() ]
+    def get_vlists(self) -> List[Set[str]]:
+        return [ ss.get_vlist() for ss in self._segment_specs.values() ]
 
     def get_file_specs(self, vlist: Set[str] ) -> List[Dict[str,str]]:
         return self._segment_specs[ skey(vlist) ].get_file_specs()
@@ -147,7 +142,7 @@ class SegmentedDatasetManager:
                 for k,v in _attrs.items():
                     if not self.equal_attr( v, self._base_metadata.get( k, None ) ):
                         self._dynamic_attributes.add( k )
-            self._file_var_sets.append( (dims, _vlist) )
+            self._file_var_sets.append(_vlist)
         print( f"  ****  Computed Dynamic Attributes: {list(self._dynamic_attributes)}")
 
     @staticmethod
@@ -174,7 +169,7 @@ class SegmentedDatasetManager:
             except ValueError as err:
                 eisc().logger.error( f" Metadata processing error: {err}, Did you mix glob and pattern in file name?")
 
-    def process_files(self, urlpath: str, **kwargs ) -> int:
+    def process_files(self, urlpath: str, **kwargs ):
         t0 = time.time()
         self._generate_file_specs( urlpath, **kwargs )
         merge_dim = eisc().get('merge_dim')
@@ -185,25 +180,25 @@ class SegmentedDatasetManager:
         self._process_files_metadata( files_metadata )
         t2 = time.time()
 
-        var_set_intersect: Set[str]  = self._file_var_sets[0][1].intersection( *self._file_var_sets )
-        var_set_diffs: List[Set] = [ s.difference(var_set_intersect) for (d,s) in self._file_var_sets ]
+        var_set_intersect: Set[str]  = self._file_var_sets[0].intersection( *self._file_var_sets )
+        var_set_diffs: List[Set] = [ s.difference(var_set_intersect) for s in self._file_var_sets ]
         var_set_difference: Set[str] = var_set_diffs[0].union( *var_set_diffs )
         if len( var_set_intersect ) > 0: self.addSegmentSpec( "", self._file_specs.values(), var_set_intersect )
         t3 = time.time()
 
         print( f"Pre-Processing {len(self._input_files)} files:")
-        for (f, (dims, var_set) ) in zip( self._input_files, self._file_var_sets ):
+        for (f, var_set ) in zip( self._input_files, self._file_var_sets ):
             outlier_vars: Set[str] = var_set_difference.intersection( var_set )
             if len( outlier_vars ) > 0:
                 outlier_key = "_" + "-".join( outlier_vars )
-                self.addSegmentSpec( outlier_key, [ self._file_specs[f] ], dims, outlier_vars )
+                self.addSegmentSpec( outlier_key, [ self._file_specs[f] ],  outlier_vars )
 
         for segment_spec in self._segment_specs.values(): segment_spec.sort( key=self.sort_key )
         t4 = time.time()
         print(f"Done preprocessing with times {t1-t0:.2f} {t2-t1:.2f} {t3-t2:.2f} {t4-t3:.2f}")
 
-    def addSegmentSpec(self, name: str, file_specs: Iterable[Dict[str, str]], dims: Set[str], vlist: Set[str] ):
-        seg_spec: DatasetSegmentSpec = self._segment_specs.setdefault( skey(vlist), DatasetSegmentSpec( name, dims, vlist ))
-        if seg_spec.is_empty(): print(f"Adding segment: name='{name}', vars = {list(vlist)}, dims = {list(dims)}")
+    def addSegmentSpec(self, name: str, file_specs: Iterable[Dict[str, str]], vlist: Set[str] ):
+        seg_spec: DatasetSegmentSpec = self._segment_specs.setdefault( skey(vlist), DatasetSegmentSpec( name, vlist ))
+        if seg_spec.is_empty(): print(f"Adding segment: name='{name}', vars = {list(vlist)}")
         seg_spec.add_file_specs( file_specs )
         return seg_spec
