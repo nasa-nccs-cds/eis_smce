@@ -164,7 +164,7 @@ class EISDataSource( ):
             from eis_smce.data.storage.s3 import s3m
             from eis_smce.data.common.cluster import dcm
             path = eiss.item_path( output_url )
-            for (dims, vlist) in self.segment_manager.get_vlists():
+            for vlist in self.segment_manager.get_vlists():
                 print( f"Processing vlist: {vlist}")
                 file_spec_list: List[Dict[str, str]] = self.segment_manager.get_file_specs(vlist)
                 nfiles = len( file_spec_list )
