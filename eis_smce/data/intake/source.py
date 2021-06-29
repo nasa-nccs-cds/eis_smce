@@ -174,7 +174,7 @@ class EISDataSource( ):
                     current_batch_size, t1 = len(batch_files), time.time()
                     self.logger.info( f"Exporting batch {ib} with {current_batch_size} files to: {path}" )
                     ispecs = [ dict( file_index=ic, input_path=file_spec_list[ic]['resolved'] ) for ic in range( ib, ib+current_batch_size ) ]
-                    cspecs = self.partition_list( ispecs )
+                    cspecs = list( self.partition_list( ispecs ) )
                     results = dcm().client.map( partial( EISDataSource._export_partition_parallel, path, self.pspec ), cspecs )
                     dcm().client.compute( results, sync=True )
                     print( f"Completed processing batch {ib} ({current_batch_size} files) in {(time.time()-t0)/60:.1f} (init: {(t1-t0)/60:.1f}) min.")
