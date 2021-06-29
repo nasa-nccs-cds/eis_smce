@@ -102,7 +102,7 @@ class EISDataSource( ):
 
     def read( self, **kwargs ) -> xa.Dataset:
         merge_dim = eisc().get( 'merge_dim' )
-        chunk_dim_size = eisc().get( 'chunk_dim_size', 100 )
+        chunk_size = eisc().get( 'chunk_size', ( 100, 100, 100 ) )
         dims = kwargs.get('dims')
         var_list: Set[str] = kwargs.get('vlist', None)
         ibatch = kwargs.get( 'ibatch', -1 )
@@ -115,7 +115,7 @@ class EISDataSource( ):
         t0 = time.time()
         rv: xa.Dataset = xa.open_mfdataset( file_list, concat_dim=merge_dim, coords="minimal", data_vars=var_list, chunks = chunk_dim_size,
                                             preprocess=partial( self.preprocess, self.pspec ), parallel = True )
-        mdim = rv[merge_dim].values
+        mdim = rv[ merge_dim ].values
         print( f"Reading merged dataset[{ibatch}] from {len(file_list)} files:" )
         print( f" --> File Range: '{os.path.basename(file_list[0])}' -> '{os.path.basename(file_list[-1])}'" )
         print( f" --> {merge_dim} range: {mdim[0]} -> {mdim[-1]}")

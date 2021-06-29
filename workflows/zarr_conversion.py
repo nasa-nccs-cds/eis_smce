@@ -19,6 +19,7 @@ if __name__ == '__main__':
     output_path = f"{eisc['output_dir']}/{eisc['output_dset']}"
     zarr_url   = f"s3://{eisc['bucket']}/{eisc['output_dset']}"
     cat_name = eisc.get( 'cat_name', eisc['output_dset'].replace("/",".") )
+    eisc.configure( cache_size = ( 100, 100, 100 ) )
 
     zc().standard_conversion( input_path, output_path  )
     zc().write_catalog( f"{output_path}.zarr", cat_name )
