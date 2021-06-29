@@ -161,7 +161,7 @@ class EISDataSource( ):
             path = eiss.item_path( output_url )
             merge_dim = self.pspec['merge_dim']
             chunks: Dict[str, int] = eisc().get( 'chunks', {merge_dim: 1} )
-            for [dims, vlist] in self.segment_manager.get_vlists():
+            for (dims, vlist) in self.segment_manager.get_vlists():
                 print( f"Processing vlist: {vlist}")
                 file_spec_list: List[Dict[str, str]] = self.segment_manager.get_file_specs(vlist)
                 nfiles = len( file_spec_list )

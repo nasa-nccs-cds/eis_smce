@@ -100,8 +100,8 @@ class SegmentedDatasetManager:
         if type(v0) is xa.DataArray:  return v0.equals( v1 )
         return v0 == v1
 
-    def get_vlists(self) -> List[List[List[int],Set[str]]]:
-        return [ [ ss.dims, ss.get_vlist() ] for ss in self._segment_specs.values() ]
+    def get_vlists(self) -> List[Tuple]:
+        return [ ( ss.dims, ss.get_vlist() ) for ss in self._segment_specs.values() ]
 
     def get_file_specs(self, vlist: Set[str] ) -> List[Dict[str,str]]:
         return self._segment_specs[ skey(vlist) ].get_file_specs()
