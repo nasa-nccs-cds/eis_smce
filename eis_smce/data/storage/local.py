@@ -90,7 +90,7 @@ class SegmentedDatasetManager:
         self._segment_specs: Dict[ Set[str], DatasetSegmentSpec ] = {}
         self._dynamic_attributes = set()
         self._base_metadata: Dict = None
-        self._file_var_sets = []
+        self._file_var_sets: List[Tuple] = []
         self._input_files = None
         self._file_specs: Dict[str,Dict[str,str]] = {}
 
@@ -147,7 +147,7 @@ class SegmentedDatasetManager:
                 for k,v in _attrs.items():
                     if not self.equal_attr( v, self._base_metadata.get( k, None ) ):
                         self._dynamic_attributes.add( k )
-            self._file_var_sets.append( [dims. _vlist] )
+            self._file_var_sets.append( (dims, _vlist) )
         print( f"  ****  Computed Dynamic Attributes: {list(self._dynamic_attributes)}")
 
     @staticmethod
@@ -186,13 +186,13 @@ class SegmentedDatasetManager:
         t2 = time.time()
 
         var_set_intersect: Set[str]  = self._file_var_sets[0][1].intersection( *self._file_var_sets )
-        var_set_diffs: List[Set] = [ s.difference(var_set_intersect) for [d,s] in self._file_var_sets ]
+        var_set_diffs: List[Set] = [ s.difference(var_set_intersect) for (d,s) in self._file_var_sets ]
         var_set_difference: Set[str] = var_set_diffs[0].union( *var_set_diffs )
         if len( var_set_intersect ) > 0: self.addSegmentSpec( "", self._file_specs.values(), var_set_intersect )
         t3 = time.time()
 
         print( f"Pre-Processing {len(self._input_files)} files:")
-        for (f, [dims, var_set] ) in zip( self._input_files, self._file_var_sets ):
+        for (f, (dims, var_set) ) in zip( self._input_files, self._file_var_sets ):
             outlier_vars: Set[str] = var_set_difference.intersection( var_set )
             if len( outlier_vars ) > 0:
                 outlier_key = "_" + "-".join( outlier_vars )
