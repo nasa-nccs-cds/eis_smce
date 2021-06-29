@@ -18,9 +18,7 @@ def has_char(string: str, chars: str): return 1 in [c in string for c in chars]
 def parse_url( urlpath: str) -> Tuple[str, str]:
     ptoks = urlpath.split(":")[-1].strip("/").split("/")
     return ( ptoks[0], "/".join( ptoks[1:] ) )
-def partition( list, chunk_size ):
-    for i in range(0, len(list), chunk_size ):
-        yield list[ i: i+chunk_size ]
+
 
 class EISDataSource( ):
     logger = EISConfiguration.get_logger()
@@ -154,13 +152,18 @@ class EISDataSource( ):
         mds.close(); del mds
         return input_files
 
+    def partition_list( self, lst: List ):
+        merge_dim = self.pspec['merge_dim']
+        chunks: Dict[str, int] = eisc().get('chunks', {merge_dim: 1})
+        chunk_size = chunks.get( merge_dim, 1 )
+        for i in range(0, len(lst), chunk_size):
+            yield lst[i: i + chunk_size]
+
     def export_parallel(self, output_url: str, **kwargs ):
         try:
             from eis_smce.data.storage.s3 import s3m
             from eis_smce.data.common.cluster import dcm
             path = eiss.item_path( output_url )
-            merge_dim = self.pspec['merge_dim']
-            chunks: Dict[str, int] = eisc().get( 'chunks', {merge_dim: 1} )
             for (dims, vlist) in self.segment_manager.get_vlists():
                 print( f"Processing vlist: {vlist}")
                 file_spec_list: List[Dict[str, str]] = self.segment_manager.get_file_specs(vlist)
@@ -171,7 +174,7 @@ class EISDataSource( ):
                     current_batch_size, t1 = len(batch_files), time.time()
                     self.logger.info( f"Exporting batch {ib} with {current_batch_size} files to: {path}" )
                     ispecs = [ dict( file_index=ic, input_path=file_spec_list[ic]['resolved'] ) for ic in range( ib, ib+current_batch_size ) ]
-                    cspecs = partition( ispecs, chunks.get( merge_dim, 1 ) )
+                    cspecs = self.partition_list( ispecs )
                     results = dcm().client.map( partial( EISDataSource._export_partition_parallel, path, self.pspec ), cspecs )
                     dcm().client.compute( results, sync=True )
                     print( f"Completed processing batch {ib} ({current_batch_size} files) in {(time.time()-t0)/60:.1f} (init: {(t1-t0)/60:.1f}) min.")
