@@ -212,7 +212,7 @@ class EISDataSource( ):
         chunks: Dict[str, int] = eisc().get( 'chunks', { merge_dim: 1 } )
         print( f"Exporting files {file_indices[0]} -> {file_indices[-1]}")
         cls.logger.info(f'xa.open_mfdataset: file_indices={file_indices}, concat_dim = {merge_dim}')
-        idset = xa.open_mfdataset( input_files, concat_dim=merge_dim, preprocess=partial( EISDataSource.preprocess, pspec ) )
+        idset = xa.open_mfdataset( input_files, concat_dim=merge_dim, preprocess=partial( EISDataSource.preprocess, pspec ), parallel=True )
         cls.logger.info( f' --> RECHUNK: chunks={chunks}')
         cdset = idset.chunk( chunks )
         region = { merge_dim: slice( file_indices[0], file_indices[-1]+1 ) }
