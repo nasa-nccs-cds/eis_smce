@@ -1,15 +1,17 @@
-import os, xarray as xa
+import os, sys, logging, xarray as xa
 import numpy as np
 
-time_index = 100
-vname = "SWE_tavg" # "GPP_tavg"
-zarr_dest0 = "/gpfsm/dnb43/projects/p151/zarr/LIS/OL_10km/1980/MERRA_IMERG.zarr"
-zarr_dest1 = "/gpfsm/dnb43/projects/p151/zarr/LIS/OL_10km/1980//MERRA_IMERG_SWdown_f_tavg-Swnet_tavg-Lwnet_tavg-LWdown_f_tavg.zarr"
-zarr_dest2 = "/discover/nobackup/tpmaxwel/cache/zarr_test.zarr"
-zarr_dest3 = "/gpfsm/dnb43/projects/p151/zarr/LIS/OL_1km/ROUTING/LIS_HIST.d01.zarr"
-zarr_dest4 = "/gpfsm/dnb43/projects/p151/zarr/LIS/OL_1km/SURFACEMODEL/LIS_HIST.d01.zarr"
+logger = logging.getLogger("distributed.utils_perf")
+logger.setLevel(logging.ERROR)
 
-zds: xa.Dataset = xa.open_zarr( zarr_dest4 )
+if len(sys.argv) == 1:
+    print( f"Usage: >> python {sys.argv[0]} <config_file_path>")
+    sys.exit(-1)
+
+zarr_dset = sys.argv[1]
+time_index = 35
+
+zds: xa.Dataset = xa.open_zarr( zarr_dset )
 sample_input = zds['_eis_source_path'].values[time_index]
 print( f"sample input path: {sample_input}"  )
 ids: xa.Dataset = xa.open_dataset( sample_input )
@@ -31,11 +33,13 @@ with xa.set_options( display_max_rows=100 ):
     print( f"\nzds:"  )
     print( zds )
 
+    vname = list(zds.variables.keys())[0]
     test_array: xa.DataArray = zds[vname]
     print( f"\n{vname} shape: {test_array.shape}"  )
-    print( f"{vname} attrs: {test_array.attrs}"  )
+    print(f" --> {vname} chunks: {test_array.chunks}")
+    print(f" --> {vname} attrs: {test_array.attrs}"  )
     test_data: np.ndarray = test_array[time_index].max().values
-    print( f"{vname} max:"  )
+    print( f" -> {vname} max:"  )
     print( test_data )
 
     print( f"\nids:"  )
