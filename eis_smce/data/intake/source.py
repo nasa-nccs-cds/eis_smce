@@ -186,8 +186,8 @@ class EISDataSource( ):
                     ispecs = [ dict( file_index=ic, input_path=file_spec_list[ic]['resolved'] ) for ic in range( ib, ib+current_batch_size ) ]
                     cspecs = list( self.partition_list( ispecs ) )
                     self.logger.info(f"Exporting batch {ib} with {current_batch_size} files to: {path}")
-                    results = dcm().client.map( partial( EISDataSource._export_partition_parallel, path, self.pspec ), cspecs )
-                    dcm().client.compute( results, sync=True )
+                    for cspec in cspecs:
+                        EISDataSource._export_partition_parallel( path, self.pspec, cspec )
                     print( f"Completed processing batch {ib} ({current_batch_size} files) in {(time.time()-t0)/60:.1f} (init: {(t1-t0)/60:.1f}) min.")
 
         except Exception  as err:
@@ -201,15 +201,17 @@ class EISDataSource( ):
         input_files = [ ispec['input_path'] for ispec in ispecs ]
         merge_dim = pspec.get( 'merge_dim' )
         chunks: Dict[str, int] = eisc().get( 'chunks', { merge_dim: 1 } )
-        cls.logger.info(f'xa.open_mfdataset: files={input_files}\n ---> chunks={chunks}, pspec = {pspec}, concat_dim = {merge_dim}')
-        dset = xa.open_mfdataset( input_files, chunks=chunks, concat_dim=merge_dim, preprocess=partial( EISDataSource.preprocess, pspec ), )
+        cls.logger.info(f'xa.open_mfdataset: file_indices={file_indices}, concat_dim = {merge_dim}')
+        idset = xa.open_mfdataset( input_files, concat_dim=merge_dim, preprocess=partial( EISDataSource.preprocess, pspec ) )
+        cls.logger.info( f' --> RECHUNK: chunks={chunks}')
+        cdset = idset.chunk( chunks )
         region = { merge_dim: slice( file_indices[0], file_indices[-1]+1 ) }
-        mval = dset[merge_dim].values[0]
+        mval = cdset[merge_dim].values[0]
         fname = os.path.basename( input_files[0] )
         cls.logger.info(f'**Export: region: {region}, {merge_dim} = {mval}, file = {fname}' )
-        cls.log_dset( '_export_partition_parallel', dset )
-        dset.to_zarr( store, mode='a', region=region )
-        dset.close(); del dset
+        cls.log_dset( '_export_partition_parallel', cdset )
+        cdset.to_zarr( store, mode='a', region=region )
+        idset.close(); del idset; cdset.close(); del cdset
         cls.logger.info(" -------------------------- Export complete -------------------------- ")
 
     @classmethod
