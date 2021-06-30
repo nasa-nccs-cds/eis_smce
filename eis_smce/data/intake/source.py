@@ -67,9 +67,6 @@ class EISDataSource( ):
         merge_dim = pspec['merge_dim']
         pattern = pspec['pattern']
         time_format = pspec.get( 'time_format', None )
-        files = pspec['files']
-        logger.info( f"  PP-> @@@@ files = {files} ")
-        logger.info( f"  PP-> @@@@ encoding: {list(ds.encoding.items())} ")
         source_file_path = ds.encoding["source"]
         dynamic_metadata = dict( _eis_source_path = source_file_path )
         for aId in pspec['dynamic_metadata_ids']:
@@ -103,7 +100,6 @@ class EISDataSource( ):
                     xv = xv.expand_dims(dim=merge_dim, axis=0)
                 vlist[vid] = xv
             rds = xa.Dataset( vlist, ds.coords, ds.attrs )
-        cls.log_dset( "Preprocessed", rds )
         return rds
 
     @classmethod
@@ -111,6 +107,9 @@ class EISDataSource( ):
         ostr = io.StringIO("")
         dset.info(ostr)
         cls.logger.info(f" DATASET: {label}-> {ostr.getvalue()} ")
+        cls.logger.info(f"    *** CHUNKS: *** ")
+        for (vid, v) in dset.variables.items():
+            cls.logger.info(f"    --> {vid}: {v.chunks}")
 
     def read( self, **kwargs ) -> xa.Dataset:
         merge_dim = eisc().get( 'merge_dim' )
@@ -208,8 +207,10 @@ class EISDataSource( ):
         mval = dset[merge_dim].values[0]
         fname = os.path.basename( input_files[0] )
         cls.logger.info(f'**Export: region: {region}, {merge_dim} = {mval}, file = {fname}' )
+        cls.log_dset( '_export_partition_parallel', dset )
         dset.to_zarr( store, mode='a', region=region )
         dset.close(); del dset
+        cls.logger.info(" -------------------------- Export complete -------------------------- ")
 
     @classmethod
     def write_catalog( cls, zpath: str, **kwargs ):
