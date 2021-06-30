@@ -26,7 +26,7 @@ for k,v in zds.attrs.items():
 
 tvals = zds['time'].values
 fvals = zds['_eis_source_path'].values
-for iT in range(101):
+for iT in range(0,time_index):
     print( f" {zds['time'].values[iT]}: {os.path.basename(zds['_eis_source_path'].values[iT])}")
 
 with xa.set_options( display_max_rows=100 ):
