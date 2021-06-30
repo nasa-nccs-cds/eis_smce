@@ -5,7 +5,7 @@ from eis_smce.data.storage.local import SegmentedDatasetManager
 from intake.source.utils import reverse_format
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable, MutableMapping, Set
 from functools import partial
-import dask.delayed, boto3, os, traceback
+import dask.delayed, boto3, os, io, traceback
 from eis_smce.data.intake.zarr.source import EISZarrSource
 import intake, zarr, numpy as np
 import dask.bag as db
@@ -61,14 +61,15 @@ class EISDataSource( ):
     def to_dask( self, **kwargs ) -> xa.Dataset:
         return self.read( **kwargs )
 
-    @staticmethod
-    def preprocess( pspec: Dict, ds: xa.Dataset )-> xa.Dataset:
+    @classmethod
+    def preprocess( cls, pspec: Dict, ds: xa.Dataset )-> xa.Dataset:
+        logger = EISConfiguration.get_logger()
         merge_dim = pspec['merge_dim']
         pattern = pspec['pattern']
         time_format = pspec.get( 'time_format', None )
-#        files = pspec['files']
-#        print( f"  PP-> @@@@ files = {files} ")
-#        print( f"  PP-> @@@@ encoding: {list(ds.encoding.items())} ")
+        files = pspec['files']
+        logger.info( f"  PP-> @@@@ files = {files} ")
+        logger.info( f"  PP-> @@@@ encoding: {list(ds.encoding.items())} ")
         source_file_path = ds.encoding["source"]
         dynamic_metadata = dict( _eis_source_path = source_file_path )
         for aId in pspec['dynamic_metadata_ids']:
@@ -102,7 +103,14 @@ class EISDataSource( ):
                     xv = xv.expand_dims(dim=merge_dim, axis=0)
                 vlist[vid] = xv
             rds = xa.Dataset( vlist, ds.coords, ds.attrs )
+        cls.log_dset( "Preprocessed", rds )
         return rds
+
+    @classmethod
+    def log_dset(cls, label: str, dset: xa.Dataset ):
+        ostr = io.StringIO("")
+        dset.info(ostr)
+        cls.logger.info(f" DATASET: {label}-> {ostr.getvalue()} ")
 
     def read( self, **kwargs ) -> xa.Dataset:
         merge_dim = eisc().get( 'merge_dim' )
@@ -176,9 +184,9 @@ class EISDataSource( ):
                     t0 = time.time()
                     batch_files = self.create_storage_item( path, ibatch=ib, vlist=vlist, **kwargs )
                     current_batch_size, t1 = len(batch_files), time.time()
-                    self.logger.info( f"Exporting batch {ib} with {current_batch_size} files to: {path}" )
                     ispecs = [ dict( file_index=ic, input_path=file_spec_list[ic]['resolved'] ) for ic in range( ib, ib+current_batch_size ) ]
                     cspecs = list( self.partition_list( ispecs ) )
+                    self.logger.info(f"Exporting batch {ib} with {current_batch_size} files to: {path}")
                     results = dcm().client.map( partial( EISDataSource._export_partition_parallel, path, self.pspec ), cspecs )
                     dcm().client.compute( results, sync=True )
                     print( f"Completed processing batch {ib} ({current_batch_size} files) in {(time.time()-t0)/60:.1f} (init: {(t1-t0)/60:.1f}) min.")
@@ -194,6 +202,7 @@ class EISDataSource( ):
         input_files = [ ispec['input_path'] for ispec in ispecs ]
         merge_dim = pspec.get( 'merge_dim' )
         chunks: Dict[str, int] = eisc().get( 'chunks', { merge_dim: 1 } )
+        cls.logger.info(f'xa.open_mfdataset: files={input_files}\n ---> chunks={chunks}, pspec = {pspec}, concat_dim = {merge_dim}')
         dset = xa.open_mfdataset( input_files, chunks=chunks, concat_dim=merge_dim, preprocess=partial( EISDataSource.preprocess, pspec ), )
         region = { merge_dim: slice( file_indices[0], file_indices[-1]+1 ) }
         mval = dset[merge_dim].values[0]
