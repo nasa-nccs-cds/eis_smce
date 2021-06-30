@@ -194,7 +194,7 @@ class EISDataSource( ):
         merge_dim = pspec.get( 'merge_dim' )
         chunks: Dict[str, int] = eisc().get( 'chunks', { merge_dim: 1 } )
         dset = xa.open_mfdataset( input_files, chunks=chunks, concat_dim=merge_dim, preprocess=partial( EISDataSource.preprocess, pspec ), )
-        region = { merge_dim: slice( file_indices[0], file_indices[-1] ) }
+        region = { merge_dim: slice( file_indices[0], file_indices[-1]+1 ) }
         mval = dset[merge_dim].values[0]
         fname = os.path.basename( input_files[0] )
         cls.logger.info(f'**Export: region: {region}, {merge_dim} = {mval}, file = {fname}' )
