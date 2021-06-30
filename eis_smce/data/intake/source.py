@@ -163,7 +163,7 @@ class EISDataSource( ):
         return input_files
 
     def partition_chunk_size(self):
-        merge_dim = self.pspec['merge_dim']
+        merge_dim = eisc().get( 'merge_dim' )
         chunks: Dict[str, int] = eisc().get( 'chunks', {merge_dim: 1} )
         chunk_size = chunks.get( merge_dim, 1 )
         return chunk_size
