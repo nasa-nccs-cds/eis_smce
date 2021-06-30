@@ -1,4 +1,4 @@
-import os, logging
+import os, logging, json
 from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapping, Hashable
 import socket, threading
 
@@ -130,7 +130,7 @@ def eisc_config( config_file_path: str ) -> EISConfiguration:
             if not line.strip().startswith("#"):
                 toks = line.split("=")
                 if len( toks ) == 2:
-                    params[ toks[0].strip() ] = toks[1].strip()
+                    params[ toks[0].strip() ] = json.loads( toks[1] )
                 else:
                     _eisc.logger.warn( f"Skipping line in config file: '{line}'")
     _eisc.configure( **params )

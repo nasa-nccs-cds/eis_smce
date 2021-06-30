@@ -66,7 +66,7 @@ class EISDataSource( ):
         merge_dim = pspec['merge_dim']
         pattern = pspec['pattern']
         time_format = pspec.get( 'time_format', None )
-        print( f"ds.encoding.source: {ds.encoding['source']}")
+        files = pspec['files']
         source_file_path = ds.encoding["source"]
         dynamic_metadata = dict( _eis_source_path = source_file_path )
         for aId in pspec['dynamic_metadata_ids']:
@@ -195,7 +195,7 @@ class EISDataSource( ):
         region = { merge_dim: slice( file_indices[0], file_indices[-1] ) }
         dset = EISDataSource.preprocess( pspec, ds0 )
         mval = dset[merge_dim].values[0]
-        fname = os.path.basename( dset['_eis_source_path'].values[0] )
+        fname = os.path.basename( input_files[0] )
         cls.logger.info(f'**Export: region: {region}, {merge_dim} = {mval}, file = {fname}' )
         dset.to_zarr( store, mode='a', region=region )
         ds0.close(); del ds0; dset.close(); del dset
