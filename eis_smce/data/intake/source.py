@@ -144,7 +144,7 @@ class EISDataSource( ):
 #        input_files = mds['_eis_source_path'].values.tolist()
         input_files = mds.attrs['_files_']
         for aId in self.pspec['dynamic_metadata_ids']: mds.attrs.pop( aId, "" )
-        zargs = dict( compute=False, consolidated=True )
+        zargs = dict( compute=False ) # , consolidated=True )
         if init: zargs['mode'] = 'w'
         else:    zargs['append_dim'] = eisc().get( 'merge_dim' )
         store = self.get_cache_path( path, self.pspec )
@@ -153,6 +153,7 @@ class EISDataSource( ):
         print( f"{'Writing' if init else 'Appending'} batch[{ibatch}] to zarr file: {store}"   )
         mds.to_zarr( store, **zargs )
         mds.close(); del mds
+        print( "Completed mds.to_zarr " )
         return input_files
 
     def partition_list( self, lst: List ):
