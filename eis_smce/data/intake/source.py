@@ -160,7 +160,7 @@ class EISDataSource( ):
         print( f"{'Writing' if init else 'Appending'} batch[{ibatch}] to zarr file: {store}"   )
         mds.to_zarr( store, **zargs )
         mds.close(); del mds
-        print( "Completed mds.to_zarr " )
+        self.logger.info( f"Completed batch[{ibatch}] zarr initialization. " )
         return input_files
 
     def partition_list( self, lst: List ):
