@@ -67,6 +67,8 @@ class EISDataSource( ):
         pattern = pspec['pattern']
         time_format = pspec.get( 'time_format', None )
         files = pspec['files']
+        print( f"  PP-> @@@@ files = {files} ")
+        print( f"  PP-> @@@@ encoding: {list(ds.encoding.items())} ")
         source_file_path = ds.encoding["source"]
         dynamic_metadata = dict( _eis_source_path = source_file_path )
         for aId in pspec['dynamic_metadata_ids']:
