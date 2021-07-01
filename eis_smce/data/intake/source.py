@@ -213,6 +213,22 @@ class EISDataSource( ):
         chunks: Dict[str, int] = eisc().get( 'chunks', { merge_dim: 1 } )
         print( f"Exporting files {file_indices[0]} -> {file_indices[-1]}, chunks={chunks}")
         cls.logger.info(f'xa.open_mfdataset: file_indices={file_indices}, concat_dim = {merge_dim}, chunks={chunks}')
+        cdset = xa.open_mfdataset( input_files, concat_dim=merge_dim, preprocess=partial( EISDataSource.preprocess, pspec ), parallel=True )
+        region = { merge_dim: slice( file_indices[0], file_indices[-1]+1 ) }
+        print(f'**Export: region: {region}, chunks: {dict(cdset.chunks)}' )
+        cls.log_dset( '_export_partition_parallel', cdset )
+        cdset.to_zarr( store, mode='a', region=region )
+        print(f" -------------------------- Export complete in {(time.time()-t0)/60} min -------------------------- ")
+
+    @classmethod
+    def _export_partition_rechunk(cls, output_path:str, pspec: Dict, ispecs: List[Dict]):
+        store = EISDataSource.get_cache_path( output_path, pspec )
+        file_indices = [ ispec['file_index'] for ispec in ispecs ]
+        input_files = [ ispec['input_path'] for ispec in ispecs ]
+        merge_dim, t0 = pspec.get( 'merge_dim' ), time.time()
+        chunks: Dict[str, int] = eisc().get( 'chunks', { merge_dim: 1 } )
+        print( f"Exporting files {file_indices[0]} -> {file_indices[-1]}, chunks={chunks}")
+        cls.logger.info(f'xa.open_mfdataset: file_indices={file_indices}, concat_dim = {merge_dim}, chunks={chunks}')
         idset = xa.open_mfdataset( input_files, concat_dim=merge_dim, preprocess=partial( EISDataSource.preprocess, pspec ), parallel=True, chunks = chunks )
         cdset = idset.chunk( chunks )
         cdset.compute()
