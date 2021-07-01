@@ -220,8 +220,6 @@ class EISDataSource( ):
         print(f'**Export: region: {region}, chunks: {cdset.chunks}' )
         cls.log_dset( '_export_partition_parallel', cdset )
         cdset.to_zarr( store, mode='a', region=region )
-        idset.close(); del idset
-        cdset.close(); del cdset
         print(f" -------------------------- Writing complete in {(time.time()-t1)/60} min -------------------------- ")
 
     @classmethod
