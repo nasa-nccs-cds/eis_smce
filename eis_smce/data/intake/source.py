@@ -208,17 +208,17 @@ class EISDataSource( ):
         store = EISDataSource.get_cache_path( output_path, pspec )
         file_indices = [ ispec['file_index'] for ispec in ispecs ]
         input_files = [ ispec['input_path'] for ispec in ispecs ]
-        merge_dim = pspec.get( 'merge_dim' )
+        merge_dim, t0 = pspec.get( 'merge_dim' ), time.time()
         chunks: Dict[str, int] = eisc().get( 'chunks', { merge_dim: 1 } )
         print( f"Exporting files {file_indices[0]} -> {file_indices[-1]}")
         cls.logger.info(f'xa.open_mfdataset: file_indices={file_indices}, concat_dim = {merge_dim}')
         idset = xa.open_mfdataset( input_files, concat_dim=merge_dim, preprocess=partial( EISDataSource.preprocess, pspec ), parallel=True )
         cls.logger.info( f' --> RECHUNK: chunks={chunks}')
         cdset = idset.chunk( chunks )
+        cdset.compute()
+        cls.logger.info(f' --> Completed read & rechunk in {(time.time()-t0)/60} min-> Writing zarr file...')
         region = { merge_dim: slice( file_indices[0], file_indices[-1]+1 ) }
-        mval = cdset[merge_dim].values[0]
-        fname = os.path.basename( input_files[0] )
-        cls.logger.info(f'**Export: region: {region}, {merge_dim} = {mval}, file = {fname}' )
+        cls.logger.info(f'**Export: region: {region}' )
         cls.log_dset( '_export_partition_parallel', cdset )
         cdset.to_zarr( store, mode='a', region=region )
         idset.close(); del idset; cdset.close(); del cdset
