@@ -9,7 +9,7 @@ if len(sys.argv) == 1:
     sys.exit(-1)
 
 zarr_dset = sys.argv[1]
-time_index = 35
+time_index = 2
 
 zds: xa.Dataset = xa.open_zarr( zarr_dset )
 sample_input = zds['_eis_source_path'].values[time_index]
