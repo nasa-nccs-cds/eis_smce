@@ -23,15 +23,14 @@ def parse_url( urlpath: str) -> Tuple[str, str]:
 class EISDataSource( ):
     logger = EISConfiguration.get_logger()
 
-    def __init__(self, input: str ):
+    def __init__(self, input: str, **kwargs ):
         super(EISDataSource, self).__init__()
         self.urlpath = input
         self.segment_manager = SegmentedDatasetManager()
         self._parts: Dict[int,xa.Dataset] = {}
         self._schema: Schema = None
-        self._ds: xa.Dataset = None
         self.pspec = None
-        self.segment_manager.process_files( self.urlpath )
+        self.segment_manager.process_files( self.urlpath, **kwargs )
 
     def _open_partition(self, ipart: int) -> xa.Dataset:
         raise NotImplementedError()
@@ -210,7 +209,7 @@ class EISDataSource( ):
         input_files = [ ispec['input_path'] for ispec in ispecs ]
         merge_dim, t0 = pspec.get( 'merge_dim' ), time.time()
         chunks: Dict[str, int] = eisc().get( 'chunks', { merge_dim: 1 } )
-        print( f"Exporting files {file_indices[0]} -> {file_indices[-1]}")
+        print( f"Exporting files {file_indices[0]} -> {file_indices[-1]}, chunks={chunks}")
         cls.logger.info(f'xa.open_mfdataset: file_indices={file_indices}, concat_dim = {merge_dim}, chunks={chunks}')
         cdset = xa.open_mfdataset( input_files, concat_dim=merge_dim, preprocess=partial( EISDataSource.preprocess, pspec ), parallel=True, chunks = chunks )
 #        cdset = idset.chunk( chunks )
@@ -252,7 +251,6 @@ class EISDataSource( ):
     def close(self):
         """Delete open file from memory"""
         self._parts = {}
-        self._ds = None
         self._schema = None
         self._varspecs = {}
         self._intermittent_vars = set()

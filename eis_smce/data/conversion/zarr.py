@@ -10,10 +10,10 @@ class ZarrConverter(EISSingleton):
         super(ZarrConverter, self).__init__()
         self.start_time = None
 
-    def standard_conversion(self, input: str, output: str ):
+    def standard_conversion(self, input: str, output: str, **kwargs ):
         try:
             self.start_time = time.time()
-            eisds: EISDataSource = EISDataSource( input )
+            eisds: EISDataSource = EISDataSource( input, **kwargs )
             eisds.export(output)
             print( f"Completed conversion in {(time.time()-self.start_time)/60} minutes" )
         except Exception as err:

@@ -151,9 +151,11 @@ class SegmentedDatasetManager:
 
     def _generate_file_specs(self, urlpath: str, **kwargs):
         from intake.source.utils import reverse_format
+        firange = kwargs.get('file_index_range',None)
         filepath_pattern = eiss.item_path( urlpath )
         filepath_glob = path_to_glob( filepath_pattern )
-        self._input_files = glob.glob(filepath_glob)
+        input_files = glob.glob(filepath_glob)
+        self._input_files = input_files if (firange is None) else input_files[ firange[0]:firange[1] ]
         assert len(self._input_files) > 0, f"Input pattern does not match any files: '{filepath_glob}'"
         file_sort = FileSortKey[ kwargs.get('sort', 'filename') ]
         is_glob = has_char( filepath_pattern, "*?[" )
