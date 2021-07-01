@@ -211,18 +211,18 @@ class EISDataSource( ):
         merge_dim, t0 = pspec.get( 'merge_dim' ), time.time()
         chunks: Dict[str, int] = eisc().get( 'chunks', { merge_dim: 1 } )
         print( f"Exporting files {file_indices[0]} -> {file_indices[-1]}")
-        cls.logger.info(f'xa.open_mfdataset: file_indices={file_indices}, concat_dim = {merge_dim}')
-        idset = xa.open_mfdataset( input_files, concat_dim=merge_dim, preprocess=partial( EISDataSource.preprocess, pspec ), parallel=True )
-        cls.logger.info( f' --> RECHUNK: chunks={chunks}')
-        cdset = idset.chunk( chunks )
+        cls.logger.info(f'xa.open_mfdataset: file_indices={file_indices}, concat_dim = {merge_dim}, chunks={chunks}')
+        cdset = xa.open_mfdataset( input_files, concat_dim=merge_dim, preprocess=partial( EISDataSource.preprocess, pspec ), parallel=True, chunks = chunks )
+#        cdset = idset.chunk( chunks )
         cdset.compute()
-        cls.logger.info(f' --> Completed read & rechunk in {(time.time()-t0)/60} min-> Writing zarr file...')
+        print(f' --> Completed read & rechunk in {(time.time()-t0)/60} min-> Writing zarr file...')
         region = { merge_dim: slice( file_indices[0], file_indices[-1]+1 ) }
-        cls.logger.info(f'**Export: region: {region}' )
+        print(f'**Export: region: {region}, chunks: {cdset.chunks}' )
         cls.log_dset( '_export_partition_parallel', cdset )
         cdset.to_zarr( store, mode='a', region=region )
-        idset.close(); del idset; cdset.close(); del cdset
-        cls.logger.info(" -------------------------- Export complete -------------------------- ")
+#        idset.close(); del idset;
+        cdset.close(); del cdset
+        print(" -------------------------- Export complete -------------------------- ")
 
     @classmethod
     def write_catalog( cls, zpath: str, **kwargs ):
