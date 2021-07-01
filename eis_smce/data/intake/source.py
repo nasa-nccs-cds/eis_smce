@@ -111,6 +111,7 @@ class EISDataSource( ):
 
     def read( self, **kwargs ) -> xa.Dataset:
         merge_dim = eisc().get( 'merge_dim' )
+        chunks: Dict[str, int] = eisc().get('chunks', {merge_dim: 1})
         var_list: Set[str] = kwargs.get('vlist', None)
         ibatch = kwargs.get( 'ibatch', -1 )
         file_list = self.get_file_list( var_list, ibatch )
@@ -118,15 +119,16 @@ class EISDataSource( ):
                            dynamic_metadata_ids=self.segment_manager.get_dynamic_attributes(),
                            sname = self.segment_manager.get_segment_name( var_list ), **kwargs )
         t0 = time.time()
-        rv: xa.Dataset = xa.open_mfdataset( file_list, concat_dim=merge_dim, coords="minimal", data_vars=var_list,
-                                            preprocess=partial( self.preprocess, self.pspec ), parallel = True )
-        mdim = rv[merge_dim].values
-        rv.attrs['_files_'] = file_list
+        ds0: xa.Dataset = xa.open_mfdataset( file_list, concat_dim=merge_dim, coords="minimal", data_vars=var_list,
+                                            preprocess=partial( self.preprocess, self.pspec ), parallel = True, chunks=chunks )
+        dset = ds0.chunk( chunks )
+        mdim = dset[merge_dim].values
+        dset.attrs['_files_'] = file_list
         print( f"Reading merged dataset[{ibatch}] from {len(file_list)} files:" )
         print( f" --> File Range: '{os.path.basename(file_list[0])}' -> '{os.path.basename(file_list[-1])}'" )
         print( f" --> {merge_dim} range: {mdim[0]} -> {mdim[-1]}")
-        self.logger.info( f"Completed merge in {time.time()-t0} secs" )
-        return rv
+        self.logger.info( f"Completed merge in {time.time()-t0} secs, chunks = {dict(dset.chunks)}" )
+        return dset
 
     @staticmethod
     def get_cache_path( path: str, pspec: Dict ) -> str:
@@ -217,7 +219,7 @@ class EISDataSource( ):
         t1 = time.time()
         print(f' --> Completed read & rechunk in {(t1-t0)/60} min-> Writing zarr file...')
         region = { merge_dim: slice( file_indices[0], file_indices[-1]+1 ) }
-        print(f'**Export: region: {region}, chunks: {cdset.chunks}' )
+        print(f'**Export: region: {region}, chunks: {dict(cdset.chunks)}' )
         cls.log_dset( '_export_partition_parallel', cdset )
         cdset.to_zarr( store, mode='a', region=region )
         print(f" -------------------------- Writing complete in {(time.time()-t1)/60} min -------------------------- ")
