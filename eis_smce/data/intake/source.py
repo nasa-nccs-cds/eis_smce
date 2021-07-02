@@ -205,14 +205,14 @@ class EISDataSource( ):
             self.logger.error(traceback.format_exc())
 
     @classmethod
-    def _export_partition(cls, output_path:str, pspec: Dict, ispecs: List[Dict]):
+    def _export_partition(cls, output_path:str, pspec: Dict, ispecs: List[Dict], parallel=False ):
         store = EISDataSource.get_cache_path( output_path, pspec )
         file_indices = [ ispec['file_index'] for ispec in ispecs ]
         input_files = [ ispec['input_path'] for ispec in ispecs ]
         merge_dim, t0 = pspec.get( 'merge_dim' ), time.time()
         print( f"Exporting files {file_indices[0]} -> {file_indices[-1]}")
         cls.logger.info(f'xa.open_mfdataset: file_indices={file_indices}, concat_dim = {merge_dim}')
-        cdset = xa.open_mfdataset( input_files, concat_dim=merge_dim, preprocess=partial( EISDataSource.preprocess, pspec ), parallel=True )
+        cdset = xa.open_mfdataset( input_files, concat_dim=merge_dim, preprocess=partial( EISDataSource.preprocess, pspec ), parallel=parallel )
         region = { merge_dim: slice( file_indices[0], file_indices[-1]+1 ) }
         print(f'**Export: region: {region}' )
         cls.log_dset( '_export_partition_parallel', cdset )
