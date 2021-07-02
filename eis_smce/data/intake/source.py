@@ -196,11 +196,12 @@ class EISDataSource( ):
                     current_batch_size, t1 = len(batch_files), time.time()
                     ispecs = [ dict( file_index=ic, input_path=file_spec_list[ic]['resolved'] ) for ic in range( ib, ib+current_batch_size ) ]
                     cspecs = list( self.partition_list( ispecs ) )
-                    self.logger.info(f"Exporting batch {ib} with {current_batch_size} files to: {path}")
                     if parallel:
+                        self.logger.info(f"Exporting parallel batch {ib} with {current_batch_size} files over {len(cspecs)} procs/chunks to: {path}")
                         results = dcm().client.map( partial( EISDataSource._export_partition, path, self.pspec ), cspecs )
                         dcm().client.compute(results, sync=True)
                     else:
+                        self.logger.info(f"Exporting batch {ib} with {current_batch_size} files to: {path}")
                         for cspec in cspecs:
                             EISDataSource._export_partition( path, self.pspec, cspec )
                     print( f"Completed processing batch {ib} ({current_batch_size} files) in {(time.time()-t0)/60:.1f} (init: {(t1-t0)/60:.1f}) min.")
