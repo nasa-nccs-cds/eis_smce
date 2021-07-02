@@ -185,6 +185,7 @@ class EISDataSource( ):
             from eis_smce.data.storage.s3 import s3m
             from eis_smce.data.common.cluster import dcm
             path = eiss.item_path( output_url )
+            parallel = kwargs.get( 'parallel', False )
             for vlist in self.segment_manager.get_vlists():
                 print( f"Processing vlist: {vlist}")
                 file_spec_list: List[Dict[str, str]] = self.segment_manager.get_file_specs(vlist)
@@ -196,8 +197,12 @@ class EISDataSource( ):
                     ispecs = [ dict( file_index=ic, input_path=file_spec_list[ic]['resolved'] ) for ic in range( ib, ib+current_batch_size ) ]
                     cspecs = list( self.partition_list( ispecs ) )
                     self.logger.info(f"Exporting batch {ib} with {current_batch_size} files to: {path}")
-                    for cspec in cspecs:
-                        EISDataSource._export_partition(path, self.pspec, cspec)
+                    if parallel:
+                        results = dcm().client.map( partial( EISDataSource._export_partition, path, self.pspec ), cspecs )
+                        dcm().client.compute(results, sync=True)
+                    else:
+                        for cspec in cspecs:
+                            EISDataSource._export_partition( path, self.pspec, cspec )
                     print( f"Completed processing batch {ib} ({current_batch_size} files) in {(time.time()-t0)/60:.1f} (init: {(t1-t0)/60:.1f}) min.")
 
         except Exception  as err:
