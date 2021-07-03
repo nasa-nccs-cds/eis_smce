@@ -9,8 +9,6 @@ if len(sys.argv) == 1:
     sys.exit(-1)
 
 zarr_dset = sys.argv[1]
-point_index = (50,50)
-
 zds: xa.Dataset = xa.open_zarr( zarr_dset )
 with xa.set_options( display_max_rows=100 ):
     print( f"\nzds:"  )
@@ -22,5 +20,6 @@ with xa.set_options( display_max_rows=100 ):
     print( f"\n{vname} shape: {test_array.shape}, dims = {test_array.dims}"  )
     print(f" --> {vname} chunks: {test_array.chunks}")
     print(f" --> {vname} attrs: {test_array.attrs}"  )
+    point_index = (test_array.shape[1]//2, test_array.shape[2]//2)
     test_data: np.ndarray = test_array[:,point_index[0],point_index[1]].max().values
     print( f" -> {vname}[:,{point_index[0]},{point_index[1]}], max: {test_data}: Computed in {time.time()-t0} sec."  )
