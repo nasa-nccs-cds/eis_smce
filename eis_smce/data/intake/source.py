@@ -105,7 +105,7 @@ class EISDataSource( ):
         ostr = io.StringIO("")
         dset.info(ostr)
         cls.logger.info(f" DATASET: {label}-> {ostr.getvalue()} ")
-        cls.logger.info(f"    *** CHUNKS: *** ")
+        cls.logger.info(f"    *** CHUNKS:   ***   ")
         for (vid, v) in dset.variables.items():
             cls.logger.info(f"    --> {vid}: {v.chunks}")
 
