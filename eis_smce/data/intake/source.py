@@ -157,7 +157,7 @@ class EISDataSource( ):
         store = self.get_cache_path( path, self.pspec )
         with xa.set_options( display_max_rows=100 ):
             self.logger.info( f" merged_dset -> zarr: {store}\n   -------------------- Merged dataset batch[{ibatch}] -------------------- \n{mds}\n")
-        print( f"{'Writing' if init else 'Appending'} batch[{ibatch}] to zarr file: {store}"   )
+        print( f"{'Writing' if init else 'Appending'} {len(input_files)} files from batch[{ibatch}] to zarr file: {store}"   )
         mds.to_zarr( store, **zargs )
         mds.close(); del mds
         self.logger.info( f"Completed batch[{ibatch}] zarr initialization. " )
