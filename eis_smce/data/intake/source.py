@@ -223,7 +223,7 @@ class EISDataSource( ):
         print(f'**Export: region: {region}' )
         cls.log_dset( '_export_partition_parallel', cdset )
         cdset.to_zarr( store, mode='a', region=region )
-        print(f" -------------------------- Export complete in {(time.time()-t0)/60} min -------------------------- ")
+        print(f" -------------------------- Export[{file_indices[0]} -> {file_indices[-1]}] complete in {(time.time()-t0)/60} min -------------------------- ")
 
     @classmethod
     def write_catalog( cls, zpath: str, **kwargs ):
