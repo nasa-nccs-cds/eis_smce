@@ -26,6 +26,8 @@ def map_nan_dist( variable: np.ndarray ):
     nan_dist_map = np.full( nan_dist.shape, " ", dtype=np.str_ )
     nan_dist_map[valid_mask] = "."
     nan_dist_map[undef_mask] = "x"
+    print(nan_dist_map.shape)
+    print( nan_dist_map[0] )
     for iL in range( nan_dist.shape[0] ):
         print( np.char.join( '', nan_dist_map[iL].squeeze() ) )
 
