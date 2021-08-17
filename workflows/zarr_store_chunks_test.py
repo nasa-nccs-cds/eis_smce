@@ -27,7 +27,7 @@ def map_nan_dist( variable: np.ndarray ):
     nan_dist_map[valid_mask] = "."
     nan_dist_map[undef_mask] = "x"
     for iL in range( nan_dist.shape[0] ):
-        print( np.char.join( nan_dist_map[iL] ) )
+        print( np.char.join( '', nan_dist_map[iL] ) )
 
 def count_missing_blocks( variable: Array ):
     missing_blocks = []
