@@ -4,12 +4,13 @@ import numpy as np
 logger = logging.getLogger("distributed.utils_perf")
 logger.setLevel(logging.ERROR)
 
-if len(sys.argv) == 1:
-    print( f"Usage: >> python {sys.argv[0]} <zarr_store_path>")
-    sys.exit(-1)
+zarr_store = "/gpfsm/dnb43/projects/p151/zarr/LIS/DELTA_2km/SCENARIO_2/ROUTING/LIS_HIST.d01.zarr"
+varname = "FloodedArea_tavg"
 
 zarr_dset = sys.argv[1]
 
 zds: xa.Dataset = xa.open_zarr( zarr_dset )
 
-print( list( zds.data_vars.keys() ) )
+variable: xa.DataArray = zds.data_vars[varname]
+
+print( variable )
