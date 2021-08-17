@@ -21,12 +21,11 @@ for i1 in range( variable.numblocks[1] ):
     for i2 in range(variable.numblocks[2]):
         chunk: np.ndarray = variable.blocks[i0,i1,i2].compute()
         num_nan = np.count_nonzero(np.isnan(chunk))
-        print( f"Chunk[{i0},{i1},{i2}]: shape={chunk.shape}, size = {np.prod(chunk.shape)}, #NaN: {num_nan}" )
+        print( f"Chunk[{i0},{i1},{i2}]: shape={chunk.shape}, size = {chunk.size}, #NaN: {num_nan}" )
 
-#
-#
-# for iC, chunks in enumerate(variable.chunks):
-#     for ic, chunk in enumerate(chunks):
-#         print( f"C{iC}[{ic}]: {chunk}" )
-#         if iC == 2: break
-#
+(i0,i1,i2) = ( 0, 2, 1 )
+chunk: np.ndarray = variable.blocks[ i0, i1, i2 ].compute()
+for iS in range( chunk.shape[0] ):
+    cslice = chunk[iS]
+    num_nan = np.count_nonzero(np.isnan(cslice))
+    print(f"Chunk[{i0},{i1},{i2}][{iS}]: shape={cslice.shape}, size = {cslice.size}, #NaN: {num_nan}")
