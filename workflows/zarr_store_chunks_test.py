@@ -17,8 +17,16 @@ print( f"Chunk sizes: {daskvar.chunksize}" )
 print( f"Chunk Dims: {daskvar.numblocks}" )
 print( f"Timeslice size: {np.prod(daskvar.shape[1:])}" )
 
-nnan: np.ndarray = np.count_nonzero( np.isnan( xvar.values ), axis = 0 )
-print( nnan )
+def map_nan_dist( variable: np.ndarray ):
+    nt = variable.shape[0]
+    nan_dist: np.ndarray = np.count_nonzero(np.isnan(variable), axis=0).squeeze()
+    nan_mask = (nan_dist == nt)
+    valid_mask = (nan_dist == 0)
+    undef_mask = ~(nan_mask | valid_mask)
+    nan_dist_map = np.full( nan_dist.shape, " ", dtype=np.str_ )
+    nan_dist_map[valid_mask] = "."
+    nan_dist_map[undef_mask] = "x"
+    print( np.array2string( nan_dist_map, nan_dist.shape[0] ) )
 
 def count_missing_blocks( variable: Array ):
     missing_blocks = []
@@ -45,6 +53,9 @@ def explore_blocks(  variable: Array  ):
         cslice = chunk[iS]
         num_nan = np.count_nonzero(np.isnan(cslice))
         print(f"Chunk[{i0},{i1},{i2}][{iS}]: shape={cslice.shape}, size = {cslice.size}, #NaN: {num_nan}")
+
+
+map_nan_dist( xvar.values )
 
 
 
