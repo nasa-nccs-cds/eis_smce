@@ -11,7 +11,8 @@ varname = "FloodedArea_tavg"
 zds: xa.Dataset = xa.open_zarr( zarr_store )
 variable: Array = zds.data_vars[varname].persist().data
 
-for iC, ( cid, chunk ) in enumerate(variable.chunks):
-    print( f"C-{iC}: {cid} = {chunk.__class__}" )
-    if iC == 10: break
+for iC, chunks in enumerate(variable.chunks):
+    for ic, chunk in enumerate(chunks):
+        print( f"C{iC}[{ic}]: {chunk.__class__}" )
+        if iC == 2: break
 
