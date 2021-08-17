@@ -10,9 +10,7 @@ varname = "FloodedArea_tavg"
 zds: xa.Dataset = xa.open_zarr( zarr_store )
 
 variable: xa.DataArray = zds.data_vars[varname]
+vdata: np.ndarray = variable.values[0]
 
-print( variable )
-
-vdata: np.ndarray = variable.values
-
+print( vdata.shape )
 print( f"vmax = {vdata.max()}, vmin = {vdata.min()}" )
