@@ -11,8 +11,12 @@ varname = "FloodedArea_tavg"
 
 zds: xa.Dataset = xa.open_zarr( zarr_store )
 variable: Array = zds.data_vars[varname].data
-chunks: IndexCallable = variable.blocks
-print( variable.numblocks )
+print( f"Chunk Dims: {variable.numblocks}" )
+
+for i1 in range( variable.numblocks[1] ):
+    for i2 in range(variable.numblocks[2]):
+        chunk = variable.blocks[0,i1,i2].compute()
+        print( chunk )
 
 #
 #
