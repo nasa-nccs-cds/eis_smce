@@ -11,7 +11,10 @@ varname = "FloodedArea_tavg"
 
 zds: xa.Dataset = xa.open_zarr( zarr_store )
 variable: Array = zds.data_vars[varname].data
+print( f"Variable Shape: {variable.shape}" )
+print( f"Chunk sizes: {variable.chunksize}" )
 print( f"Chunk Dims: {variable.numblocks}" )
+print( f"Timeslice size: {np.prod(variable.shape[1:])}" )
 
 i0 = 0
 for i1 in range( variable.numblocks[1] ):
