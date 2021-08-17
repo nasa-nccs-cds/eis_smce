@@ -8,9 +8,8 @@ zarr_store = "/gpfsm/dnb43/projects/p151/zarr/LIS/DELTA_2km/SCENARIO_2/ROUTING/L
 varname = "FloodedArea_tavg"
 
 zds: xa.Dataset = xa.open_zarr( zarr_store )
-variable: xa.DataArray = zds.data_vars[varname]
-vslice: xa.DataArray = variable[0:25]
-print( vslice )
+variable: xa.DataArray = zds.data_vars[varname].compute()
+print( variable )
 
 def test_chunk( chunk: xa.DataArray ) -> xa.DataArray:
     print( f"{chunk.shape}" )
