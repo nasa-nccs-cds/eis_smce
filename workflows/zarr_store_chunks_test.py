@@ -1,5 +1,6 @@
 import os, sys, logging, xarray as xa
 import numpy as np
+import dask
 
 logger = logging.getLogger("distributed.utils_perf")
 logger.setLevel(logging.ERROR)
@@ -9,11 +10,4 @@ varname = "FloodedArea_tavg"
 
 zds: xa.Dataset = xa.open_zarr( zarr_store )
 variable = zds.data_vars[varname].persist().data
-print( variable )
-
-
-def test_chunk( chunk: xa.DataArray ) -> xa.DataArray:
-    print( f" CS={chunk.shape} " )
-    return chunk
-
-result = xa.map_blocks( test_chunk, variable )
+print( variable.__class__ )
