@@ -13,10 +13,12 @@ zds: xa.Dataset = xa.open_zarr( zarr_store )
 variable: Array = zds.data_vars[varname].data
 print( f"Chunk Dims: {variable.numblocks}" )
 
+i0 = 0
 for i1 in range( variable.numblocks[1] ):
     for i2 in range(variable.numblocks[2]):
-        chunk = variable.blocks[0,i1,i2].compute()
-        print( chunk.__class__ )
+        chunk: np.ndarray = variable.blocks[i0,i1,i2].compute()
+        num_nan = np.count_nonzero(np.isnan(chunk))
+        print( f"Chunk[{i0},{i1},{i2}]: #NaN: {num_nan}/{chunk.size}" )
 
 #
 #
