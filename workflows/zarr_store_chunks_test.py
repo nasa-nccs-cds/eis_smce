@@ -13,6 +13,6 @@ variable: Array = zds.data_vars[varname].persist().data
 
 for iC, chunks in enumerate(variable.chunks):
     for ic, chunk in enumerate(chunks):
-        print( f"C{iC}[{ic}]: {chunk.__class__}" )
+        print( f"C{iC}[{ic}]: {chunk}" )
         if iC == 2: break
 
