@@ -30,3 +30,13 @@ for iS in range( chunk.shape[0] ):
     cslice = chunk[iS]
     num_nan = np.count_nonzero(np.isnan(cslice))
     print(f"Chunk[{i0},{i1},{i2}][{iS}]: shape={cslice.shape}, size = {cslice.size}, #NaN: {num_nan}")
+
+missing_blocks = []
+for i0 in range( variable.numblocks[0] ):
+    for i1 in range( variable.numblocks[1] ):
+        for i2 in range(variable.numblocks[2]):
+            chunk: np.ndarray = variable.blocks[i0,i1,i2].compute()
+            if np.count_nonzero(~np.isnan(chunk)) == 0:
+                missing_blocks.append( (i0,i1,i2) )
+
+print(f"\nMissing Blocks: {missing_blocks}")
