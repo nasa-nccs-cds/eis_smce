@@ -23,7 +23,8 @@ for i1 in range( variable.numblocks[1] ):
         num_nan = np.count_nonzero(np.isnan(chunk))
         print( f"Chunk[{i0},{i1},{i2}]: shape={chunk.shape}, size = {chunk.size}, #NaN: {num_nan}" )
 
-(i0,i1,i2) = ( 0, 2, 1 )
+print("\n")
+(i0,i1,i2) = ( 0, 2, 3 )
 chunk: np.ndarray = variable.blocks[ i0, i1, i2 ].compute()
 for iS in range( chunk.shape[0] ):
     cslice = chunk[iS]
