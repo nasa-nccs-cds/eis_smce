@@ -12,3 +12,7 @@ zds: xa.Dataset = xa.open_zarr( zarr_store )
 variable: xa.DataArray = zds.data_vars[varname]
 
 print( variable )
+
+vdata: np.ndarray = variable.values
+
+print( f"vmax = {vdata.max()}, vmin = {vdata.min()}" )
