@@ -16,4 +16,4 @@ def test_chunk( chunk: xa.DataArray ) -> xa.DataArray:
     print( f"{chunk.shape}" )
     return chunk
 
-result = xa.map_blocks( test_chunk, vslice )
+result = xa.map_blocks( test_chunk, variable )
