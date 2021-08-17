@@ -8,9 +8,12 @@ zarr_store = "/gpfsm/dnb43/projects/p151/zarr/LIS/DELTA_2km/SCENARIO_2/ROUTING/L
 varname = "FloodedArea_tavg"
 
 zds: xa.Dataset = xa.open_zarr( zarr_store )
-
 variable: xa.DataArray = zds.data_vars[varname]
-vdata: np.ndarray = variable.values[0]
+vslice: xa.DataArray = variable[0:25]
+print( vslice )
 
-print( vdata.shape )
-print( f"vmax = {vdata.max()}, vmin = {vdata.min()}" )
+def test_chunk( chunk: xa.DataArray ) -> xa.DataArray:
+    print( f"{chunk.shape}" )
+    return chunk
+
+result = xa.map_blocks( test_chunk, vslice )
