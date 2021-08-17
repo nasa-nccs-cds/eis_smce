@@ -16,7 +16,7 @@ print( f"Chunk Dims: {variable.numblocks}" )
 for i1 in range( variable.numblocks[1] ):
     for i2 in range(variable.numblocks[2]):
         chunk = variable.blocks[0,i1,i2].compute()
-        print( chunk )
+        print( chunk.__class__ )
 
 #
 #
