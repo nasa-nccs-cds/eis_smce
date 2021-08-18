@@ -224,6 +224,7 @@ class EISDataSource( ):
 
     @classmethod
     def _export_partition(cls, output_path:str, pspec: Dict, ispecs: List[Dict], parallel=False ):
+        from zarr.sync import ThreadSynchronizer
         store = EISDataSource.get_cache_path( output_path, pspec )
         file_indices = [ ispec['file_index'] for ispec in ispecs ]
         input_files = [ ispec['input_path'] for ispec in ispecs ]
@@ -234,7 +235,7 @@ class EISDataSource( ):
         cdset = xa.open_mfdataset( input_files, concat_dim=merge_dim, preprocess=partial( EISDataSource.preprocess, pspec ), parallel=parallel )
         cls.log_dset( '_export_partition_parallel', cdset )
         cls.test_for_NaN( cdset, "FloodedArea_tavg", 50, 50, 100, 100 )
-        cdset.to_zarr( store, mode='a', region=region )
+        cdset.to_zarr( store, mode='a', region=region, compute=True )
         print(f" -------------------------- Export[{file_indices[0]} -> {file_indices[-1]}] complete in {(time.time()-t0)/60} min -------------------------- ")
 
     @classmethod
