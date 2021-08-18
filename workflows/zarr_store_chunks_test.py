@@ -67,6 +67,8 @@ def explore_blocks(  variable: Array  ):
 
 show_nan_ts( xvar.values, 200, 220 )
 
+map_nan_dist( xvar.values )
+
 
 
 
