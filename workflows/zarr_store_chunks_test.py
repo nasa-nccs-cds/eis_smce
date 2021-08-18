@@ -17,6 +17,19 @@ print( f"Chunk sizes: {daskvar.chunksize}" )
 print( f"Chunk Dims: {daskvar.numblocks}" )
 print( f"Timeslice size: {np.prod(daskvar.shape[1:])}" )
 
+def show_nan_ts( variable: np.ndarray ):
+    nt = variable.shape[0]
+    subvar: np.ndarray = variable[:,150,150]
+    nan_dist: np.ndarray = np.isnan(subvar)
+    nan_dist_char = ((nan_dist % 93)+33).astype(np.uint8).view('S1')
+    nan_mask = (nan_dist == nt)
+    valid_mask = (nan_dist == 0)
+    undef_mask = ~(nan_mask | valid_mask)
+    nan_dist_map = np.full( nan_dist.shape, ".", dtype=np.str_ )
+    nan_dist_map[valid_mask] = " "
+    nan_ts: np.ndarray =  np.where( undef_mask, nan_dist_char, nan_dist_map )
+    print( ''.join( nan_ts.tolist() ) )
+
 def map_nan_dist( variable: np.ndarray ):
     nt = variable.shape[0]
     subvar: np.ndarray = variable[:,:240,:240]
@@ -58,7 +71,7 @@ def explore_blocks(  variable: Array  ):
         print(f"Chunk[{i0},{i1},{i2}][{iS}]: shape={cslice.shape}, size = {cslice.size}, #NaN: {num_nan}")
 
 
-map_nan_dist( xvar.values )
+show_nan_ts( xvar.values )
 
 
 
