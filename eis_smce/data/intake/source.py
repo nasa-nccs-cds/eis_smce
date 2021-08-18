@@ -217,10 +217,9 @@ class EISDataSource( ):
         input_files = [ ispec['input_path'] for ispec in ispecs ]
         merge_dim, t0 = pspec.get( 'merge_dim' ), time.time()
         print( f"Exporting files {file_indices[0]} -> {file_indices[-1]}")
-        cls.logger.info(f'xa.open_mfdataset: file_indices={file_indices}, concat_dim = {merge_dim}')
+        region = {merge_dim: slice(file_indices[0], file_indices[-1] + 1)}
+        cls.logger.info(f'xa.open_mfdataset: file_indices={file_indices}, concat_dim = {merge_dim}, region= {region}')
         cdset = xa.open_mfdataset( input_files, concat_dim=merge_dim, preprocess=partial( EISDataSource.preprocess, pspec ), parallel=parallel )
-        region = { merge_dim: slice( file_indices[0], file_indices[-1]+1 ) }
-        print(f'**Export: region: {region}' )
         cls.log_dset( '_export_partition_parallel', cdset )
         cdset.to_zarr( store, mode='a', region=region )
         print(f" -------------------------- Export[{file_indices[0]} -> {file_indices[-1]}] complete in {(time.time()-t0)/60} min -------------------------- ")
