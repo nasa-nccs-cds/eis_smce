@@ -198,10 +198,12 @@ class EISDataSource( ):
                     cspecs = list( self.partition_list( ispecs ) )
                     if parallel:
                         self.logger.info(f"Exporting parallel batch {ib} with {current_batch_size} files over {len(cspecs)} procs/chunks to: {path}")
+                        self.pspec['synchronizer'] = dcm().zsync
                         results = dcm().client.map( partial( EISDataSource._export_partition, path, self.pspec ), cspecs )
-                        dcm().client.compute(results, sync=True)
+                        dcm().client.compute( results, sync=True )
                     else:
                         self.logger.info(f"Exporting batch {ib} with {current_batch_size} files to: {path}")
+                        self.pspec['synchronizer'] = None
                         for cspec in cspecs:
                             EISDataSource._export_partition( path, self.pspec, cspec )
                     print( f"Completed processing batch {ib} ({current_batch_size} files) in {(time.time()-t0)/60:.1f} (init: {(t1-t0)/60:.1f}) min.")
@@ -223,20 +225,20 @@ class EISDataSource( ):
         cls.logger.info(f'\n\n   ---->  NaN count for {vname}{test_var.shape}: {"".join( Nan_counts )}\n\n'  )
 
     @classmethod
-    def _export_partition(cls, output_path:str, pspec: Dict, ispecs: List[Dict], parallel=False ):
-        from zarr.sync import ThreadSynchronizer
+    def _export_partition(cls, output_path:str, pspec: Dict, ispecs: List[Dict] ):
         store = EISDataSource.get_cache_path( output_path, pspec )
         file_indices = [ ispec['file_index'] for ispec in ispecs ]
         input_files = [ ispec['input_path'] for ispec in ispecs ]
         merge_dim, t0 = pspec.get( 'merge_dim' ), time.time()
+        synchronizer = pspec.get( 'synchronizer', None )
+        compute = (synchronizer is None)
         print( f"Exporting files {file_indices[0]} -> {file_indices[-1]}")
         region = {merge_dim: slice(file_indices[0], file_indices[-1] + 1)}
         cls.logger.info(f'xa.open_mfdataset: file_indices={file_indices}, concat_dim = {merge_dim}, region= {region}')
-        cdset = xa.open_mfdataset( input_files, concat_dim=merge_dim, preprocess=partial( EISDataSource.preprocess, pspec ), parallel=parallel )
+        cdset = xa.open_mfdataset( input_files, concat_dim=merge_dim, preprocess=partial( EISDataSource.preprocess, pspec ), parallel=compute )
         cls.log_dset( '_export_partition_parallel', cdset )
         cls.test_for_NaN( cdset, "FloodedArea_tavg", 50, 50, 100, 100 )
-        cdset.to_zarr( store, mode='a', region=region, compute=True )
-        print(f" -------------------------- Export[{file_indices[0]} -> {file_indices[-1]}] complete in {(time.time()-t0)/60} min -------------------------- ")
+        return cdset.to_zarr( store, mode='a', region=region, compute=compute )
 
     @classmethod
     def write_catalog( cls, zpath: str, **kwargs ):

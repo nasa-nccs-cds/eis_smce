@@ -3,6 +3,8 @@ from typing import List, Union, Dict, Callable, Tuple, Optional, Any, Type, Mapp
 from dask.distributed import Client, LocalCluster
 from dask.diagnostics import ProgressBar, Profiler, ResourceProfiler, CacheProfiler
 from dask_jobqueue import PBSCluster
+from eis_smce.data.common.base import eisc
+from zarr.sync import ProcessSynchronizer, ThreadSynchronizer
 from .base import EISSingleton
 
 class DaskClusterManager(EISSingleton):
@@ -12,17 +14,20 @@ class DaskClusterManager(EISSingleton):
         self._client: Client = None
         self._cluster: LocalCluster = None
         self._pbar = ProgressBar(dt=5)
+        self._zsync = None
 
     def init_cluster( self, **kwargs ) -> Client:
         self.shutdown()
-        if 'jobs' in kwargs:
-            self._cluster = PBSCluster()
-            self._cluster.scale( kwargs.pop('jobs') )
-        else:
-            self._cluster = LocalCluster( **kwargs )
+        self._processes = kwargs.pop('processes',True)
+        self._cluster = LocalCluster( processes=self._processes, **kwargs )
         self._client = Client( self._cluster )
         self._pbar.register()
+        self._zsync = ProcessSynchronizer( eisc().cache_dir ) if self._processes else ThreadSynchronizer()
         return self._client
+
+    @property
+    def zsync(self) -> Client:
+        return self._zsync
 
     @property
     def client(self) -> Client:
