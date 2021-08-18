@@ -19,7 +19,8 @@ print( f"Timeslice size: {np.prod(daskvar.shape[1:])}" )
 
 def map_nan_dist( variable: np.ndarray ):
     nt = variable.shape[0]
-    nan_dist: np.ndarray = np.count_nonzero(np.isnan(variable), axis=0).squeeze()
+    subvar: np.ndarray = variable[:,:200,:200]
+    nan_dist: np.ndarray = np.count_nonzero(np.isnan(subvar), axis=0).squeeze()
     nan_mask = (nan_dist == nt)
     valid_mask = (nan_dist == 0)
     undef_mask = ~(nan_mask | valid_mask)
