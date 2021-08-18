@@ -201,6 +201,7 @@ class EISDataSource( ):
                         self.logger.info(f"Exporting parallel batch {ib} with {current_batch_size} files over {len(cspecs)} procs/chunks to: {path}")
                         self.pspec['synchronizer'] = dcm().zsync
                         results = dcm().client.map( partial( EISDataSource._export_partition, path, self.pspec ), cspecs )
+                        self.logger.info(f"Computing {len(results)} parallel processes" )
                         dcm().client.compute( results, sync=True )
                     else:
                         self.logger.info(f"Exporting batch {ib} with {current_batch_size} files to: {path}")
