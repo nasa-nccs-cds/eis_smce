@@ -213,16 +213,14 @@ class EISDataSource( ):
     @classmethod
     def test_for_NaN(cls, dset: xa.Dataset, vname: str, x0: int, y0: int, dx: int, dy: int ):
         test_var: xa.DataArray = dset.data_vars[vname]
-        cls.logger.info(f'\nNaN count for {vname}{test_var.shape}')
+        Nan_counts = []
         for iy in range( y0, test_var.shape[1], dy ):
-            Nan_counts = []
             for ix in range( x0, test_var.shape[2], dx ):
                 NaN_ts = np.isnan( test_var[:,iy,ix].squeeze() )
                 ncnt = np.count_nonzero( NaN_ts )
                 rval = "." if ncnt == test_var.shape[0] else "N"
                 Nan_counts.append( "*" if ncnt == 0 else rval )
-            cls.logger.info("".join( Nan_counts ))
-        cls.logger.info("\n")
+        cls.logger.info(f'\nNaN count for {vname}{test_var.shape}: {"".join( Nan_counts )}')
 
     @classmethod
     def _export_partition(cls, output_path:str, pspec: Dict, ispecs: List[Dict], parallel=False ):
