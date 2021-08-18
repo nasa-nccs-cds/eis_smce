@@ -211,6 +211,20 @@ class EISDataSource( ):
             self.logger.error(traceback.format_exc())
 
     @classmethod
+    def test_for_NaN(cls, dset: xa.Dataset, vname: str, x0: int, y0: int, dx: int, dy: int ):
+        test_var: xa.DataArray = dset.data_vars[vname]
+        cls.logger.info(f'\nNaN count for {vname}{test_var.shape}')
+        for iy in range( y0, test_var.shape[1], dy ):
+            Nan_counts = []
+            for ix in range( x0, test_var.shape[2], dx ):
+                NaN_ts = np.isnan( test_var[:,iy,ix].squeeze() )
+                ncnt = np.count_nonzero( NaN_ts )
+                rval = "." if ncnt == test_var.shape[0] else "N"
+                Nan_counts.append( "*" if ncnt == 0 else rval )
+            cls.logger.info("".join( Nan_counts ))
+        cls.logger.info("\n")
+
+    @classmethod
     def _export_partition(cls, output_path:str, pspec: Dict, ispecs: List[Dict], parallel=False ):
         store = EISDataSource.get_cache_path( output_path, pspec )
         file_indices = [ ispec['file_index'] for ispec in ispecs ]
@@ -221,6 +235,7 @@ class EISDataSource( ):
         cls.logger.info(f'xa.open_mfdataset: file_indices={file_indices}, concat_dim = {merge_dim}, region= {region}')
         cdset = xa.open_mfdataset( input_files, concat_dim=merge_dim, preprocess=partial( EISDataSource.preprocess, pspec ), parallel=parallel )
         cls.log_dset( '_export_partition_parallel', cdset )
+        cls.test_for_NaN( cdset, "FloodedArea_tavg", 50, 50, 100, 100 )
         cdset.to_zarr( store, mode='a', region=region )
         print(f" -------------------------- Export[{file_indices[0]} -> {file_indices[-1]}] complete in {(time.time()-t0)/60} min -------------------------- ")
 
