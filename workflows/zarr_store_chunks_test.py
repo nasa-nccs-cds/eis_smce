@@ -65,7 +65,7 @@ def explore_blocks(  variable: Array  ):
         print(f"Chunk[{i0},{i1},{i2}][{iS}]: shape={cslice.shape}, size = {cslice.size}, #NaN: {num_nan}")
 
 
-show_nan_ts( xvar.values, 200, 150 )
+show_nan_ts( xvar.values, 200, 220 )
 
 
 
