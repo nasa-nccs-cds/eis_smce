@@ -220,7 +220,7 @@ class EISDataSource( ):
                 ncnt = np.count_nonzero( NaN_ts )
                 rval = "." if ncnt == test_var.shape[0] else "N"
                 Nan_counts.append( "*" if ncnt == 0 else rval )
-        cls.logger.info(f'\n\n   ---->  NaN count for {vname}{test_var.shape}: {"".join( Nan_counts )}\n\n')
+        cls.logger.info(f'\n\n   ---->  NaN count for {vname}{test_var.shape}: {"".join( Nan_counts )}\n\n'  )
 
     @classmethod
     def _export_partition(cls, output_path:str, pspec: Dict, ispecs: List[Dict], parallel=False ):
