@@ -21,7 +21,7 @@ def map_nan_dist( variable: np.ndarray ):
     nt = variable.shape[0]
     subvar: np.ndarray = variable[:,:240,:240]
     nan_dist: np.ndarray = np.count_nonzero(np.isnan(subvar), axis=0).squeeze()
-    nan_dist_char = nan_dist.astype(str)
+    nan_dist_char = (nan_dist % 256 ).astype(np.uint8).view('S1').squeeze()
     nan_mask = (nan_dist == nt)
     valid_mask = (nan_dist == 0)
     undef_mask = ~(nan_mask | valid_mask)
