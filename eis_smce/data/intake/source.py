@@ -187,9 +187,10 @@ class EISDataSource( ):
             path = eiss.item_path( output_url )
             parallel = kwargs.get( 'parallel', False )
             for vlist in self.segment_manager.get_vlists():
-                print( f"Processing vlist: {vlist}")
+                self.logger.info( f"Processing vlist( parallel = {parallel} ): {vlist}")
                 file_spec_list: List[Dict[str, str]] = self.segment_manager.get_file_specs(vlist)
                 nfiles = len( file_spec_list )
+                self.logger.info(f"Processing {nfiles} files (batch-size = {self.batch_size()})")
                 for ib in range( 0, nfiles, self.batch_size() ):
                     t0 = time.time()
                     batch_files = self.create_storage_item( path, ibatch=ib, vlist=vlist, **kwargs )
@@ -236,7 +237,7 @@ class EISDataSource( ):
         region = {merge_dim: slice(file_indices[0], file_indices[-1] + 1)}
         cls.logger.info(f'xa.open_mfdataset: file_indices={file_indices}, concat_dim = {merge_dim}, region= {region}')
         cdset = xa.open_mfdataset( input_files, concat_dim=merge_dim, preprocess=partial( EISDataSource.preprocess, pspec ), parallel=compute )
-        cls.log_dset( '_export_partition_parallel', cdset )
+        cls.log_dset( f'_export_partition( compute = {compute} )', cdset )
         cls.test_for_NaN( cdset, "FloodedArea_tavg", 50, 50, 100, 100 )
         return cdset.to_zarr( store, mode='a', region=region, compute=compute )
 
