@@ -159,7 +159,7 @@ class EISDataSource( ):
             self.logger.info( f" merged_dset -> zarr: {store}\n   -------------------- Merged dataset batch[{ibatch}] -------------------- \n{mds}\n")
         print( f"{'Writing' if init else 'Appending'} {len(input_files)} files from batch[{ibatch}] to zarr file: {store}"   )
         mds.to_zarr( store, **zargs )
-        mds.close(); del mds
+        mds.close()
         self.logger.info( f"Completed batch[{ibatch}] zarr initialization. " )
         return input_files
 
