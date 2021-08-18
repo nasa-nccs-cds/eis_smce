@@ -24,8 +24,8 @@ def map_nan_dist( variable: np.ndarray ):
     valid_mask = (nan_dist == 0)
     undef_mask = ~(nan_mask | valid_mask)
     nan_dist_map = np.full( nan_dist.shape, "x", dtype=np.str_ )
-    nan_dist_map[valid_mask] = "."
-    nan_dist_map[undef_mask] = "*"
+    nan_dist_map[valid_mask] = " "
+    nan_dist_map[undef_mask] = "."
     print(nan_dist_map.shape)
     print( nan_dist_map[0] )
     for iL in range( nan_dist.shape[0] ):
