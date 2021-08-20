@@ -42,7 +42,7 @@ class EISDataSource( ):
     def get_file_list( self, vlist: Set[str], ibatch: int ) -> List[str]:
         file_spec_list:  List[Dict[str,str]] = self.segment_manager.get_file_specs( vlist )
         Nf = len( file_spec_list )
-        (istart,istop)  = (0, Nf) if (ibatch < 0) else (ibatch, min( ibatch + self.batch_size(), Nf ))
+        (istart,istop)  = (0, Nf) if (ibatch < 0) else (ibatch, min( ibatch + self.partition_chunk_size(), Nf ))
         return [ file_spec_list[ip].get("resolved") for ip in range(istart,istop) ]
 
     def get_local_file_path(self, data_url: str):
@@ -172,12 +172,6 @@ class EISDataSource( ):
         chunk_size = self.partition_chunk_size()
         for i in range(0, len(lst), chunk_size):
             yield lst[i: i + chunk_size]
-
-    def batch_size(self) -> int:
-        batch_size_suggestion = eisc().get( 'batch_size', 100 )
-        chunk_size = self.partition_chunk_size()
-        chunks_per_batch: int = round( batch_size_suggestion/chunk_size )
-        return chunks_per_batch * chunk_size
 
     def log(self, msg: str ):
         self.logger.info( msg )
