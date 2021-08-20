@@ -145,11 +145,12 @@ class EISDataSource( ):
     #     return store
 
     def create_storage_item(self, path: str, **kwargs ) -> xa.Dataset:
+        from eis_smce.data.common.cluster import dcm
         ibatch =  kwargs.get( 'ibatch', 0 )
         init = ( ibatch == 0 )
         mds: xa.Dataset = self.to_dask( **kwargs )
         for aId in self.pspec['dynamic_metadata_ids']: mds.attrs.pop( aId, "" )
-        zargs = dict( compute=kwargs.get('write',False) ) # , consolidated=True )
+        zargs = dict( compute=kwargs.get('write',False), synchronizer = dcm().zsync )
         if init: zargs['mode'] = 'w'
         else:    zargs['append_dim'] = eisc().get( 'merge_dim' )
         store = self.get_cache_path( path, self.pspec )
