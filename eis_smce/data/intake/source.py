@@ -149,7 +149,7 @@ class EISDataSource( ):
         init = ( ibatch == 0 )
         mds: xa.Dataset = self.to_dask( **kwargs )
         for aId in self.pspec['dynamic_metadata_ids']: mds.attrs.pop( aId, "" )
-        zargs = dict( compute=False ) # , consolidated=True )
+        zargs = dict( compute=kwargs.get('write',False) ) # , consolidated=True )
         if init: zargs['mode'] = 'w'
         else:    zargs['append_dim'] = eisc().get( 'merge_dim' )
         store = self.get_cache_path( path, self.pspec )
@@ -212,13 +212,13 @@ class EISDataSource( ):
                 nfiles = len( file_spec_list )
                 self.logger.info(f"Processing {nfiles} files (batch-size = {self.batch_size()})")
                 for ib in range( 0, nfiles, self.batch_size() ):
-                    merge_dim = self.pspec.get('merge_dim')
-                    mds: xa.Dataset = self.create_storage_item( path, ibatch=ib, vlist=vlist, **kwargs )
-                    store = EISDataSource.get_cache_path( path, self.pspec )
-                    current_batch_size = len(mds.attrs['_files_'])
-                    region = { merge_dim: slice(ib, ib+current_batch_size) }
-                    self.logger.info( f'Export to Zarr: batch_size = {current_batch_size}, region= {region}' )
-                    mds.to_zarr( store, mode='a', region=region, compute=True )
+                    mds: xa.Dataset = self.create_storage_item( path, ibatch=ib, vlist=vlist, write=True, **kwargs )
+                    # merge_dim = self.pspec.get('merge_dim')
+                    # store = EISDataSource.get_cache_path( path, self.pspec )
+                    # current_batch_size = len(mds.attrs['_files_'])
+                    # region = { merge_dim: slice(ib, ib+current_batch_size) }
+                    # self.logger.info( f'Export to Zarr: batch_size = {current_batch_size}, region= {region}' )
+                    # mds.to_zarr( store, mode='a', region=region, compute=True )
         except Exception  as err:
             self.logger.error(f"Exception in export: {err}")
             self.logger.error(traceback.format_exc())
