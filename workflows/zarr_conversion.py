@@ -13,7 +13,7 @@ eisc = eisc_config( sys.argv[1] )
 
 if __name__ == '__main__':
 
-    dcm().init_cluster( processes=False )
+    dcm().init_cluster( processes=True )
 
     input_path  = f"{eisc['input_dir']}/{eisc['input_dset']}"
     output_path = f"{eisc['output_dir']}/{eisc['output_dset']}"
