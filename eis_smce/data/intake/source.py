@@ -146,6 +146,7 @@ class EISDataSource( ):
     #     return store
 
     def create_storage_item(self, path: str, **kwargs ):
+        t0 = time.time()
         ibatch =  kwargs.get( 'ibatch', 0 )
         init = ( ibatch == 0 )
         mds: xa.Dataset = self.to_dask( **kwargs )
@@ -159,6 +160,7 @@ class EISDataSource( ):
         print( f"{'Writing' if init else 'Appending'} dset from batch[{ibatch}] to zarr file: {store}"   )
         mds.to_zarr( store, **zargs )
         mds.close()
+        print( f"Completed batch {ibatch} in {time.time()-t0} sec" )
 
     def create_storage_item1(self, path: str, **kwargs) -> List[str]:
         ibatch = kwargs.get('ibatch', 0)
