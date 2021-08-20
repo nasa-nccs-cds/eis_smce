@@ -24,9 +24,9 @@ def show_nan_ts( variable: np.ndarray, ix, iy  ):
     nan_ts[nan_dist] = "N"
     print( ''.join( nan_ts.tolist() ) )
 
-def show_nan_ts( variable: np.ndarray, ix, iy  ):
+def show_ts( variable: np.ndarray, ix, iy  ):
     subvar: np.ndarray = variable[:,iy,ix].squeeze()
-    print( ''.join( subvar.tolist() ) )
+    print( subvar.tolist() )
 
 def map_nan_dist( variable: np.ndarray ):
     nt = variable.shape[0]
@@ -70,7 +70,7 @@ def explore_blocks(  variable: Array  ):
 
 
 show_nan_ts( xvar.values, 200, 220 )
-show_nan_ts( xvar.values, 200, 220 )
+show_ts( xvar.values, 200, 220 )
 map_nan_dist( xvar.values )
 
 
