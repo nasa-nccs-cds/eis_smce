@@ -146,6 +146,7 @@ class EISDataSource( ):
     #     return store
 
     def create_storage_item(self, path: str, **kwargs ):
+        t0 = time.time()
         ibatch =  kwargs.get( 'ibatch', 0 )
         init = ( ibatch == 0 )
         mds: xa.Dataset = self.to_dask( **kwargs )
@@ -159,29 +160,7 @@ class EISDataSource( ):
         print( f"{'Writing' if init else 'Appending'} dset from batch[{ibatch}] to zarr file: {store}"   )
         mds.to_zarr( store, **zargs )
         mds.close()
-
-    def create_storage_item1(self, path: str, **kwargs) -> List[str]:
-        ibatch = kwargs.get('ibatch', 0)
-        init = (ibatch == 0)
-        mds: xa.Dataset = self.to_dask(**kwargs)
-        #        input_files = mds['_eis_source_path'].values.tolist()
-        input_files = mds.attrs['_files_']
-        for aId in self.pspec['dynamic_metadata_ids']: mds.attrs.pop(aId, "")
-        zargs = dict(compute=False)  # , consolidated=True )
-        if init:
-            zargs['mode'] = 'w'
-        else:
-            zargs['append_dim'] = eisc().get('merge_dim')
-        store = self.get_cache_path(path, self.pspec)
-        with xa.set_options(display_max_rows=100):
-            self.logger.info(
-                f" merged_dset -> zarr: {store}\n   -------------------- Merged dataset batch[{ibatch}] -------------------- \n{mds}\n")
-        print(
-            f"{'Writing' if init else 'Appending'} {len(input_files)} files from batch[{ibatch}] to zarr file: {store}")
-        mds.to_zarr(store, **zargs)
-        mds.close()
-        self.logger.info(f"Completed batch[{ibatch}] zarr initialization. ")
-        return input_files
+        print(f"Completed batch {ibatch} in {time.time()-t0} sec")
 
     def partition_chunk_size(self):
         merge_dim = eisc().get( 'merge_dim' )
@@ -207,7 +186,6 @@ class EISDataSource( ):
     def export(self, output_url: str, **kwargs):
         try:
             from eis_smce.data.storage.s3 import s3m
-            from eis_smce.data.common.cluster import dcm
             path = eiss.item_path( output_url )
             for vlist in self.segment_manager.get_vlists():
                 file_spec_list: List[Dict[str, str]] = self.segment_manager.get_file_specs(vlist)
@@ -215,40 +193,6 @@ class EISDataSource( ):
                 self.log(f"Processing vlist over {nfiles} files: {vlist}")
                 for ib in range(0, nfiles, self.partition_chunk_size()):
                     self.create_storage_item( path, ibatch=ib, vlist=vlist, **kwargs )
-        except Exception  as err:
-            self.logger.error(f"Exception in export: {err}")
-            self.logger.error(traceback.format_exc())
-
-    def export1(self, output_url: str, **kwargs):
-        try:
-            from eis_smce.data.storage.s3 import s3m
-            from eis_smce.data.common.cluster import dcm
-            path = eiss.item_path( output_url )
-            parallel = kwargs.get( 'parallel', False )
-            for vlist in self.segment_manager.get_vlists():
-                self.logger.info( f"Processing vlist( parallel = {parallel} ): {vlist}")
-                file_spec_list: List[Dict[str, str]] = self.segment_manager.get_file_specs(vlist)
-                nfiles = len( file_spec_list )
-                self.logger.info(f"Processing {nfiles} files (batch-size = {self.batch_size()})")
-                for ib in range( 0, nfiles, self.batch_size() ):
-                    t0 = time.time()
-                    batch_files = self.create_storage_item( path, ibatch=ib, vlist=vlist, **kwargs )
-                    current_batch_size, t1 = len(batch_files), time.time()
-                    ispecs = [ dict( file_index=ic, input_path=file_spec_list[ic]['resolved'] ) for ic in range( ib, ib+current_batch_size ) ]
-                    cspecs = list( self.partition_list( ispecs ) )
-                    if parallel:
-                        self.logger.info(f"Exporting parallel batch {ib} with {current_batch_size} files over {len(cspecs)} procs/chunks to: {path}")
-                        self.pspec['synchronizer'] = dcm().zsync
-                        results = dcm().client.map( partial( EISDataSource._export_partition, path, self.pspec ), cspecs )
-                        self.logger.info(f"Computing {len(results)} parallel processes" )
-                        dcm().client.compute( results, sync=True )
-                    else:
-                        self.logger.info(f"Exporting batch {ib} with {current_batch_size} files to: {path}")
-                        self.pspec['synchronizer'] = None
-                        for cspec in cspecs:
-                            EISDataSource._export_partition( path, self.pspec, cspec )
-                    print( f"Completed processing batch {ib} ({current_batch_size} files) in {(time.time()-t0)/60:.1f} (init: {(t1-t0)/60:.1f}) min.")
-
         except Exception  as err:
             self.logger.error(f"Exception in export: {err}")
             self.logger.error(traceback.format_exc())

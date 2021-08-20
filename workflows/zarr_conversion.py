@@ -13,7 +13,7 @@ eisc = eisc_config( sys.argv[1] )
 
 if __name__ == '__main__':
 
-    dcm().init_cluster( processes=False )
+#    dcm().init_cluster( processes=True )
 
     input_path  = f"{eisc['input_dir']}/{eisc['input_dset']}"
     output_path = f"{eisc['output_dir']}/{eisc['output_dset']}"
@@ -26,5 +26,5 @@ if __name__ == '__main__':
 
     print( f"S3 upload command:\n\t '>> aws s3 mv {output_path}.zarr {zarr_url}.zarr  --acl bucket-owner-full-control --recursive' ")
 
-    dcm().shutdown()
+#    dcm().shutdown()
     sys.exit(0)
