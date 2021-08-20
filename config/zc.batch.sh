@@ -13,6 +13,6 @@ echo "Running zarr conversion on $SLURM_CPUS_ON_NODE CPU cores"
 cd /discover/nobackup/${USER}/eis_smce
 source /home/${USER}/.bashrc
 source activate eis_smce
-python ./workflows/zarr_conversion.py /home/${USER}/.eis_smce/config/chunking_tests/zc1.cfg
+python ./workflows/zarr_conversion.py /home/${USER}/.eis_smce/config/chunking_tests/zc2.cfg
 
 date
