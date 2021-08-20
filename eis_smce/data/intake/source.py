@@ -121,7 +121,7 @@ class EISDataSource( ):
                            sname = self.segment_manager.get_segment_name( var_list ), **kwargs )
         t0 = time.time()
         ds0: xa.Dataset = xa.open_mfdataset( file_list, concat_dim=merge_dim, coords="minimal", data_vars=var_list,
-                                            preprocess=partial( self.preprocess, self.pspec ), parallel = False, chunks=chunks )
+                                            preprocess=partial( self.preprocess, self.pspec ), parallel = True, chunks=chunks )
         dset = ds0.chunk( chunks )
         mdim = dset[merge_dim].values
         dset.attrs['_files_'] = file_list
@@ -145,19 +145,20 @@ class EISDataSource( ):
     #     store = EISDataSource.get_cache_path(path) if use_cache else s3m().get_store(path,clear)
     #     return store
 
-    def create_storage_item(self, path: str, sync,  parms: Dict  ) -> Delayed:
-        ibatch =  parms.get( 'ibatch', 0 )
+    def create_storage_item(self, path: str, **kwargs ):
+        ibatch =  kwargs.get( 'ibatch', 0 )
         init = ( ibatch == 0 )
-        mds: xa.Dataset = self.to_dask( **parms )
+        mds: xa.Dataset = self.to_dask( **kwargs )
         for aId in self.pspec['dynamic_metadata_ids']: mds.attrs.pop( aId, "" )
-        zargs = dict( compute=False, synchronizer = sync, mode='a' )
+        zargs = dict( compute=True, mode='a' )
         if init: zargs['mode'] = 'w'
         else:    zargs['append_dim'] = eisc().get( 'merge_dim' )
         store = self.get_cache_path( path, self.pspec )
         with xa.set_options( display_max_rows=100 ):
             self.logger.info( f" merged_dset -> zarr: {store}\n   -------------------- Merged dataset batch[{ibatch}] -------------------- \n{mds}\n")
         print( f"{'Writing' if init else 'Appending'} dset from batch[{ibatch}] to zarr file: {store}"   )
-        return mds.to_zarr( store, **zargs )
+        mds.to_zarr( store, **zargs )
+        mds.close()
 
     def create_storage_item1(self, path: str, **kwargs) -> List[str]:
         ibatch = kwargs.get('ibatch', 0)
@@ -204,7 +205,6 @@ class EISDataSource( ):
         print( msg )
 
     def export(self, output_url: str, **kwargs):
-        from eis_smce.data.common.cluster import dcm
         try:
             from eis_smce.data.storage.s3 import s3m
             from eis_smce.data.common.cluster import dcm
@@ -213,10 +213,8 @@ class EISDataSource( ):
                 file_spec_list: List[Dict[str, str]] = self.segment_manager.get_file_specs(vlist)
                 nfiles = len( file_spec_list )
                 self.log(f"Processing vlist over {nfiles} files: {vlist}")
-                zparms = [ dict( ibatch=ib, vlist=vlist, **kwargs ) for ib in range( 0, nfiles, self.partition_chunk_size() ) ]
-                results = dcm().client.map( partial( self.create_storage_item, path, dcm().zsync ), zparms )
-                self.log(f"Computing {len(results)} parallel processes")
-                dcm().client.compute(results, sync=True)
+                for ib in range(0, nfiles, self.partition_chunk_size()):
+                    self.create_storage_item( path, ibatch=ib, vlist=vlist, **kwargs )
         except Exception  as err:
             self.logger.error(f"Exception in export: {err}")
             self.logger.error(traceback.format_exc())

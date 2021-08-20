@@ -120,7 +120,7 @@ class SegmentedDatasetManager:
             return "-".join( data_vars )
 
     @staticmethod
-    def _get_file_metadata( merge_dim: str,  file_path: str ) -> Tuple[ Dict[str,Union[str,np.array]], Optional[Set[str]] ]:
+    def _get_file_metadata( file_path: str ) -> Tuple[ Dict[str,Union[str,np.array]], Optional[Set[str]] ]:
         try:
             with xa.open_dataset(file_path) as dset:
                 _attrs: Dict[str,Union[str,np.array]] = { str(k): v for k, v in dset.attrs.items() }
@@ -174,10 +174,9 @@ class SegmentedDatasetManager:
     def process_files(self, urlpath: str, **kwargs ):
         t0 = time.time()
         self._generate_file_specs( urlpath, **kwargs )
-        merge_dim = eisc().get('merge_dim')
         print( "Testing varlists in all files")
         t1 = time.time()
-        tasks = dcm().client.map( partial( self._get_file_metadata, merge_dim ), self._input_files )
+        tasks = dcm().client.map( self._get_file_metadata, self._input_files )
         files_metadata = dcm().client.compute( tasks, sync=True )
         self._process_files_metadata( files_metadata )
         t2 = time.time()
