@@ -12,7 +12,7 @@ class ZarrConverter(EISSingleton):
 
     def standard_conversion(self, input: str, output: str, **kwargs ):
         try:
-            self.start_time = time.time()
+            self.start_time =   time.time()
             eisds: EISDataSource = EISDataSource( input, **kwargs )
             eisds.export( output,**kwargs )
             print( f"Completed conversion in {(time.time()-self.start_time)/60} minutes" )

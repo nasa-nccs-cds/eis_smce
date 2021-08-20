@@ -16,7 +16,7 @@ if __name__ == '__main__':
 #    dcm().init_cluster( processes=True )
 
     input_path  = f"{eisc['input_dir']}/{eisc['input_dset']}"
-    output_path = f"{eisc['output_dir']}/{eisc['output_dset']}"
+    output_path =   f"{eisc['output_dir']}/{eisc['output_dset']}"
     zarr_url   = f"s3://{eisc['bucket']}/{eisc['output_dset']}"
     cat_name = eisc.get( 'cat_name', eisc['output_dset'].replace("/",".") )
     file_index_range = eisc.get( 'file_index_range', None )

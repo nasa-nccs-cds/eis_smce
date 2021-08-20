@@ -145,7 +145,7 @@ class EISDataSource( ):
     #     store = EISDataSource.get_cache_path(path) if use_cache else s3m().get_store(path,clear)
     #     return store
 
-    def create_storage_item(self, path: str, **kwargs ):
+    def create_storage_item(self, path: str, **kwargs   ):
         t0 = time.time()
         ibatch =  kwargs.get( 'ibatch', 0 )
         init = ( ibatch == 0 )
